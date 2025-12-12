@@ -1,0 +1,421 @@
+.dashboard {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.dashboardHeader {
+  margin-bottom: 25px;
+}
+
+.dashboardHeader h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.cardHeader h3 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.cardSubtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.dropdown {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--white);
+  cursor: pointer;
+}
+
+.dropdown:focus {
+  outline: none;
+  border-color: var(--primary-green);
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.mainStat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.percentage {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.percentage i {
+  font-size: 8px;
+  color: #3B82F6;
+}
+
+.trend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--primary-green);
+}
+
+.trend i {
+  font-size: 12px;
+}
+
+.trendDown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--primary-green);
+}
+
+.trendDown i {
+  font-size: 12px;
+}
+
+/* Bar Chart Styles */
+.barChart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.barItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.barLabel {
+  min-width: 75px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.barWrapper {
+  flex: 1;
+  height: 24px;
+  background: #F3F4F6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.barIncome {
+  height: 100%;
+  background: var(--primary-green);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.barExpense {
+  height: 100%;
+  background: #3B82F6;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.barCategory {
+  min-width: 65px;
+  color: var(--text-secondary);
+}
+
+/* Donut Chart Styles */
+.donutChart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legendText {
+  flex: 1;
+}
+
+/* Invoice Styles */
+.invoiceSection {
+  padding: 15px 0;
+}
+
+.invoiceSection:first-child {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.invoiceHeader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.invoiceAmount {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.invoiceLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.progressBar {
+  height: 12px;
+  background: #F3F4F6;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progressOverdue {
+  height: 100%;
+  background: #F97316;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progressPaid {
+  height: 100%;
+  background: var(--primary-green);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+/* Bank Accounts Styles */
+.accountsList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.accountItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.accountItem:last-child {
+  border-bottom: none;
+}
+
+.accountInfo {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.accountInfo i {
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.accountBank {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.accountUpdate {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.accountBalance {
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.accountSecondary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.accountReview {
+  font-size: 11px;
+  color: #3B82F6;
+  margin-top: 2px;
+}
+
+/* Line Chart Styles */
+.lineChart {
+  margin-top: 15px;
+}
+
+/* Integrations Styles */
+.integrationStatus {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px;
+  background: #F0FDF4;
+  border-radius: 6px;
+  margin-top: 15px;
+}
+
+.integrationStatus i {
+  font-size: 18px;
+}
+
+.integrationStatus span {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.integrationCount {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dashboardGrid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 10px 0;
+  }
+
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .card {
+    padding: 15px;
+  }
+
+  .amount {
+    font-size: 24px;
+  }
+
+  .cardHeader {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dropdown {
+    align-self: flex-start;
+  }
+
+  .donutChart {
+    margin-top: 10px;
+  }
+
+  .lineChart {
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboardHeader h2 {
+    font-size: 20px;
+  }
+
+  .amount {
+    font-size: 20px;
+  }
+
+  .invoiceAmount {
+    font-size: 22px;
+  }
+
+  .barLabel {
+    min-width: 60px;
+    font-size: 12px;
+  }
+
+  .barCategory {
+    min-width: 55px;
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,160 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background-color: var(--white);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+  gap: 20px;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  background: var(--primary-green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+}
+
+.logoIcon i {
+  font-size: 12px;
+}
+
+.logoText {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.companyName {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-left: 20px;
+  border-left: 1px solid var(--border-color);
+}
+
+.headerCenter {
+  flex: 1;
+  max-width: 600px;
+}
+
+.searchBar {
+  position: relative;
+  width: 100%;
+}
+
+.searchBar i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.searchBar input {
+  width: 100%;
+  padding: 10px 15px 10px 45px;
+  border: 1px solid var(--border-color);
+  border-radius: 25px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.searchBar input:focus {
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconBtn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.iconBtn:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.mobileMenuToggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+  .companyName {
+    display: none;
+  }
+
+  .headerCenter {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 15px;
+  }
+
+  .headerRight {
+    display: none;
+  }
+
+  .mobileMenuToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .searchBar input {
+    font-size: 13px;
+    padding: 8px 12px 8px 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logoText {
+    font-size: 16px;
+  }
+
+  .searchBar input {
+    font-size: 12px;
+  }
+}

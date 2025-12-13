@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import Sidebar from '@/components/Sidebar'
 import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
+import Invoice from '@/components/Invoice'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -60,6 +61,8 @@ export default function Home() {
         <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
           {activeMenu === 'Dashboard' ? (
             <Dashboard />
+          ) : activeMenu === 'Invoices' ? (
+            <Invoice />
           ) : (
             <>
               <div className={styles.contentHeader}>

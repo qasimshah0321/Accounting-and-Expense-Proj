@@ -1,0 +1,242 @@
+'use client'
+
+import { useState } from 'react'
+import styles from './Invoice.module.css'
+
+export default function Invoice() {
+  const [lineItems, setLineItems] = useState([
+    { id: 1, description: '', quantity: 1, rate: 0, amount: 0 }
+  ])
+
+  const addLineItem = () => {
+    const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
+    setLineItems([...lineItems, { id: newId, description: '', quantity: 1, rate: 0, amount: 0 }])
+  }
+
+  const removeLineItem = (id) => {
+    if (lineItems.length > 1) {
+      setLineItems(lineItems.filter(item => item.id !== id))
+    }
+  }
+
+  const updateLineItem = (id, field, value) => {
+    setLineItems(lineItems.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value }
+        if (field === 'quantity' || field === 'rate') {
+          updatedItem.amount = updatedItem.quantity * updatedItem.rate
+        }
+        return updatedItem
+      }
+      return item
+    }))
+  }
+
+  const calculateSubtotal = () => {
+    return lineItems.reduce((sum, item) => sum + item.amount, 0)
+  }
+
+  const calculateTax = () => {
+    return calculateSubtotal() * 0.1 // 10% tax
+  }
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax()
+  }
+
+  return (
+    <div className={styles.invoiceContainer}>
+      <div className={styles.invoiceHeader}>
+        <h1>Create Invoice</h1>
+        <div className={styles.actionButtons}>
+          <button className={styles.btnSecondary}>Save as Draft</button>
+          <button className={styles.btnPrimary}>Save & Send</button>
+        </div>
+      </div>
+
+      {/* Upper Section */}
+      <div className={styles.invoiceUpperSection}>
+        <div className={styles.sectionCard}>
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Customer *</label>
+              <select className={styles.formControl}>
+                <option>Select Customer</option>
+                <option>John Doe</option>
+                <option>Jane Smith</option>
+                <option>ABC Corporation</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label>Invoice Number *</label>
+              <input
+                type="text"
+                className={styles.formControl}
+                placeholder="INV-001"
+                defaultValue="INV-001"
+              />
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Invoice Date *</label>
+              <input
+                type="date"
+                className={styles.formControl}
+                defaultValue={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>Due Date *</label>
+              <input
+                type="date"
+                className={styles.formControl}
+              />
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label>Payment Terms</label>
+              <select className={styles.formControl}>
+                <option>Net 30</option>
+                <option>Net 15</option>
+                <option>Due on Receipt</option>
+                <option>Net 60</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label>Reference Number</label>
+              <input
+                type="text"
+                className={styles.formControl}
+                placeholder="PO-12345"
+              />
+            </div>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroupFull}>
+              <label>Notes</label>
+              <textarea
+                className={styles.formControl}
+                rows="3"
+                placeholder="Add any additional notes or instructions..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section - Line Items */}
+      <div className={styles.invoiceBottomSection}>
+        <div className={styles.sectionCard}>
+          <div className={styles.sectionHeader}>
+            <h3>Items</h3>
+            <button className={styles.btnAddItem} onClick={addLineItem}>
+              <i className="fas fa-plus"></i> Add Item
+            </button>
+          </div>
+
+          <div className={styles.tableContainer}>
+            <table className={styles.itemsTable}>
+              <thead>
+                <tr>
+                  <th className={styles.colDescription}>Description</th>
+                  <th className={styles.colQuantity}>Quantity</th>
+                  <th className={styles.colRate}>Rate</th>
+                  <th className={styles.colAmount}>Amount</th>
+                  <th className={styles.colAction}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineItems.map((item) => (
+                  <tr key={item.id}>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.formControl}
+                        placeholder="Item description"
+                        value={item.description}
+                        onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className={styles.formControl}
+                        value={item.quantity}
+                        min="1"
+                        onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className={styles.formControl}
+                        value={item.rate}
+                        min="0"
+                        step="0.01"
+                        onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                      />
+                    </td>
+                    <td className={styles.amountCell}>
+                      ${item.amount.toFixed(2)}
+                    </td>
+                    <td className={styles.actionCell}>
+                      <button
+                        className={styles.btnRemove}
+                        onClick={() => removeLineItem(item.id)}
+                        disabled={lineItems.length === 1}
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={styles.totalsSection}>
+            <div className={styles.totalsGrid}>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Subtotal:</span>
+                <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
+              </div>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Tax (10%):</span>
+                <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+              </div>
+              <div className={styles.totalRow}>
+                <span className={styles.totalLabel}>Discount:</span>
+                <span className={styles.totalValue}>
+                  <input
+                    type="number"
+                    className={styles.discountInput}
+                    defaultValue="0.00"
+                    step="0.01"
+                  />
+                </span>
+              </div>
+              <div className={`${styles.totalRow} ${styles.grandTotal}`}>
+                <span className={styles.totalLabel}>Total:</span>
+                <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className={styles.invoiceFooter}>
+        <button className={styles.btnCancel}>Cancel</button>
+        <div className={styles.footerActions}>
+          <button className={styles.btnSecondary}>Save as Draft</button>
+          <button className={styles.btnPrimary}>Save & Send</button>
+        </div>
+      </div>
+    </div>
+  )
+}

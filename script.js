@@ -132,11 +132,64 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Search query:', e.target.value);
     });
 
-    // Handle create button
+    // Handle create button - open create menu modal
     const createBtn = document.querySelector('.create-btn');
-    createBtn.addEventListener('click', function() {
-        console.log('Create button clicked');
-        alert('Create new transaction');
+    const createMenuOverlay = document.getElementById('createMenuOverlay');
+    const closeCreateMenu = document.getElementById('closeCreateMenu');
+    const createSubmenuItems = document.querySelectorAll('.create-submenu-item');
+
+    createBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        createMenuOverlay.classList.add('active');
+        console.log('Create menu opened');
+    });
+
+    // Handle close create menu button
+    closeCreateMenu.addEventListener('click', function() {
+        createMenuOverlay.classList.remove('active');
+        console.log('Create menu closed');
+    });
+
+    // Close create menu when clicking on overlay
+    createMenuOverlay.addEventListener('click', function(e) {
+        if (e.target === createMenuOverlay) {
+            createMenuOverlay.classList.remove('active');
+            console.log('Create menu closed by overlay click');
+        }
+    });
+
+    // Handle create menu item clicks
+    createSubmenuItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const pageName = this.getAttribute('data-page');
+
+            // Remove active class from all menu items and submenu items
+            menuItems.forEach(menuItem => {
+                menuItem.classList.remove('active');
+            });
+            submenuItems.forEach(submenuItem => {
+                submenuItem.classList.remove('active');
+            });
+
+            // Update page title
+            pageTitle.textContent = pageName;
+
+            // Update content display
+            contentDisplay.innerHTML = `
+                <h2>${pageName}</h2>
+                <p>Create new ${pageName}</p>
+            `;
+
+            // Close create menu
+            createMenuOverlay.classList.remove('active');
+
+            // Close mobile menu if open
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+            }
+
+            console.log(`Creating new: ${pageName}`);
+        });
     });
 
     // Handle icon buttons

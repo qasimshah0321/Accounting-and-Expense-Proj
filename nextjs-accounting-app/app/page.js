@@ -4,11 +4,13 @@ import { useState } from 'react'
 import Header from '@/components/Header'
 import Sidebar from '@/components/Sidebar'
 import Dashboard from '@/components/Dashboard'
+import CreateMenu from '@/components/CreateMenu'
 import styles from './page.module.css'
 
 export default function Home() {
   const [activeMenu, setActiveMenu] = useState('Dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
@@ -22,15 +24,30 @@ export default function Home() {
     setIsSidebarOpen(!isSidebarOpen)
   }
 
+  const handleCreateClick = () => {
+    setIsCreateMenuOpen(true)
+  }
+
+  const handleCreateMenuClose = () => {
+    setIsCreateMenuOpen(false)
+  }
+
   return (
     <>
       <Header onMenuToggle={handleMenuToggle} />
+
+      <CreateMenu
+        isOpen={isCreateMenuOpen}
+        onClose={handleCreateMenuClose}
+        onMenuClick={handleMenuClick}
+      />
 
       <div className={styles.mainContainer}>
         <Sidebar
           isOpen={isSidebarOpen}
           activeMenu={activeMenu}
           onMenuClick={handleMenuClick}
+          onCreateClick={handleCreateClick}
         />
 
         <main className={styles.mainContent}>

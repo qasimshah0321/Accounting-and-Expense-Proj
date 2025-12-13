@@ -53,7 +53,7 @@ const menuItems = [
   { id: 'settings', name: 'Settings', icon: 'fa-sliders-h' },
 ]
 
-export default function Sidebar({ isOpen, activeMenu, onMenuClick }) {
+export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick }) {
   const [expandedMenus, setExpandedMenus] = useState({})
 
   const toggleSubmenu = (menuId) => {
@@ -66,7 +66,7 @@ export default function Sidebar({ isOpen, activeMenu, onMenuClick }) {
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.active : ''}`}>
       <div className={styles.sidebarHeader}>
-        <button className={styles.createBtn}>
+        <button className={styles.createBtn} onClick={onCreateClick}>
           <i className="fas fa-plus-circle"></i>
           <span>Create</span>
         </button>

@@ -1,18 +1,23 @@
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Get all menu items
-    const menuItems = document.querySelectorAll('.menu-item[data-page]');
+    const menuItems = document.querySelectorAll('.menu-item[data-page]:not(.has-submenu)');
+    const menuItemsWithSubmenu = document.querySelectorAll('.menu-item.has-submenu');
+    const submenuItems = document.querySelectorAll('.submenu-item[data-page]');
     const pageTitle = document.getElementById('page-title');
     const contentDisplay = document.getElementById('content-display');
     const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
     const sidebar = document.getElementById('sidebar');
 
-    // Handle menu item clicks
+    // Handle menu items without submenu clicks
     menuItems.forEach(item => {
         item.addEventListener('click', function() {
-            // Remove active class from all items
+            // Remove active class from all menu items and submenu items
             menuItems.forEach(menuItem => {
                 menuItem.classList.remove('active');
+            });
+            submenuItems.forEach(submenuItem => {
+                submenuItem.classList.remove('active');
             });
 
             // Add active class to clicked item
@@ -25,6 +30,59 @@ document.addEventListener('DOMContentLoaded', function() {
             pageTitle.textContent = pageName;
 
             // Update content display with the menu name
+            contentDisplay.innerHTML = `
+                <h2>${pageName}</h2>
+                <p>You clicked on ${pageName}</p>
+            `;
+
+            // Close mobile menu if open
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+            }
+
+            // Log to console for debugging
+            console.log(`Navigated to: ${pageName}`);
+        });
+    });
+
+    // Handle menu items with submenu clicks (expand/collapse)
+    menuItemsWithSubmenu.forEach(item => {
+        const menuItemContent = item.querySelector('.menu-item-content');
+
+        menuItemContent.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            // Toggle expanded class
+            item.classList.toggle('expanded');
+
+            // Log to console for debugging
+            console.log(`Toggled submenu: ${item.getAttribute('data-page')}`);
+        });
+    });
+
+    // Handle submenu item clicks
+    submenuItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            // Remove active class from all menu items and submenu items
+            menuItems.forEach(menuItem => {
+                menuItem.classList.remove('active');
+            });
+            submenuItems.forEach(submenuItem => {
+                submenuItem.classList.remove('active');
+            });
+
+            // Add active class to clicked submenu item
+            this.classList.add('active');
+
+            // Get the page name from data attribute
+            const pageName = this.getAttribute('data-page');
+
+            // Update page title
+            pageTitle.textContent = pageName;
+
+            // Update content display with the submenu name
             contentDisplay.innerHTML = `
                 <h2>${pageName}</h2>
                 <p>You clicked on ${pageName}</p>

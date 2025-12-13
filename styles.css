@@ -213,14 +213,25 @@ body {
 }
 
 .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
     color: var(--text-secondary);
     font-size: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
+    position: relative;
+}
+
+.menu-item:not(.has-submenu) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+}
+
+.menu-item.has-submenu .menu-item-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
     position: relative;
 }
 
@@ -230,18 +241,73 @@ body {
     text-align: center;
 }
 
-.menu-item:hover {
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 12px !important;
+    transition: transform 0.3s ease;
+    width: auto !important;
+}
+
+.menu-item.expanded .submenu-arrow {
+    transform: rotate(180deg);
+}
+
+.menu-item:not(.has-submenu):hover,
+.menu-item.has-submenu .menu-item-content:hover {
     background-color: var(--sidebar-hover);
     color: var(--text-primary);
 }
 
-.menu-item.active {
+.menu-item.active:not(.has-submenu) {
     background-color: var(--sidebar-active);
     color: var(--primary-green);
     font-weight: 600;
 }
 
-.menu-item.active::before {
+.menu-item.active:not(.has-submenu)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--primary-green);
+}
+
+/* Submenu Styles */
+.submenu {
+    list-style: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.menu-item.expanded .submenu {
+    max-height: 500px;
+}
+
+.submenu-item {
+    padding: 10px 20px 10px 52px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.submenu-item:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+
+.submenu-item.active {
+    background-color: var(--sidebar-active);
+    color: var(--primary-green);
+    font-weight: 600;
+}
+
+.submenu-item.active::before {
     content: '';
     position: absolute;
     left: 0;

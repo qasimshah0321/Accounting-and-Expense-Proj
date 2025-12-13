@@ -11,6 +11,7 @@ export default function Home() {
   const [activeMenu, setActiveMenu] = useState('Dashboard')
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
@@ -32,6 +33,10 @@ export default function Home() {
     setIsCreateMenuOpen(false)
   }
 
+  const handleToggleCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
+
   return (
     <>
       <Header onMenuToggle={handleMenuToggle} />
@@ -45,12 +50,14 @@ export default function Home() {
       <div className={styles.mainContainer}>
         <Sidebar
           isOpen={isSidebarOpen}
+          isCollapsed={isSidebarCollapsed}
           activeMenu={activeMenu}
           onMenuClick={handleMenuClick}
           onCreateClick={handleCreateClick}
+          onToggleCollapse={handleToggleCollapse}
         />
 
-        <main className={styles.mainContent}>
+        <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
           {activeMenu === 'Dashboard' ? (
             <Dashboard />
           ) : (

@@ -9,6 +9,11 @@
   flex: 1;
   padding: 30px;
   background-color: #FAFAFA;
+  transition: margin-left 0.3s ease;
+}
+
+.mainContent.collapsed {
+  margin-left: 70px;
 }
 
 .contentHeader h1 {

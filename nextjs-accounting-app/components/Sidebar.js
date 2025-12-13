@@ -53,7 +53,7 @@ const menuItems = [
   { id: 'settings', name: 'Settings', icon: 'fa-sliders-h' },
 ]
 
-export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick }) {
+export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, onCreateClick, onToggleCollapse }) {
   const [expandedMenus, setExpandedMenus] = useState({})
 
   const toggleSubmenu = (menuId) => {
@@ -64,12 +64,21 @@ export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick
   }
 
   return (
-    <aside className={`${styles.sidebar} ${isOpen ? styles.active : ''}`}>
+    <aside className={`${styles.sidebar} ${isOpen ? styles.active : ''} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.sidebarHeader}>
-        <button className={styles.createBtn} onClick={onCreateClick}>
-          <i className="fas fa-plus-circle"></i>
-          <span>Create</span>
+        <button
+          className={styles.toggleBtn}
+          onClick={onToggleCollapse}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
         </button>
+        {!isCollapsed && (
+          <button className={styles.createBtn} onClick={onCreateClick}>
+            <i className="fas fa-plus-circle"></i>
+            <span>Create</span>
+          </button>
+        )}
       </div>
 
       <nav className={styles.sidebarNav}>
@@ -83,29 +92,36 @@ export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick
                     className={`${styles.menuItem} ${styles.hasSubmenu} ${
                       expandedMenus[item.id] ? styles.expanded : ''
                     }`}
-                    onClick={() => toggleSubmenu(item.id)}
+                    onClick={() => !isCollapsed && toggleSubmenu(item.id)}
+                    title={isCollapsed ? item.name : ''}
                   >
                     <div className={styles.menuItemContent}>
                       <i className={`fas ${item.icon}`}></i>
-                      <span>{item.name}</span>
-                      <i className={`fas fa-chevron-down ${styles.submenuArrow}`}></i>
+                      {!isCollapsed && (
+                        <>
+                          <span>{item.name}</span>
+                          <i className={`fas fa-chevron-down ${styles.submenuArrow}`}></i>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <ul className={`${styles.submenu} ${
-                    expandedMenus[item.id] ? styles.expanded : ''
-                  }`}>
-                    {item.submenus.map((submenu) => (
-                      <li
-                        key={submenu.id}
-                        className={`${styles.submenuItem} ${
-                          activeMenu === submenu.name ? styles.active : ''
-                        }`}
-                        onClick={() => onMenuClick(submenu.name)}
-                      >
-                        {submenu.name}
-                      </li>
-                    ))}
-                  </ul>
+                  {!isCollapsed && (
+                    <ul className={`${styles.submenu} ${
+                      expandedMenus[item.id] ? styles.expanded : ''
+                    }`}>
+                      {item.submenus.map((submenu) => (
+                        <li
+                          key={submenu.id}
+                          className={`${styles.submenuItem} ${
+                            activeMenu === submenu.name ? styles.active : ''
+                          }`}
+                          onClick={() => onMenuClick(submenu.name)}
+                        >
+                          {submenu.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </>
               ) : (
                 // Regular menu item without submenus
@@ -114,9 +130,10 @@ export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick
                     activeMenu === item.name ? styles.active : ''
                   }`}
                   onClick={() => onMenuClick(item.name)}
+                  title={isCollapsed ? item.name : ''}
                 >
                   <i className={`fas ${item.icon}`}></i>
-                  <span>{item.name}</span>
+                  {!isCollapsed && <span>{item.name}</span>}
                 </div>
               )}
             </li>
@@ -125,9 +142,9 @@ export default function Sidebar({ isOpen, activeMenu, onMenuClick, onCreateClick
       </nav>
 
       <div className={styles.sidebarFooter}>
-        <div className={styles.menuItem}>
+        <div className={styles.menuItem} title={isCollapsed ? 'Bookmarks' : ''}>
           <i className="fas fa-star"></i>
-          <span>Bookmarks</span>
+          {!isCollapsed && <span>Bookmarks</span>}
         </div>
       </div>
     </aside>

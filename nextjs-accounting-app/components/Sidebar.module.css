@@ -68,6 +68,13 @@
   transition: all 0.3s ease;
 }
 
+.sidebar.collapsed .createBtn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+}
+
 .createBtn:hover {
   background-color: var(--dark-green);
   transform: translateY(-1px);

@@ -14,6 +14,7 @@ const createMenuData = [
       { id: 'estimates-quotations', name: 'Estimates/Quotations' },
       { id: 'sale-receipts', name: 'Sale Receipts' },
       { id: 'customer-payments', name: 'Customer Payments' },
+      { id: 'refunds', name: 'Refunds' },
     ]
   },
   {
@@ -22,9 +23,11 @@ const createMenuData = [
     icon: 'fa-file-invoice-dollar',
     items: [
       { id: 'bills', name: 'Bills' },
+      { id: 'expenses', name: 'Expenses' },
       { id: 'request-for-quotation', name: 'Request for Quotation' },
       { id: 'vendor-credits', name: 'Vendor Credits' },
       { id: 'bill-payments', name: 'Bill Payments' },
+      { id: 'refunds-purchases', name: 'Refunds' },
     ]
   },
   {

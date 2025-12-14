@@ -16,6 +16,7 @@ const menuItems = [
       { id: 'estimates-quotations', name: 'Estimates/Quotations' },
       { id: 'sale-receipts', name: 'Sale Receipts' },
       { id: 'customer-payments', name: 'Customer Payments' },
+      { id: 'refunds', name: 'Refunds' },
     ]
   },
   {
@@ -24,9 +25,11 @@ const menuItems = [
     icon: 'fa-file-invoice-dollar',
     submenus: [
       { id: 'bills', name: 'Bills' },
+      { id: 'expenses', name: 'Expenses' },
       { id: 'request-for-quotation', name: 'Request for Quotation' },
       { id: 'vendor-credits', name: 'Vendor Credits' },
       { id: 'bill-payments', name: 'Bill Payments' },
+      { id: 'refunds-purchases', name: 'Refunds' },
     ]
   },
   { id: 'payments', name: 'Payments', icon: 'fa-credit-card' },

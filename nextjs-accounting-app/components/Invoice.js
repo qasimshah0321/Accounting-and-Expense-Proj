@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import styles from './Invoice.module.css'
 
-export default function Invoice() {
+export default function Invoice({ isOpen, onClose }) {
   const [lineItems, setLineItems] = useState([
     { id: 1, description: '', quantity: 1, rate: 0, amount: 0 }
   ])
+
+  if (!isOpen) return null
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
@@ -45,14 +47,30 @@ export default function Invoice() {
   }
 
   return (
-    <div className={styles.invoiceContainer}>
-      <div className={styles.invoiceHeader}>
-        <h1>Create Invoice</h1>
-        <div className={styles.actionButtons}>
-          <button className={styles.btnSecondary}>Save as Draft</button>
-          <button className={styles.btnPrimary}>Save & Send</button>
+    <div className={styles.invoicePopupOverlay}>
+      <div className={styles.invoicePopup}>
+        {/* Header */}
+        <div className={styles.popupHeader}>
+          <div className={styles.headerLeft}>
+            <h2>Create Invoice</h2>
+          </div>
+          <div className={styles.headerRight}>
+            <button className={styles.headerBtn}>
+              <i className="fas fa-file-pdf"></i>
+              View PDF
+            </button>
+            <button className={styles.headerBtn}>
+              <i className="fas fa-edit"></i>
+              Edit
+            </button>
+            <button className={styles.closeBtn} onClick={onClose}>
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* Scrollable Content */}
+        <div className={styles.popupContent}>
 
       {/* Upper Section */}
       <div className={styles.invoiceUpperSection}>
@@ -229,12 +247,23 @@ export default function Invoice() {
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className={styles.invoiceFooter}>
-        <button className={styles.btnCancel}>Cancel</button>
-        <div className={styles.footerActions}>
-          <button className={styles.btnSecondary}>Save as Draft</button>
-          <button className={styles.btnPrimary}>Save & Send</button>
+        </div>
+
+        {/* Fixed Footer */}
+        <div className={styles.popupFooter}>
+          <div className={styles.footerLeft}>
+            <button className={styles.btnCancel} onClick={onClose}>Cancel</button>
+          </div>
+          <div className={styles.footerRight}>
+            <button className={styles.btnSecondary}>
+              <i className="fas fa-save"></i>
+              Save
+            </button>
+            <button className={styles.btnPrimary}>
+              <i className="fas fa-paper-plane"></i>
+              Review & Send
+            </button>
+          </div>
         </div>
       </div>
     </div>

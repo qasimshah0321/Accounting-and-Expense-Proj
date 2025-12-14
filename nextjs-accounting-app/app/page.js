@@ -13,13 +13,24 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
+
+    // Open invoice popup if Invoices is clicked
+    if (menuName === 'Invoices') {
+      setIsInvoiceOpen(true)
+    }
+
     // Close sidebar on mobile after selection
     if (window.innerWidth <= 768) {
       setIsSidebarOpen(false)
     }
+  }
+
+  const handleInvoiceClose = () => {
+    setIsInvoiceOpen(false)
   }
 
   const handleMenuToggle = () => {
@@ -48,6 +59,8 @@ export default function Home() {
         onMenuClick={handleMenuClick}
       />
 
+      <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} />
+
       <div className={styles.mainContainer}>
         <Sidebar
           isOpen={isSidebarOpen}
@@ -61,8 +74,6 @@ export default function Home() {
         <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
           {activeMenu === 'Dashboard' ? (
             <Dashboard />
-          ) : activeMenu === 'Invoices' ? (
-            <Invoice />
           ) : (
             <>
               <div className={styles.contentHeader}>

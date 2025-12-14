@@ -113,14 +113,14 @@ export default function Invoice({ isOpen, onClose }) {
                 onChange={handleCustomerChange}
               >
                 <option value="">Select Customer</option>
+                <option value="add-new" className={styles.addNewOption}>
+                  + Add New
+                </option>
                 {customers.map(customer => (
                   <option key={customer.id} value={customer.name}>
                     {customer.name}
                   </option>
                 ))}
-                <option value="add-new" className={styles.addNewOption}>
-                  + Add New Customer
-                </option>
               </select>
             </div>
             <div className={styles.formGroup}>

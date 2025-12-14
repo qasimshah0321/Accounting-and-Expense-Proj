@@ -235,6 +235,11 @@ textarea.formControl {
   min-height: 80px;
 }
 
+.addNewOption {
+  color: var(--primary-green);
+  font-weight: 600;
+}
+
 /* Table */
 .tableContainer {
   overflow-x: auto;

@@ -2,13 +2,42 @@
 
 import { useState } from 'react'
 import styles from './Invoice.module.css'
+import CustomerPopup from './CustomerPopup'
 
 export default function Invoice({ isOpen, onClose }) {
   const [lineItems, setLineItems] = useState([
     { id: 1, description: '', quantity: 1, rate: 0, amount: 0 }
   ])
 
+  const [customers, setCustomers] = useState([
+    { id: 1, name: 'John Doe' },
+    { id: 2, name: 'Jane Smith' },
+    { id: 3, name: 'ABC Corporation' }
+  ])
+
+  const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
+
   if (!isOpen) return null
+
+  const handleCustomerChange = (e) => {
+    const value = e.target.value
+    if (value === 'add-new') {
+      setIsCustomerPopupOpen(true)
+    } else {
+      setSelectedCustomer(value)
+    }
+  }
+
+  const handleCustomerSave = (newCustomer) => {
+    setCustomers(prev => [...prev, newCustomer])
+    setSelectedCustomer(newCustomer.name)
+    setIsCustomerPopupOpen(false)
+  }
+
+  const handleCustomerPopupClose = () => {
+    setIsCustomerPopupOpen(false)
+  }
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
@@ -78,11 +107,20 @@ export default function Invoice({ isOpen, onClose }) {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label>Customer *</label>
-              <select className={styles.formControl}>
-                <option>Select Customer</option>
-                <option>John Doe</option>
-                <option>Jane Smith</option>
-                <option>ABC Corporation</option>
+              <select
+                className={styles.formControl}
+                value={selectedCustomer}
+                onChange={handleCustomerChange}
+              >
+                <option value="">Select Customer</option>
+                {customers.map(customer => (
+                  <option key={customer.id} value={customer.name}>
+                    {customer.name}
+                  </option>
+                ))}
+                <option value="add-new" className={styles.addNewOption}>
+                  + Add New Customer
+                </option>
               </select>
             </div>
             <div className={styles.formGroup}>
@@ -266,6 +304,13 @@ export default function Invoice({ isOpen, onClose }) {
           </div>
         </div>
       </div>
+
+      {/* Customer Popup */}
+      <CustomerPopup
+        isOpen={isCustomerPopupOpen}
+        onClose={handleCustomerPopupClose}
+        onSave={handleCustomerSave}
+      />
     </div>
   )
 }

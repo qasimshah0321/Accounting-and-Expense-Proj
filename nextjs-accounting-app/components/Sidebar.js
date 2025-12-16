@@ -55,7 +55,7 @@ const menuItems = [
     submenus: [
       { id: 'inventory-center', name: 'Inventory Center' },
       { id: 'inventory-list', name: 'Inventory List' },
-      { id: 'projects-master-data', name: 'Projects & Master Data' },
+      { id: 'products-master-data', name: 'Products & Master Data' },
       { id: 'stock-locations', name: 'Stock Locations' },
       { id: 'stock-mobility', name: 'Stock Mobility' },
       { id: 'inventory-valuation', name: 'Inventory Valuation' },

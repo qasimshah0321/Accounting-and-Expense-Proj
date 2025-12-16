@@ -67,12 +67,12 @@ const menuItems = [
     name: 'Product & Services',
     icon: 'fa-boxes',
     submenus: [
-      { id: 'inventory-center', name: 'Inventory Center' },
-      { id: 'inventory-list', name: 'Inventory List' },
+      { id: 'inventory-center', name: 'Product Center' },
+      { id: 'inventory-list', name: 'Product List' },
       { id: 'products-master-data', name: 'Products & Master Data' },
       { id: 'stock-locations', name: 'Stock Locations' },
       { id: 'stock-mobility', name: 'Stock Mobility' },
-      { id: 'inventory-valuation', name: 'Inventory Valuation' },
+      { id: 'inventory-valuation', name: 'Stock Valuation' },
       { id: 'reorder-planning', name: 'Reorder Planning' },
       { id: 'documents-attachments-inventory', name: 'Documents & Attachments' },
     ]

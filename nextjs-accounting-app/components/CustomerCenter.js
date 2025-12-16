@@ -66,39 +66,45 @@ export default function CustomerCenter({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Customer Grid */}
-        <div className={styles.customerGrid}>
+        {/* Customer Grid Table */}
+        <div className={styles.customerGridContainer}>
           {filteredCustomers.length > 0 ? (
-            filteredCustomers.map((customer) => (
-              <div key={customer.id} className={styles.customerCard}>
-                <div className={styles.customerAvatar}>
-                  <i className="fas fa-user"></i>
-                </div>
-                <div className={styles.customerInfo}>
-                  <h3>{customer.name}</h3>
-                  {customer.email && (
-                    <p className={styles.customerEmail}>
-                      <i className="fas fa-envelope"></i>
-                      {customer.email}
-                    </p>
-                  )}
-                  {customer.phone && (
-                    <p className={styles.customerPhone}>
-                      <i className="fas fa-phone"></i>
-                      {customer.phone}
-                    </p>
-                  )}
-                </div>
-                <div className={styles.customerActions}>
-                  <button className={styles.btnEdit} title="Edit">
-                    <i className="fas fa-edit"></i>
-                  </button>
-                  <button className={styles.btnView} title="View Details">
-                    <i className="fas fa-eye"></i>
-                  </button>
-                </div>
-              </div>
-            ))
+            <table className={styles.customerTable}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCustomers.map((customer) => (
+                  <tr key={customer.id}>
+                    <td>
+                      <div className={styles.nameCell}>
+                        <div className={styles.customerAvatar}>
+                          <i className="fas fa-user"></i>
+                        </div>
+                        <span>{customer.name}</span>
+                      </div>
+                    </td>
+                    <td>{customer.email || '-'}</td>
+                    <td>{customer.phone || '-'}</td>
+                    <td>
+                      <div className={styles.actionButtons}>
+                        <button className={styles.btnEdit} title="Edit">
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button className={styles.btnView} title="View">
+                          <i className="fas fa-eye"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
             <div className={styles.emptyState}>
               <i className="fas fa-users"></i>

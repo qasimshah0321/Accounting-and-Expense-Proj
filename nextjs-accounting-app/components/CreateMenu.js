@@ -8,13 +8,10 @@ const createMenuData = [
     title: 'Sales',
     icon: 'fa-shopping-cart',
     items: [
-      { id: 'invoices', name: 'Invoices' },
-      { id: 'delivery-notes', name: 'Delivery Notes' },
-      { id: 'sales-order', name: 'Sales Order' },
-      { id: 'estimates-quotations', name: 'Estimates/Quotations' },
-      { id: 'sale-receipts', name: 'Sale Receipts' },
-      { id: 'customer-payments', name: 'Customer Payments' },
-      { id: 'refunds', name: 'Refunds' },
+      { id: 'invoices', name: 'Invoice' },
+      { id: 'sales-order', name: 'Sale Order' },
+      { id: 'delivery-notes', name: 'Delivery Note' },
+      { id: 'estimates', name: 'Estimate' },
     ]
   },
   {
@@ -22,12 +19,9 @@ const createMenuData = [
     title: 'Purchases',
     icon: 'fa-file-invoice-dollar',
     items: [
-      { id: 'bills', name: 'Bills' },
-      { id: 'expenses', name: 'Expenses' },
-      { id: 'request-for-quotation', name: 'Request for Quotation' },
-      { id: 'vendor-credits', name: 'Vendor Credits' },
-      { id: 'bill-payments', name: 'Bill Payments' },
-      { id: 'refunds-purchases', name: 'Refunds' },
+      { id: 'bills', name: 'Bill' },
+      { id: 'expenses', name: 'Expense' },
+      { id: 'purchase-order', name: 'Purchase Order' },
     ]
   },
   {
@@ -35,21 +29,16 @@ const createMenuData = [
     title: 'Payments',
     icon: 'fa-credit-card',
     items: [
-      { id: 'new-payment', name: 'New Payment' },
+      { id: 'receive-payment', name: 'Receive Payment' },
+      { id: 'make-payment', name: 'Make Payment' },
     ]
   },
   {
-    id: 'customers',
-    title: 'Customers',
-    icon: 'fa-users',
+    id: 'accounting',
+    title: 'Accounting',
+    icon: 'fa-calculator',
     items: [
-      { id: 'customer-center', name: 'Customer Center' },
-      { id: 'customer-statements', name: 'Customer Statements' },
-      { id: 'aging-account-receivables', name: 'Aging (Account Receivables)' },
-      { id: 'credit-limits-terms', name: 'Credit Limits and Terms' },
-      { id: 'customer-groups-segment', name: 'Customer Groups/Segment' },
-      { id: 'customer-list', name: 'Customer List' },
-      { id: 'document-attachments', name: 'Document & Attachments' },
+      { id: 'journal-entry', name: 'Journal Entry' },
     ]
   },
 ]

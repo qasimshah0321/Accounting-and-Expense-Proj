@@ -33,7 +33,15 @@ const menuItems = [
       { id: 'refunds-purchases', name: 'Refunds' },
     ]
   },
-  { id: 'payments', name: 'Payments', icon: 'fa-credit-card' },
+  {
+    id: 'payments',
+    name: 'Payments',
+    icon: 'fa-credit-card',
+    submenus: [
+      { id: 'receive-payment', name: 'Receive Payment' },
+      { id: 'make-payment', name: 'Make Payment' },
+    ]
+  },
   {
     id: 'customers',
     name: 'Customers',

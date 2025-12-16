@@ -48,11 +48,80 @@ const menuItems = [
     ]
   },
   { id: 'vendors', name: 'Vendors', icon: 'fa-truck' },
-  { id: 'inventory', name: 'Inventory', icon: 'fa-boxes' },
-  { id: 'payroll', name: 'Payroll', icon: 'fa-money-check-alt' },
-  { id: 'banking', name: 'Banking', icon: 'fa-university' },
-  { id: 'accounting', name: 'Accounting', icon: 'fa-calculator' },
-  { id: 'reports', name: 'Reports', icon: 'fa-chart-line' },
+  {
+    id: 'product-services',
+    name: 'Product & Services',
+    icon: 'fa-boxes',
+    submenus: [
+      { id: 'inventory-center', name: 'Inventory Center' },
+      { id: 'inventory-list', name: 'Inventory List' },
+      { id: 'projects-master-data', name: 'Projects & Master Data' },
+      { id: 'stock-locations', name: 'Stock Locations' },
+      { id: 'stock-mobility', name: 'Stock Mobility' },
+      { id: 'inventory-valuation', name: 'Inventory Valuation' },
+      { id: 'reorder-planning', name: 'Reorder Planning' },
+      { id: 'documents-attachments-inventory', name: 'Documents & Attachments' },
+    ]
+  },
+  {
+    id: 'payroll',
+    name: 'Payroll',
+    icon: 'fa-money-check-alt',
+    submenus: [
+      { id: 'payroll-center', name: 'Payroll Center' },
+      { id: 'employee-list', name: 'Employee List' },
+      { id: 'pay-runs', name: 'Pay Runs' },
+      { id: 'earnings-deductions', name: 'Earnings & Deductions' },
+      { id: 'time-attendance', name: 'Time & Attendance' },
+      { id: 'payroll-payments', name: 'Payroll Payments' },
+      { id: 'documents-attachments-payroll', name: 'Documents & Attachments' },
+    ]
+  },
+  {
+    id: 'banking',
+    name: 'Banking',
+    icon: 'fa-university',
+    submenus: [
+      { id: 'banking-center', name: 'Banking Center' },
+      { id: 'bank-accounts', name: 'Bank Accounts' },
+      { id: 'bank-transactions', name: 'Bank Transactions' },
+      { id: 'bank-reconciliation', name: 'Bank Reconciliation' },
+      { id: 'transfers', name: 'Transfers' },
+      { id: 'cheque-management', name: 'Cheque Management' },
+      { id: 'documents-attachments-banking', name: 'Documents & Attachments' },
+    ]
+  },
+  {
+    id: 'accounting',
+    name: 'Accounting',
+    icon: 'fa-calculator',
+    submenus: [
+      { id: 'accounting-center', name: 'Accounting Center' },
+      { id: 'chart-of-accounts', name: 'Chart of Accounts' },
+      { id: 'journal-entries', name: 'Journal Entries' },
+      { id: 'general-ledger', name: 'General Ledger' },
+      { id: 'trial-balance', name: 'Trial Balance' },
+      { id: 'documents-attachments-accounting', name: 'Documents & Attachments' },
+    ]
+  },
+  {
+    id: 'reports',
+    name: 'Reports',
+    icon: 'fa-chart-line',
+    submenus: [
+      { id: 'financial-statements', name: 'Financial Statements' },
+      { id: 'planning-performance-analysis', name: 'Planning & Performance Analysis' },
+      { id: 'revenue-sales-analysis', name: 'Revenue & Sales Analysis' },
+      { id: 'cost-expense-analytics', name: 'Cost & Expense Analytics' },
+      { id: 'receivables-payables', name: 'Receivables & Payables' },
+      { id: 'inventory-analytics', name: 'Inventory Analytics' },
+      { id: 'payroll-workforce-costs', name: 'Payroll & Workforce Costs' },
+      { id: 'cash-banking', name: 'Cash & Banking' },
+      { id: 'tax-compliances', name: 'Tax & Compliances' },
+      { id: 'management-performance', name: 'Management & Performance' },
+      { id: 'audit-risk', name: 'Audit & Risk' },
+    ]
+  },
   { id: 'settings', name: 'Settings', icon: 'fa-sliders-h' },
 ]
 

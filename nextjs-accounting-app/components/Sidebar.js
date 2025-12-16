@@ -47,7 +47,20 @@ const menuItems = [
       { id: 'document-attachments', name: 'Document & Attachments' },
     ]
   },
-  { id: 'vendors', name: 'Vendors', icon: 'fa-truck' },
+  {
+    id: 'vendors',
+    name: 'Vendors',
+    icon: 'fa-truck',
+    submenus: [
+      { id: 'vendor-center', name: 'Vendor Center' },
+      { id: 'contact-list', name: 'Contact List' },
+      { id: 'vendor-groups-segments', name: 'Vendor Group/Segments' },
+      { id: 'payment-terms-method', name: 'Payments Terms & Method' },
+      { id: 'vendor-statements', name: 'Vendor Statements' },
+      { id: 'aging-accounts-payables', name: 'Aging (Accounts Payables)' },
+      { id: 'documents-attachments-vendors', name: 'Documents & Attachments' },
+    ]
+  },
   {
     id: 'product-services',
     name: 'Product & Services',

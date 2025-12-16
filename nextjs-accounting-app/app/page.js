@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar'
 import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
+import CustomerCenter from '@/components/CustomerCenter'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
+  const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
@@ -21,6 +23,11 @@ export default function Home() {
     // Open invoice popup if Invoices is clicked
     if (menuName === 'Invoices') {
       setIsInvoiceOpen(true)
+    }
+
+    // Open customer center if Customer Center is clicked
+    if (menuName === 'Customer Center') {
+      setIsCustomerCenterOpen(true)
     }
 
     // Close sidebar on mobile after selection
@@ -31,6 +38,10 @@ export default function Home() {
 
   const handleInvoiceClose = () => {
     setIsInvoiceOpen(false)
+  }
+
+  const handleCustomerCenterClose = () => {
+    setIsCustomerCenterOpen(false)
   }
 
   const handleMenuToggle = () => {
@@ -60,6 +71,8 @@ export default function Home() {
       />
 
       <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} />
+
+      <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
 
       <div className={styles.mainContainer}>
         <Sidebar

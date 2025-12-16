@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import styles from './Invoice.module.css'
 import CustomerPopup from './CustomerPopup'
 
@@ -16,22 +16,59 @@ export default function Invoice({ isOpen, onClose }) {
   ])
 
   const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [customerSearchText, setCustomerSearchText] = useState('')
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
+
+  const autocompleteRef = useRef(null)
+
+  // Click away handler for autocomplete dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
+        setShowCustomerDropdown(false)
+      }
+    }
+
+    if (showCustomerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCustomerDropdown])
 
   if (!isOpen) return null
 
-  const handleCustomerChange = (e) => {
+  const handleCustomerInputChange = (e) => {
     const value = e.target.value
-    if (value === 'add-new') {
-      setIsCustomerPopupOpen(true)
-    } else {
-      setSelectedCustomer(value)
+    setCustomerSearchText(value)
+    setShowCustomerDropdown(true)
+    if (value === '') {
+      setSelectedCustomer('')
     }
   }
+
+  const handleCustomerSelect = (customerName) => {
+    setSelectedCustomer(customerName)
+    setCustomerSearchText(customerName)
+    setShowCustomerDropdown(false)
+  }
+
+  const handleAddNewCustomer = () => {
+    setIsCustomerPopupOpen(true)
+    setShowCustomerDropdown(false)
+  }
+
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(customerSearchText.toLowerCase())
+  )
 
   const handleCustomerSave = (newCustomer) => {
     setCustomers(prev => [...prev, newCustomer])
     setSelectedCustomer(newCustomer.name)
+    setCustomerSearchText(newCustomer.name)
     setIsCustomerPopupOpen(false)
   }
 
@@ -107,21 +144,43 @@ export default function Invoice({ isOpen, onClose }) {
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
               <label>Customer *</label>
-              <select
-                className={styles.formControl}
-                value={selectedCustomer}
-                onChange={handleCustomerChange}
-              >
-                <option value="">Select Customer</option>
-                <option value="add-new" className={styles.addNewOption}>
-                  + Add New
-                </option>
-                {customers.map(customer => (
-                  <option key={customer.id} value={customer.name}>
-                    {customer.name}
-                  </option>
-                ))}
-              </select>
+              <div className={styles.autocompleteWrapper} ref={autocompleteRef}>
+                <input
+                  type="text"
+                  className={styles.formControl}
+                  placeholder="Search or select customer"
+                  value={customerSearchText}
+                  onChange={handleCustomerInputChange}
+                  onFocus={() => setShowCustomerDropdown(true)}
+                />
+                {showCustomerDropdown && (
+                  <div className={styles.autocompleteDropdown}>
+                    <div
+                      className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                      onClick={handleAddNewCustomer}
+                    >
+                      <i className="fas fa-plus"></i> Add New
+                    </div>
+                    {filteredCustomers.length > 0 ? (
+                      filteredCustomers.map(customer => (
+                        <div
+                          key={customer.id}
+                          className={styles.autocompleteOption}
+                          onClick={() => handleCustomerSelect(customer.name)}
+                        >
+                          {customer.name}
+                        </div>
+                      ))
+                    ) : (
+                      customerSearchText && (
+                        <div className={styles.autocompleteOption + ' ' + styles.noResults}>
+                          No customers found
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             <div className={styles.formGroup}>
               <label>Invoice Number *</label>

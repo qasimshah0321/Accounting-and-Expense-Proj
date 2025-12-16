@@ -27,6 +27,7 @@ const menuItems = [
       { id: 'bills', name: 'Bills' },
       { id: 'expenses', name: 'Expenses' },
       { id: 'request-for-quotation', name: 'Request for Quotation' },
+      { id: 'purchase-order', name: 'Purchase Order' },
       { id: 'vendor-credits', name: 'Vendor Credits' },
       { id: 'bill-payments', name: 'Bill Payments' },
       { id: 'refunds-purchases', name: 'Refunds' },

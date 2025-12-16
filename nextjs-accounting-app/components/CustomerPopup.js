@@ -94,7 +94,7 @@ export default function CustomerPopup({ isOpen, onClose, onSave }) {
       <div className={styles.popupPanel} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className={styles.popupHeader}>
-          <h2>Add New Customer</h2>
+          <h2>Add New</h2>
           <button className={styles.closeBtn} onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>

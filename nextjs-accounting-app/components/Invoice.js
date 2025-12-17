@@ -223,28 +223,6 @@ export default function Invoice({ isOpen, onClose }) {
               </div>
             </div>
           </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label>Reference Number</label>
-              <input
-                type="text"
-                className={styles.formControl}
-                placeholder="PO-12345"
-              />
-            </div>
-          </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroupFull}>
-              <label>Notes</label>
-              <textarea
-                className={styles.formControl}
-                rows="3"
-                placeholder="Add any additional notes or instructions..."
-              ></textarea>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -316,6 +294,44 @@ export default function Invoice({ isOpen, onClose }) {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Notes and Attachments Section */}
+          <div className={styles.notesAttachmentsSection}>
+            <div className={styles.formGroup}>
+              <label>Reference Number</label>
+              <input
+                type="text"
+                className={styles.formControl}
+                placeholder="PO-12345"
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Notes</label>
+              <textarea
+                className={styles.formControl}
+                rows="3"
+                placeholder="Add any additional notes or instructions..."
+              ></textarea>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Attachments</label>
+              <div className={styles.attachmentArea}>
+                <input
+                  type="file"
+                  id="fileUpload"
+                  className={styles.fileInput}
+                  multiple
+                />
+                <label htmlFor="fileUpload" className={styles.fileUploadLabel}>
+                  <i className="fas fa-cloud-upload-alt"></i>
+                  <span>Click to upload or drag and drop</span>
+                  <small>PDF, DOC, JPG, PNG (Max 10MB each)</small>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div className={styles.totalsSection}>

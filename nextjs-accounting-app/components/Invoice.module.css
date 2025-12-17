@@ -187,6 +187,24 @@
 }
 
 /* Form Elements */
+.invoiceHeaderRow {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 30px;
+  margin-bottom: 20px;
+}
+
+.customerSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.invoiceDetailsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .formRow {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -563,6 +581,15 @@ textarea.formControl {
 
   .headerBtn span {
     display: none;
+  }
+
+  .invoiceHeaderRow {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .invoiceDetailsColumn {
+    gap: 12px;
   }
 
   .formRow {

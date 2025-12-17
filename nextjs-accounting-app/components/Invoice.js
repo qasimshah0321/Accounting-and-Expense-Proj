@@ -141,86 +141,90 @@ export default function Invoice({ isOpen, onClose }) {
       {/* Upper Section */}
       <div className={styles.invoiceUpperSection}>
         <div className={styles.sectionCard}>
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label>Customer *</label>
-              <div className={styles.autocompleteWrapper} ref={autocompleteRef}>
+          <div className={styles.invoiceHeaderRow}>
+            {/* Left Side - Customer */}
+            <div className={styles.customerSection}>
+              <div className={styles.formGroup}>
+                <label>Customer *</label>
+                <div className={styles.autocompleteWrapper} ref={autocompleteRef}>
+                  <input
+                    type="text"
+                    className={styles.formControl}
+                    placeholder="Search or select customer"
+                    value={customerSearchText}
+                    onChange={handleCustomerInputChange}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                  />
+                  {showCustomerDropdown && (
+                    <div className={styles.autocompleteDropdown}>
+                      <div
+                        className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                        onClick={handleAddNewCustomer}
+                      >
+                        <i className="fas fa-plus"></i> Add New
+                      </div>
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map(customer => (
+                          <div
+                            key={customer.id}
+                            className={styles.autocompleteOption}
+                            onClick={() => handleCustomerSelect(customer.name)}
+                          >
+                            {customer.name}
+                          </div>
+                        ))
+                      ) : (
+                        customerSearchText && (
+                          <div className={styles.autocompleteOption + ' ' + styles.noResults}>
+                            No customers found
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side - Invoice Details Column */}
+            <div className={styles.invoiceDetailsColumn}>
+              <div className={styles.formGroup}>
+                <label>Invoice Number *</label>
                 <input
                   type="text"
                   className={styles.formControl}
-                  placeholder="Search or select customer"
-                  value={customerSearchText}
-                  onChange={handleCustomerInputChange}
-                  onFocus={() => setShowCustomerDropdown(true)}
+                  placeholder="INV-001"
+                  defaultValue="INV-001"
                 />
-                {showCustomerDropdown && (
-                  <div className={styles.autocompleteDropdown}>
-                    <div
-                      className={styles.autocompleteOption + ' ' + styles.addNewOption}
-                      onClick={handleAddNewCustomer}
-                    >
-                      <i className="fas fa-plus"></i> Add New
-                    </div>
-                    {filteredCustomers.length > 0 ? (
-                      filteredCustomers.map(customer => (
-                        <div
-                          key={customer.id}
-                          className={styles.autocompleteOption}
-                          onClick={() => handleCustomerSelect(customer.name)}
-                        >
-                          {customer.name}
-                        </div>
-                      ))
-                    ) : (
-                      customerSearchText && (
-                        <div className={styles.autocompleteOption + ' ' + styles.noResults}>
-                          No customers found
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+              </div>
+              <div className={styles.formGroup}>
+                <label>Terms</label>
+                <select className={styles.formControl}>
+                  <option>Net 30</option>
+                  <option>Net 15</option>
+                  <option>Due on Receipt</option>
+                  <option>Net 60</option>
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label>Invoice Date *</label>
+                <input
+                  type="date"
+                  className={styles.formControl}
+                  defaultValue={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Due Date *</label>
+                <input
+                  type="date"
+                  className={styles.formControl}
+                />
               </div>
             </div>
-            <div className={styles.formGroup}>
-              <label>Invoice Number *</label>
-              <input
-                type="text"
-                className={styles.formControl}
-                placeholder="INV-001"
-                defaultValue="INV-001"
-              />
-            </div>
           </div>
 
           <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label>Invoice Date *</label>
-              <input
-                type="date"
-                className={styles.formControl}
-                defaultValue={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Due Date *</label>
-              <input
-                type="date"
-                className={styles.formControl}
-              />
-            </div>
-          </div>
-
-          <div className={styles.formRow}>
-            <div className={styles.formGroup}>
-              <label>Payment Terms</label>
-              <select className={styles.formControl}>
-                <option>Net 30</option>
-                <option>Net 15</option>
-                <option>Due on Receipt</option>
-                <option>Net 60</option>
-              </select>
-            </div>
             <div className={styles.formGroup}>
               <label>Reference Number</label>
               <input

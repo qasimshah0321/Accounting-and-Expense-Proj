@@ -296,68 +296,72 @@ export default function Invoice({ isOpen, onClose }) {
             </table>
           </div>
 
-          {/* Notes and Attachments Section */}
-          <div className={styles.notesAttachmentsSection}>
-            <div className={styles.formGroup}>
-              <label>Reference Number</label>
-              <input
-                type="text"
-                className={styles.formControl}
-                placeholder="PO-12345"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Notes</label>
-              <textarea
-                className={styles.formControl}
-                rows="3"
-                placeholder="Add any additional notes or instructions..."
-              ></textarea>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Attachments</label>
-              <div className={styles.attachmentArea}>
+          {/* Bottom Row - Notes/Attachments and Totals */}
+          <div className={styles.bottomRow}>
+            {/* Left Side - Notes and Attachments */}
+            <div className={styles.notesAttachmentsSection}>
+              <div className={styles.formGroup}>
+                <label>Reference Number</label>
                 <input
-                  type="file"
-                  id="fileUpload"
-                  className={styles.fileInput}
-                  multiple
+                  type="text"
+                  className={styles.formControl}
+                  placeholder="PO-12345"
                 />
-                <label htmlFor="fileUpload" className={styles.fileUploadLabel}>
-                  <i className="fas fa-cloud-upload-alt"></i>
-                  <span>Click to upload or drag and drop</span>
-                  <small>PDF, DOC, JPG, PNG (Max 10MB each)</small>
-                </label>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Notes</label>
+                <textarea
+                  className={styles.formControl}
+                  rows="3"
+                  placeholder="Add any additional notes or instructions..."
+                ></textarea>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Attachments</label>
+                <div className={styles.attachmentArea}>
+                  <input
+                    type="file"
+                    id="fileUpload"
+                    className={styles.fileInput}
+                    multiple
+                  />
+                  <label htmlFor="fileUpload" className={styles.fileUploadLabel}>
+                    <i className="fas fa-cloud-upload-alt"></i>
+                    <span>Click to upload or drag and drop</span>
+                    <small>PDF, DOC, JPG, PNG (Max 10MB each)</small>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className={styles.totalsSection}>
-            <div className={styles.totalsGrid}>
-              <div className={styles.totalRow}>
-                <span className={styles.totalLabel}>Subtotal:</span>
-                <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
-              </div>
-              <div className={styles.totalRow}>
-                <span className={styles.totalLabel}>Tax (10%):</span>
-                <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
-              </div>
-              <div className={styles.totalRow}>
-                <span className={styles.totalLabel}>Discount:</span>
-                <span className={styles.totalValue}>
-                  <input
-                    type="number"
-                    className={styles.discountInput}
-                    defaultValue="0.00"
-                    step="0.01"
-                  />
-                </span>
-              </div>
-              <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-                <span className={styles.totalLabel}>Total:</span>
-                <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+            {/* Right Side - Totals */}
+            <div className={styles.totalsSection}>
+              <div className={styles.totalsGrid}>
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Subtotal:</span>
+                  <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
+                </div>
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Tax (10%):</span>
+                  <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+                </div>
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Discount:</span>
+                  <span className={styles.totalValue}>
+                    <input
+                      type="number"
+                      className={styles.discountInput}
+                      defaultValue="0.00"
+                      step="0.01"
+                    />
+                  </span>
+                </div>
+                <div className={`${styles.totalRow} ${styles.grandTotal}`}>
+                  <span className={styles.totalLabel}>Total:</span>
+                  <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>

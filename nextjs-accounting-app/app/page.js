@@ -20,8 +20,8 @@ export default function Home() {
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
 
-    // Open invoice popup if Invoices is clicked
-    if (menuName === 'Invoices') {
+    // Open invoice popup if Invoices or Invoice is clicked
+    if (menuName === 'Invoices' || menuName === 'Invoice') {
       setIsInvoiceOpen(true)
     }
 
@@ -30,10 +30,13 @@ export default function Home() {
       setIsCustomerCenterOpen(true)
     }
 
-    // Close sidebar on mobile after selection
+    // Close sidebar and create menu on mobile after selection
     if (window.innerWidth <= 768) {
       setIsSidebarOpen(false)
     }
+
+    // Close create menu after item is clicked
+    setIsCreateMenuOpen(false)
   }
 
   const handleInvoiceClose = () => {

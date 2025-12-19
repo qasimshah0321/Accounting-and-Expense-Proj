@@ -214,14 +214,16 @@
 
 .formGroup {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .formGroupFull {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .formGroup label,
@@ -229,6 +231,14 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.formGroup label::after,
+.formGroupFull label::after {
+  content: ':';
+  margin-left: 2px;
 }
 
 .formControl {
@@ -261,7 +271,7 @@ textarea.formControl {
 /* Autocomplete Styles */
 .autocompleteWrapper {
   position: relative;
-  width: 100%;
+  flex: 1;
 }
 
 .autocompleteDropdown {

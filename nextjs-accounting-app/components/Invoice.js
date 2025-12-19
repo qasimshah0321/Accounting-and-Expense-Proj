@@ -145,7 +145,7 @@ export default function Invoice({ isOpen, onClose }) {
             {/* Left Side - Customer */}
             <div className={styles.customerSection}>
               <div className={styles.formGroup}>
-                <label>Customer *</label>
+                <label>Customer</label>
                 <div className={styles.autocompleteWrapper} ref={autocompleteRef}>
                   <input
                     type="text"
@@ -189,7 +189,7 @@ export default function Invoice({ isOpen, onClose }) {
             {/* Right Side - Invoice Details Column */}
             <div className={styles.invoiceDetailsColumn}>
               <div className={styles.formGroup}>
-                <label>Invoice Number *</label>
+                <label>Invoice Number</label>
                 <input
                   type="text"
                   className={styles.formControl}
@@ -207,7 +207,7 @@ export default function Invoice({ isOpen, onClose }) {
                 </select>
               </div>
               <div className={styles.formGroup}>
-                <label>Invoice Date *</label>
+                <label>Invoice Date</label>
                 <input
                   type="date"
                   className={styles.formControl}
@@ -215,7 +215,15 @@ export default function Invoice({ isOpen, onClose }) {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label>Due Date *</label>
+                <label>Reference Number</label>
+                <input
+                  type="text"
+                  className={styles.formControl}
+                  placeholder="PO-12345"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Due Date</label>
                 <input
                   type="date"
                   className={styles.formControl}
@@ -300,15 +308,6 @@ export default function Invoice({ isOpen, onClose }) {
           <div className={styles.bottomRow}>
             {/* Left Side - Notes and Attachments */}
             <div className={styles.notesAttachmentsSection}>
-              <div className={styles.formGroup}>
-                <label>Reference Number</label>
-                <input
-                  type="text"
-                  className={styles.formControl}
-                  placeholder="PO-12345"
-                />
-              </div>
-
               <div className={styles.formGroup}>
                 <label>Notes</label>
                 <textarea

@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 
 export default function Invoice({ isOpen, onClose }) {
   const [lineItems, setLineItems] = useState([
-    { id: 1, description: '', quantity: 1, rate: 0, amount: 0 }
+    { id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }
   ])
 
   const [customers, setCustomers] = useState([
@@ -113,7 +113,14 @@ export default function Invoice({ isOpen, onClose }) {
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
-    setLineItems([...lineItems, { id: newId, description: '', quantity: 1, rate: 0, amount: 0 }])
+    setLineItems([...lineItems, { id: newId, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
+  }
+
+  const handleFieldFocus = (itemId) => {
+    const isLastRow = lineItems[lineItems.length - 1].id === itemId
+    if (isLastRow) {
+      addLineItem()
+    }
   }
 
   const removeLineItem = (id) => {
@@ -281,15 +288,13 @@ export default function Invoice({ isOpen, onClose }) {
         <div className={styles.sectionCard}>
           <div className={styles.sectionHeader}>
             <h3>Items</h3>
-            <button className={styles.btnAddItem} onClick={addLineItem}>
-              <i className="fas fa-plus"></i> Add Item
-            </button>
           </div>
 
           <div className={styles.tableContainer}>
             <table className={styles.itemsTable}>
               <thead>
                 <tr>
+                  <th className={styles.colSku}>SKU</th>
                   <th className={styles.colDescription}>Description</th>
                   <th className={styles.colQuantity}>Quantity</th>
                   <th className={styles.colRate}>Rate</th>
@@ -304,9 +309,20 @@ export default function Invoice({ isOpen, onClose }) {
                       <input
                         type="text"
                         className={styles.formControl}
+                        placeholder="SKU"
+                        value={item.sku}
+                        onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
+                        onFocus={() => handleFieldFocus(item.id)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.formControl}
                         placeholder="Item description"
                         value={item.description}
                         onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                        onFocus={() => handleFieldFocus(item.id)}
                       />
                     </td>
                     <td>
@@ -316,6 +332,7 @@ export default function Invoice({ isOpen, onClose }) {
                         value={item.quantity}
                         min="1"
                         onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        onFocus={() => handleFieldFocus(item.id)}
                       />
                     </td>
                     <td>
@@ -326,6 +343,7 @@ export default function Invoice({ isOpen, onClose }) {
                         min="0"
                         step="0.01"
                         onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        onFocus={() => handleFieldFocus(item.id)}
                       />
                     </td>
                     <td className={styles.amountCell}>

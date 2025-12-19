@@ -1,0 +1,337 @@
+/* Vendor Center Overlay */
+.vendorCenterOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--white);
+  z-index: 3000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vendorCenterContainer {
+  width: 100%;
+  height: 100%;
+  background-color: var(--white);
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--white);
+  flex-shrink: 0;
+}
+
+.headerLeft h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.headerRight {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btnAddVendor {
+  padding: 10px 20px;
+  background-color: var(--primary-green);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnAddVendor:hover {
+  background-color: var(--dark-green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(44, 160, 28, 0.3);
+}
+
+.closeBtn {
+  width: 40px;
+  height: 40px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background-color: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+/* Search Section */
+.searchSection {
+  padding: 20px 30px;
+  background-color: #FAFAFA;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.searchWrapper {
+  position: relative;
+  max-width: 500px;
+}
+
+.searchWrapper i {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  background-color: var(--white);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
+}
+
+/* Vendor Grid Container */
+.vendorGridContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  background-color: #FAFAFA;
+}
+
+.vendorGridContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.vendorGridContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vendorGridContainer::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.vendorGridContainer::-webkit-scrollbar-thumb:hover {
+  background: #BDBDBD;
+}
+
+/* Vendor Table */
+.vendorTable {
+  width: 100%;
+  background-color: var(--white);
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.vendorTable thead {
+  background-color: var(--sidebar-bg);
+}
+
+.vendorTable th {
+  padding: 15px 20px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.vendorTable tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.vendorTable tbody tr:hover {
+  background-color: #F9FFF7;
+}
+
+.vendorTable tbody tr:last-child {
+  border-bottom: none;
+}
+
+.vendorTable td {
+  padding: 15px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* Name Cell with Avatar */
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vendorAvatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.nameCell span {
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.btnEdit,
+.btnView {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--white);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btnEdit:hover {
+  background-color: var(--primary-green);
+  border-color: var(--primary-green);
+  color: var(--white);
+}
+
+.btnView:hover {
+  background-color: var(--sidebar-hover);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background-color: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.emptyState i {
+  font-size: 64px;
+  color: var(--border-color);
+  margin-bottom: 20px;
+}
+
+.emptyState h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 10px 0;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    padding: 15px 20px;
+  }
+
+  .headerLeft h2 {
+    font-size: 20px;
+  }
+
+  .btnAddVendor span {
+    display: none;
+  }
+
+  .btnAddVendor {
+    padding: 10px 14px;
+  }
+
+  .searchSection {
+    padding: 15px 20px;
+  }
+
+  .vendorGridContainer {
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  .vendorTable {
+    min-width: 600px;
+  }
+
+  .vendorTable th,
+  .vendorTable td {
+    padding: 10px 12px;
+  }
+}

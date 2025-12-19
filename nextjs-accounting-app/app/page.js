@@ -7,6 +7,7 @@ import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
 import CustomerCenter from '@/components/CustomerCenter'
+import VendorCenter from '@/components/VendorCenter'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -16,6 +17,7 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
+  const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
@@ -28,6 +30,11 @@ export default function Home() {
     // Open customer center if Customer Center is clicked
     if (menuName === 'Customer Center') {
       setIsCustomerCenterOpen(true)
+    }
+
+    // Open vendor center if Vendor Center is clicked
+    if (menuName === 'Vendor Center') {
+      setIsVendorCenterOpen(true)
     }
 
     // Close sidebar and create menu on mobile after selection
@@ -45,6 +52,10 @@ export default function Home() {
 
   const handleCustomerCenterClose = () => {
     setIsCustomerCenterOpen(false)
+  }
+
+  const handleVendorCenterClose = () => {
+    setIsVendorCenterOpen(false)
   }
 
   const handleMenuToggle = () => {
@@ -76,6 +87,8 @@ export default function Home() {
       <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} />
 
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
+
+      <VendorCenter isOpen={isVendorCenterOpen} onClose={handleVendorCenterClose} />
 
       <div className={styles.mainContainer}>
         <Sidebar

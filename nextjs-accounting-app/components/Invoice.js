@@ -19,8 +19,43 @@ export default function Invoice({ isOpen, onClose }) {
   const [customerSearchText, setCustomerSearchText] = useState('')
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0])
+  const [dueDate, setDueDate] = useState('')
+  const [terms, setTerms] = useState('Net 30')
 
   const autocompleteRef = useRef(null)
+
+  // Calculate due date based on terms and invoice date
+  const calculateDueDate = (selectedTerms, selectedInvoiceDate) => {
+    if (!selectedInvoiceDate) return ''
+
+    const date = new Date(selectedInvoiceDate)
+
+    switch (selectedTerms) {
+      case 'Net 15':
+        date.setDate(date.getDate() + 15)
+        break
+      case 'Net 30':
+        date.setDate(date.getDate() + 30)
+        break
+      case 'Net 60':
+        date.setDate(date.getDate() + 60)
+        break
+      case 'Due on Receipt':
+        // Due date is same as invoice date
+        break
+      default:
+        date.setDate(date.getDate() + 30)
+    }
+
+    return date.toISOString().split('T')[0]
+  }
+
+  // Update due date when terms or invoice date changes
+  useEffect(() => {
+    const newDueDate = calculateDueDate(terms, invoiceDate)
+    setDueDate(newDueDate)
+  }, [terms, invoiceDate])
 
   // Click away handler for autocomplete dropdown
   useEffect(() => {
@@ -199,7 +234,11 @@ export default function Invoice({ isOpen, onClose }) {
               </div>
               <div className={styles.formGroup}>
                 <label>Terms</label>
-                <select className={styles.formControl}>
+                <select
+                  className={styles.formControl}
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                >
                   <option>Net 30</option>
                   <option>Net 15</option>
                   <option>Due on Receipt</option>
@@ -211,7 +250,8 @@ export default function Invoice({ isOpen, onClose }) {
                 <input
                   type="date"
                   className={styles.formControl}
-                  defaultValue={new Date().toISOString().split('T')[0]}
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
                 />
               </div>
               <div className={styles.formGroup}>
@@ -227,6 +267,8 @@ export default function Invoice({ isOpen, onClose }) {
                 <input
                   type="date"
                   className={styles.formControl}
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
                 />
               </div>
             </div>

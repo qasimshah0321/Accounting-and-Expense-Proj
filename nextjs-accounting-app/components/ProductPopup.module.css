@@ -177,12 +177,20 @@ textarea.formControl {
   min-height: 60px;
 }
 
-/* Name and Image Row */
+/* Name, Item Type and Image Row */
 .nameImageRow {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   margin-bottom: 15px;
   align-items: flex-start;
+}
+
+.nameSection {
+  flex: 2;
+}
+
+.itemTypeSection {
+  flex: 1.5;
 }
 
 .imageSection {
@@ -195,10 +203,6 @@ textarea.formControl {
   color: var(--text-primary);
   display: block;
   margin-bottom: 8px;
-}
-
-.nameSection {
-  flex: 1;
 }
 
 /* Image Upload */
@@ -339,5 +343,10 @@ textarea.formControl {
   .nameImageRow {
     flex-direction: column;
     gap: 15px;
+  }
+
+  .nameSection,
+  .itemTypeSection {
+    flex: 1;
   }
 }

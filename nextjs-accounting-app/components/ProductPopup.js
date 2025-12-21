@@ -159,8 +159,8 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
               <h3>Basic Info</h3>
 
               <div className={styles.nameImageRow}>
-                {/* Name Field on Left */}
-                <div className={styles.nameSection}>
+                {/* Name and Item Type on Left */}
+                <div className={styles.nameItemTypeSection}>
                   <div className={styles.formGroup}>
                     <label>Name *</label>
                     <input
@@ -171,6 +171,21 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                       onChange={handleChange}
                       required
                     />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>Item Type</label>
+                    <select
+                      name="itemType"
+                      className={styles.formControl}
+                      value={formData.itemType}
+                      onChange={handleChange}
+                    >
+                      <option>Services</option>
+                      <option>Inventory item</option>
+                      <option>Non-Inventory</option>
+                      <option>Bundle</option>
+                    </select>
                   </div>
                 </div>
 
@@ -199,22 +214,6 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                     )}
                   </div>
                 </div>
-              </div>
-
-              {/* Item Type - Full Width */}
-              <div className={styles.formGroup}>
-                <label>Item Type</label>
-                <select
-                  name="itemType"
-                  className={styles.formControl}
-                  value={formData.itemType}
-                  onChange={handleChange}
-                >
-                  <option>Services</option>
-                  <option>Inventory item</option>
-                  <option>Non-Inventory</option>
-                  <option>Bundle</option>
-                </select>
               </div>
 
               {/* SKU Field - Full Width */}

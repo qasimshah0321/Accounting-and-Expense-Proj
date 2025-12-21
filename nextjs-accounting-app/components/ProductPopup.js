@@ -159,38 +159,7 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
               <h3>Basic Info</h3>
 
               <div className={styles.nameImageRow}>
-                {/* Image Upload on Left */}
-                <div className={styles.imageSection}>
-                  <label>Image</label>
-                  <div className={styles.imageUploadWrapper}>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className={styles.fileInput}
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                    <div className={styles.imagePreviewLarge}>
-                      {formData.image ? (
-                        <img src={formData.image} alt="Product preview" />
-                      ) : (
-                        <div className={styles.imagePlaceholder}>
-                          <i className="fas fa-image"></i>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      className={styles.btnUpload}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <i className="fas fa-upload"></i>
-                      {formData.image ? 'Change' : 'Upload'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Name Field on Right */}
+                {/* Name Field on Left */}
                 <div className={styles.nameSection}>
                   <div className={styles.formGroup}>
                     <label>Name *</label>
@@ -202,6 +171,32 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                       onChange={handleChange}
                       required
                     />
+                  </div>
+                </div>
+
+                {/* Image Upload on Right */}
+                <div className={styles.imageSection}>
+                  <label>Image</label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className={styles.fileInput}
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  <div
+                    className={styles.imagePreviewLarge}
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Click to upload image"
+                  >
+                    {formData.image ? (
+                      <img src={formData.image} alt="Product preview" />
+                    ) : (
+                      <div className={styles.imagePlaceholder}>
+                        <i className="fas fa-upload"></i>
+                        <span>Click to upload</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

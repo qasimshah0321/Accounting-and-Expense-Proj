@@ -6,9 +6,9 @@ import ProductPopup from './ProductPopup'
 
 export default function ProductCenter({ isOpen, onClose }) {
   const [products, setProducts] = useState([
-    { id: 1, name: 'Consulting Service', salesDescription: 'Business consulting', qtyOnHand: 0, category: 'Services', sku: 'CONS-001', type: 'Services', price: 150.00, cost: 0 },
-    { id: 2, name: 'Office Chair', salesDescription: 'Ergonomic office chair', qtyOnHand: 25, category: 'Furniture', sku: 'FURN-001', type: 'Inventory item', price: 299.99, cost: 150.00 },
-    { id: 3, name: 'Software License', salesDescription: 'Annual software subscription', qtyOnHand: 100, category: 'Software', sku: 'SOFT-001', type: 'Non-Inventory', price: 999.00, cost: 500.00 }
+    { id: 1, name: 'Consulting Service', salesDescription: 'Business consulting', qtyOnHand: 0, category: 'Services', sku: 'CONS-001', type: 'Services', price: 150.00, cost: 0, image: null },
+    { id: 2, name: 'Office Chair', salesDescription: 'Ergonomic office chair', qtyOnHand: 25, category: 'Furniture', sku: 'FURN-001', type: 'Inventory item', price: 299.99, cost: 150.00, image: null },
+    { id: 3, name: 'Software License', salesDescription: 'Annual software subscription', qtyOnHand: 100, category: 'Software', sku: 'SOFT-001', type: 'Non-Inventory', price: 999.00, cost: 500.00, image: null }
   ])
 
   const [isProductPopupOpen, setIsProductPopupOpen] = useState(false)
@@ -95,8 +95,12 @@ export default function ProductCenter({ isOpen, onClose }) {
                   <tr key={product.id}>
                     <td>
                       <div className={styles.nameCell}>
-                        <div className={styles.productAvatar}>
-                          <i className="fas fa-box"></i>
+                        <div className={styles.productImage}>
+                          {product.image ? (
+                            <img src={product.image} alt={product.name} />
+                          ) : (
+                            <i className="fas fa-box"></i>
+                          )}
                         </div>
                         <span>{product.name}</span>
                       </div>

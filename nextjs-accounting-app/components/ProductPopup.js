@@ -49,10 +49,14 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setFormData(prev => ({
-        ...prev,
-        image: file
-      }))
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setFormData(prev => ({
+          ...prev,
+          image: reader.result
+        }))
+      }
+      reader.readAsDataURL(file)
     }
   }
 
@@ -176,13 +180,18 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                     accept="image/*"
                     onChange={handleImageChange}
                   />
+                  {formData.image && (
+                    <div className={styles.imagePreview}>
+                      <img src={formData.image} alt="Product preview" />
+                    </div>
+                  )}
                   <button
                     type="button"
                     className={styles.btnUpload}
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <i className="fas fa-upload"></i>
-                    {formData.image ? formData.image.name : 'Choose Image'}
+                    {formData.image ? 'Change Image' : 'Choose Image'}
                   </button>
                 </div>
               </div>

@@ -174,24 +174,6 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                   </div>
                 </div>
 
-                {/* Item Type in Middle */}
-                <div className={styles.itemTypeSection}>
-                  <div className={styles.formGroup}>
-                    <label>Item Type</label>
-                    <select
-                      name="itemType"
-                      className={styles.formControl}
-                      value={formData.itemType}
-                      onChange={handleChange}
-                    >
-                      <option>Services</option>
-                      <option>Inventory item</option>
-                      <option>Non-Inventory</option>
-                      <option>Bundle</option>
-                    </select>
-                  </div>
-                </div>
-
                 {/* Image Upload on Right */}
                 <div className={styles.imageSection}>
                   <label>Image</label>
@@ -217,6 +199,22 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Item Type - Full Width */}
+              <div className={styles.formGroup}>
+                <label>Item Type</label>
+                <select
+                  name="itemType"
+                  className={styles.formControl}
+                  value={formData.itemType}
+                  onChange={handleChange}
+                >
+                  <option>Services</option>
+                  <option>Inventory item</option>
+                  <option>Non-Inventory</option>
+                  <option>Bundle</option>
+                </select>
               </div>
 
               {/* SKU Field - Full Width */}

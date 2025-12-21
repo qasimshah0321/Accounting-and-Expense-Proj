@@ -158,41 +158,51 @@ export default function ProductPopup({ isOpen, onClose, onSave }) {
             <div className={styles.section}>
               <h3>Basic Info</h3>
 
-              <div className={styles.formGroup}>
-                <label>Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  className={styles.formControl}
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Image</label>
-                <div className={styles.imageUploadWrapper}>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className={styles.fileInput}
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                  {formData.image && (
-                    <div className={styles.imagePreview}>
-                      <img src={formData.image} alt="Product preview" />
+              <div className={styles.nameImageRow}>
+                {/* Image Upload on Left */}
+                <div className={styles.imageSection}>
+                  <label>Image</label>
+                  <div className={styles.imageUploadWrapper}>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className={styles.fileInput}
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    <div className={styles.imagePreviewLarge}>
+                      {formData.image ? (
+                        <img src={formData.image} alt="Product preview" />
+                      ) : (
+                        <div className={styles.imagePlaceholder}>
+                          <i className="fas fa-image"></i>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.btnUpload}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <i className="fas fa-upload"></i>
-                    {formData.image ? 'Change Image' : 'Choose Image'}
-                  </button>
+                    <button
+                      type="button"
+                      className={styles.btnUpload}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <i className="fas fa-upload"></i>
+                      {formData.image ? 'Change' : 'Upload'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Name Field on Right */}
+                <div className={styles.nameSection}>
+                  <div className={styles.formGroup}>
+                    <label>Name *</label>
+                    <input
+                      type="text"
+                      name="name"
+                      className={styles.formControl}
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 

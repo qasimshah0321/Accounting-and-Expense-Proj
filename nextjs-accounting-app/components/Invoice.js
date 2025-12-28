@@ -191,7 +191,7 @@ export default function Invoice({ isOpen, onClose }) {
                 <div className={styles.autocompleteWrapper} ref={autocompleteRef}>
                   <input
                     type="text"
-                    className={styles.formControl}
+                    className={styles.formControlStandard}
                     placeholder="Search or select customer"
                     value={customerSearchText}
                     onChange={handleCustomerInputChange}
@@ -234,7 +234,7 @@ export default function Invoice({ isOpen, onClose }) {
                 <label>Invoice Number</label>
                 <input
                   type="text"
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   placeholder="INV-001"
                   defaultValue="INV-001"
                 />
@@ -242,7 +242,7 @@ export default function Invoice({ isOpen, onClose }) {
               <div className={styles.formGroup}>
                 <label>Terms</label>
                 <select
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   value={terms}
                   onChange={(e) => setTerms(e.target.value)}
                 >
@@ -256,7 +256,7 @@ export default function Invoice({ isOpen, onClose }) {
                 <label>Invoice Date</label>
                 <input
                   type="date"
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   value={invoiceDate}
                   onChange={(e) => setInvoiceDate(e.target.value)}
                 />
@@ -265,7 +265,7 @@ export default function Invoice({ isOpen, onClose }) {
                 <label>Reference Number</label>
                 <input
                   type="text"
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   placeholder="PO-12345"
                 />
               </div>
@@ -273,7 +273,7 @@ export default function Invoice({ isOpen, onClose }) {
                 <label>Due Date</label>
                 <input
                   type="date"
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                 />
@@ -308,7 +308,7 @@ export default function Invoice({ isOpen, onClose }) {
                     <td>
                       <input
                         type="text"
-                        className={styles.formControl}
+                        className={styles.formControlTable}
                         placeholder="SKU"
                         value={item.sku}
                         onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
@@ -318,7 +318,7 @@ export default function Invoice({ isOpen, onClose }) {
                     <td>
                       <input
                         type="text"
-                        className={styles.formControl}
+                        className={styles.formControlTable}
                         placeholder="Item description"
                         value={item.description}
                         onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
@@ -328,7 +328,7 @@ export default function Invoice({ isOpen, onClose }) {
                     <td>
                       <input
                         type="number"
-                        className={styles.formControl}
+                        className={styles.formControlTable}
                         value={item.quantity}
                         min="1"
                         onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
@@ -338,7 +338,7 @@ export default function Invoice({ isOpen, onClose }) {
                     <td>
                       <input
                         type="number"
-                        className={styles.formControl}
+                        className={styles.formControlTable}
                         value={item.rate}
                         min="0"
                         step="0.01"
@@ -371,7 +371,7 @@ export default function Invoice({ isOpen, onClose }) {
               <div className={styles.formGroup}>
                 <label>Notes</label>
                 <textarea
-                  className={styles.formControl}
+                  className={styles.formControlStandard}
                   rows="3"
                   placeholder="Add any additional notes or instructions..."
                 ></textarea>

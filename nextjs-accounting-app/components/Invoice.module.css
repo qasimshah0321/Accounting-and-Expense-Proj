@@ -241,7 +241,59 @@
   margin-left: 2px;
 }
 
-.formControl {
+/* Standard form inputs (header section) */
+.formControlStandard {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  width: 100%;
+  height: var(--input-height-standard);
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Width-specific input classes */
+.formControlShort {
+  min-width: var(--input-width-short);
+  max-width: var(--input-width-short-max);
+}
+
+.formControlDefault {
+  min-width: var(--input-width-default);
+  max-width: var(--input-width-default-max);
+}
+
+.formControlMedium {
+  min-width: var(--input-width-medium);
+  max-width: var(--input-width-medium-max);
+}
+
+.formControlLong {
+  min-width: var(--input-width-long);
+  max-width: var(--input-width-long-max);
+}
+
+.formControlFullWidth {
+  width: 100%;
+  max-width: var(--input-width-full-max);
+}
+
+.formControlDate {
+  min-width: var(--datepicker-width);
+  max-width: var(--datepicker-width-max);
+}
+
+.formControlStandard:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
+}
+
+/* Table inline inputs */
+.formControlTable {
   padding: 6px 10px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
@@ -249,20 +301,22 @@
   color: var(--text-primary);
   transition: all 0.3s ease;
   width: 100%;
-  height: 32px;
+  height: var(--input-height-table);
   font-family: inherit;
   box-sizing: border-box;
 }
 
-.formControl:focus {
+.formControlTable:focus {
   outline: none;
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
 }
 
-textarea.formControl {
+/* Textarea for notes */
+textarea.formControlStandard {
   resize: vertical;
-  min-height: 80px;
+  min-height: var(--textarea-height-min);
+  max-height: var(--textarea-height-max);
 }
 
 .addNewOption {

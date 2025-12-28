@@ -17,6 +17,49 @@
   --white: #FFFFFF;
   --header-height: 60px;
   --sidebar-width: 240px;
+
+  /* === FORM INPUT HEIGHT TOKENS === */
+  --input-height-standard: 40px;
+  --input-height-table: 32px;
+
+  /* === TEXT INPUT WIDTH TOKENS === */
+  --input-width-short: 120px;
+  --input-width-short-max: 150px;
+  --input-width-default: 240px;
+  --input-width-default-max: 320px;
+  --input-width-medium: 180px;
+  --input-width-medium-max: 240px;
+  --input-width-long: 300px;
+  --input-width-long-max: 400px;
+
+  /* === DROPDOWN WIDTH TOKENS === */
+  --select-width-default: 240px;
+  --select-width-default-max: 320px;
+  --select-width-short: 150px;
+  --select-width-short-max: 180px;
+
+  /* === TABLE INPUT WIDTH TOKENS === */
+  --table-input-width-min: 80px;
+  --table-input-width-max: 160px;
+  --table-select-width-min: 120px;
+  --table-select-width-max: 180px;
+
+  /* === SPECIALIZED INPUT TOKENS === */
+  --datepicker-width: 180px;
+  --datepicker-width-max: 220px;
+  --search-width: 240px;
+  --search-width-max: 320px;
+  --textarea-height-min: 80px;
+  --textarea-height-max: 160px;
+
+  /* === FULL-WIDTH INPUT TOKENS === */
+  --input-width-full-max: 900px;
+  --textarea-width-min: 600px;
+  --textarea-width-max: 900px;
+
+  /* === MULTI-SELECT DROPDOWN TOKENS === */
+  --multiselect-width-min: 300px;
+  --multiselect-width-max: 400px;
 }
 
 body {

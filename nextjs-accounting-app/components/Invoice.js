@@ -10,9 +10,48 @@ export default function Invoice({ isOpen, onClose }) {
   ])
 
   const [customers, setCustomers] = useState([
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Smith' },
-    { id: 3, name: 'ABC Corporation' }
+    {
+      id: 1,
+      name: 'John Doe',
+      billingAddress: '123 Main St',
+      billingCity: 'New York',
+      billingState: 'NY',
+      billingPostalCode: '10001',
+      billingCountry: 'USA',
+      shippingAddress: '123 Main St',
+      shippingCity: 'New York',
+      shippingState: 'NY',
+      shippingPostalCode: '10001',
+      shippingCountry: 'USA'
+    },
+    {
+      id: 2,
+      name: 'Jane Smith',
+      billingAddress: '456 Oak Avenue',
+      billingCity: 'Los Angeles',
+      billingState: 'CA',
+      billingPostalCode: '90001',
+      billingCountry: 'USA',
+      shippingAddress: '789 Pine Street',
+      shippingCity: 'San Francisco',
+      shippingState: 'CA',
+      shippingPostalCode: '94102',
+      shippingCountry: 'USA'
+    },
+    {
+      id: 3,
+      name: 'ABC Corporation',
+      billingAddress: '999 Business Blvd',
+      billingCity: 'Chicago',
+      billingState: 'IL',
+      billingPostalCode: '60601',
+      billingCountry: 'USA',
+      shippingAddress: '999 Business Blvd',
+      shippingCity: 'Chicago',
+      shippingState: 'IL',
+      shippingPostalCode: '60601',
+      shippingCountry: 'USA'
+    }
   ])
 
   const [selectedCustomer, setSelectedCustomer] = useState('')
@@ -22,6 +61,8 @@ export default function Invoice({ isOpen, onClose }) {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDate, setDueDate] = useState('')
   const [terms, setTerms] = useState('Net 30')
+  const [billTo, setBillTo] = useState('')
+  const [shipTo, setShipTo] = useState('')
 
   const autocompleteRef = useRef(null)
 
@@ -89,6 +130,27 @@ export default function Invoice({ isOpen, onClose }) {
     setSelectedCustomer(customerName)
     setCustomerSearchText(customerName)
     setShowCustomerDropdown(false)
+
+    // Find the selected customer and populate addresses
+    const customer = customers.find(c => c.name === customerName)
+    if (customer) {
+      const billingAddress = formatAddress(
+        customer.billingAddress,
+        customer.billingCity,
+        customer.billingState,
+        customer.billingPostalCode,
+        customer.billingCountry
+      )
+      const shippingAddress = formatAddress(
+        customer.shippingAddress,
+        customer.shippingCity,
+        customer.shippingState,
+        customer.shippingPostalCode,
+        customer.shippingCountry
+      )
+      setBillTo(billingAddress)
+      setShipTo(shippingAddress)
+    }
   }
 
   const handleAddNewCustomer = () => {
@@ -105,6 +167,24 @@ export default function Invoice({ isOpen, onClose }) {
     setSelectedCustomer(newCustomer.name)
     setCustomerSearchText(newCustomer.name)
     setIsCustomerPopupOpen(false)
+
+    // Populate addresses for the new customer
+    const billingAddress = formatAddress(
+      newCustomer.billingAddress,
+      newCustomer.billingCity,
+      newCustomer.billingState,
+      newCustomer.billingPostalCode,
+      newCustomer.billingCountry
+    )
+    const shippingAddress = formatAddress(
+      newCustomer.shippingAddress,
+      newCustomer.shippingCity,
+      newCustomer.shippingState,
+      newCustomer.shippingPostalCode,
+      newCustomer.shippingCountry
+    )
+    setBillTo(billingAddress)
+    setShipTo(shippingAddress)
   }
 
   const handleCustomerPopupClose = () => {
@@ -152,6 +232,11 @@ export default function Invoice({ isOpen, onClose }) {
 
   const calculateTotal = () => {
     return calculateSubtotal() + calculateTax()
+  }
+
+  const formatAddress = (address, city, state, postalCode, country) => {
+    const parts = [address, city, state, postalCode, country].filter(part => part && part.trim() !== '')
+    return parts.join(', ')
   }
 
   return (
@@ -225,6 +310,28 @@ export default function Invoice({ isOpen, onClose }) {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Bill To</label>
+                <textarea
+                  className={styles.formControlStandard}
+                  placeholder="Billing address will populate automatically"
+                  value={billTo}
+                  onChange={(e) => setBillTo(e.target.value)}
+                  rows="3"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Ship To</label>
+                <textarea
+                  className={styles.formControlStandard}
+                  placeholder="Shipping address will populate automatically"
+                  value={shipTo}
+                  onChange={(e) => setShipTo(e.target.value)}
+                  rows="3"
+                />
               </div>
             </div>
 

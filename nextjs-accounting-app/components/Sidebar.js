@@ -144,7 +144,14 @@ const menuItems = [
       { id: 'audit-risk', name: 'Audit & Risk' },
     ]
   },
-  { id: 'settings', name: 'Settings', icon: 'fa-sliders-h' },
+  {
+    id: 'settings',
+    name: 'Settings',
+    icon: 'fa-sliders-h',
+    submenus: [
+      { id: 'tax', name: 'Tax' },
+    ]
+  },
 ]
 
 export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, onCreateClick, onToggleCollapse }) {

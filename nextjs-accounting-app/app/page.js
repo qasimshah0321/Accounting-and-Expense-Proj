@@ -9,6 +9,7 @@ import Invoice from '@/components/Invoice'
 import CustomerCenter from '@/components/CustomerCenter'
 import VendorCenter from '@/components/VendorCenter'
 import ProductCenter from '@/components/ProductCenter'
+import TaxConfiguration from '@/components/TaxConfiguration'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -20,6 +21,11 @@ export default function Home() {
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
   const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
   const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
+  const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
+  const [taxes, setTaxes] = useState([
+    { id: 1, name: 'Sales Tax', rate: 10, description: 'Standard sales tax', isDefault: true },
+    { id: 2, name: 'VAT', rate: 15, description: 'Value Added Tax', isDefault: false },
+  ])
 
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
@@ -42,6 +48,11 @@ export default function Home() {
     // Open product center if Product Center is clicked
     if (menuName === 'Product Center') {
       setIsProductCenterOpen(true)
+    }
+
+    // Open tax configuration if Tax is clicked
+    if (menuName === 'Tax') {
+      setIsTaxConfigOpen(true)
     }
 
     // Close sidebar and create menu on mobile after selection
@@ -67,6 +78,14 @@ export default function Home() {
 
   const handleProductCenterClose = () => {
     setIsProductCenterOpen(false)
+  }
+
+  const handleTaxConfigClose = () => {
+    setIsTaxConfigOpen(false)
+  }
+
+  const handleTaxUpdate = (updatedTaxes) => {
+    setTaxes(updatedTaxes)
   }
 
   const handleMenuToggle = () => {
@@ -95,13 +114,15 @@ export default function Home() {
         onMenuClick={handleMenuClick}
       />
 
-      <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} />
+      <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
 
       <VendorCenter isOpen={isVendorCenterOpen} onClose={handleVendorCenterClose} />
 
       <ProductCenter isOpen={isProductCenterOpen} onClose={handleProductCenterClose} />
+
+      <TaxConfiguration isOpen={isTaxConfigOpen} onClose={handleTaxConfigClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
       <div className={styles.mainContainer}>
         <Sidebar

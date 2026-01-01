@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './Invoice.module.css'
 import CustomerPopup from './CustomerPopup'
+import TaxPopup from './TaxPopup'
 
-export default function Invoice({ isOpen, onClose }) {
+export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [lineItems, setLineItems] = useState([
     { id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }
   ])
@@ -63,9 +64,13 @@ export default function Invoice({ isOpen, onClose }) {
   const [terms, setTerms] = useState('Net 30')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
-  const [taxItems, setTaxItems] = useState([])
+  const [selectedTaxes, setSelectedTaxes] = useState([])
+  const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
+  const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [taxDropdownIndex, setTaxDropdownIndex] = useState(null)
 
   const autocompleteRef = useRef(null)
+  const taxDropdownRef = useRef(null)
 
   // Calculate due date based on terms and invoice date
   const calculateDueDate = (selectedTerms, selectedInvoiceDate) => {
@@ -115,6 +120,24 @@ export default function Invoice({ isOpen, onClose }) {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showCustomerDropdown])
+
+  // Click away handler for tax dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (taxDropdownRef.current && !taxDropdownRef.current.contains(event.target)) {
+        setShowTaxDropdown(false)
+        setTaxDropdownIndex(null)
+      }
+    }
+
+    if (showTaxDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showTaxDropdown])
 
   if (!isOpen) return null
 
@@ -210,26 +233,39 @@ export default function Invoice({ isOpen, onClose }) {
     }
   }
 
-  const addTaxItem = () => {
-    const newId = taxItems.length > 0 ? Math.max(...taxItems.map(item => item.id)) + 1 : 1
-    setTaxItems([...taxItems, { id: newId, name: 'Tax', rate: 0, amount: 0 }])
+  const addSelectedTax = () => {
+    setSelectedTaxes([...selectedTaxes, null])
+    setTaxDropdownIndex(selectedTaxes.length)
+    setShowTaxDropdown(true)
   }
 
-  const removeTaxItem = (id) => {
-    setTaxItems(taxItems.filter(item => item.id !== id))
+  const removeSelectedTax = (index) => {
+    setSelectedTaxes(selectedTaxes.filter((_, i) => i !== index))
   }
 
-  const updateTaxItem = (id, field, value) => {
-    setTaxItems(taxItems.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value }
-        if (field === 'rate') {
-          updatedItem.amount = calculateSubtotal() * (parseFloat(value) / 100)
-        }
-        return updatedItem
-      }
-      return item
-    }))
+  const handleTaxSelect = (tax, index) => {
+    const newSelectedTaxes = [...selectedTaxes]
+    newSelectedTaxes[index] = tax
+    setSelectedTaxes(newSelectedTaxes)
+    setShowTaxDropdown(false)
+    setTaxDropdownIndex(null)
+  }
+
+  const handleAddNewTax = () => {
+    setIsTaxPopupOpen(true)
+    setShowTaxDropdown(false)
+  }
+
+  const handleTaxPopupClose = () => {
+    setIsTaxPopupOpen(false)
+  }
+
+  const handleTaxSave = (newTax) => {
+    onTaxUpdate([...taxes, newTax])
+    if (taxDropdownIndex !== null) {
+      handleTaxSelect(newTax, taxDropdownIndex)
+    }
+    setIsTaxPopupOpen(false)
   }
 
   const updateLineItem = (id, field, value) => {
@@ -250,7 +286,13 @@ export default function Invoice({ isOpen, onClose }) {
   }
 
   const calculateTax = () => {
-    return taxItems.reduce((sum, item) => sum + item.amount, 0)
+    const subtotal = calculateSubtotal()
+    return selectedTaxes.reduce((sum, tax) => {
+      if (tax) {
+        return sum + (subtotal * tax.rate / 100)
+      }
+      return sum
+    }, 0)
   }
 
   const calculateTotal = () => {
@@ -534,32 +576,48 @@ export default function Invoice({ isOpen, onClose }) {
                 </div>
 
                 {/* Tax Items */}
-                {taxItems.map((tax) => (
-                  <div key={tax.id} className={styles.totalRow}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                      <input
-                        type="text"
-                        className={styles.taxNameInput}
-                        placeholder="Tax name"
-                        value={tax.name}
-                        onChange={(e) => updateTaxItem(tax.id, 'name', e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        className={styles.taxRateInput}
-                        placeholder="%"
-                        value={tax.rate}
-                        min="0"
-                        step="0.01"
-                        onChange={(e) => updateTaxItem(tax.id, 'rate', e.target.value)}
-                      />
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>%</span>
+                {selectedTaxes.map((tax, index) => (
+                  <div key={index} className={styles.totalRow}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }} ref={taxDropdownIndex === index ? taxDropdownRef : null}>
+                      <div className={styles.taxSelectWrapper} style={{ position: 'relative', flex: 1 }}>
+                        <div
+                          className={styles.taxSelectButton}
+                          onClick={() => {
+                            setTaxDropdownIndex(index)
+                            setShowTaxDropdown(true)
+                          }}
+                        >
+                          <span>{tax ? `${tax.name} (${tax.rate}%)` : 'Select tax'}</span>
+                          <i className="fas fa-chevron-down"></i>
+                        </div>
+                        {showTaxDropdown && taxDropdownIndex === index && (
+                          <div className={styles.autocompleteDropdown}>
+                            <div
+                              className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                              onClick={handleAddNewTax}
+                            >
+                              <i className="fas fa-plus"></i> Add New
+                            </div>
+                            {taxes.map((t) => (
+                              <div
+                                key={t.id}
+                                className={styles.autocompleteOption}
+                                onClick={() => handleTaxSelect(t, index)}
+                              >
+                                {t.name} ({t.rate}%)
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className={styles.totalValue}>${tax.amount.toFixed(2)}</span>
+                      <span className={styles.totalValue}>
+                        {tax ? `$${(calculateSubtotal() * tax.rate / 100).toFixed(2)}` : '$0.00'}
+                      </span>
                       <button
                         className={styles.btnRemoveTax}
-                        onClick={() => removeTaxItem(tax.id)}
+                        onClick={() => removeSelectedTax(index)}
                         title="Remove tax"
                       >
                         <i className="fas fa-times"></i>
@@ -570,7 +628,7 @@ export default function Invoice({ isOpen, onClose }) {
 
                 {/* Add Tax Button */}
                 <div className={styles.totalRow}>
-                  <button className={styles.btnAddTax} onClick={addTaxItem}>
+                  <button className={styles.btnAddTax} onClick={addSelectedTax}>
                     <i className="fas fa-plus"></i>
                     Add Tax
                   </button>
@@ -622,6 +680,13 @@ export default function Invoice({ isOpen, onClose }) {
         isOpen={isCustomerPopupOpen}
         onClose={handleCustomerPopupClose}
         onSave={handleCustomerSave}
+      />
+
+      {/* Tax Popup */}
+      <TaxPopup
+        isOpen={isTaxPopupOpen}
+        onClose={handleTaxPopupClose}
+        onSave={handleTaxSave}
       />
     </div>
   )

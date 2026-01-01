@@ -706,6 +706,30 @@ textarea.formControlStandard {
   color: #c00;
 }
 
+.taxSelectButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--white);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.taxSelectButton:hover {
+  border-color: var(--primary-green);
+  background-color: var(--sidebar-hover);
+}
+
+.taxSelectButton i {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
 /* Bottom Row - Notes and Totals Side by Side */
 .bottomRow {
   display: grid;

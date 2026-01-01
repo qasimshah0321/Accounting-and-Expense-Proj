@@ -64,10 +64,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [terms, setTerms] = useState('Net 30')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
-  const [selectedTaxes, setSelectedTaxes] = useState([])
+  const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
-  const [taxDropdownIndex, setTaxDropdownIndex] = useState(null)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -141,13 +140,13 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   // Auto-populate default tax when invoice opens
   useEffect(() => {
-    if (isOpen && taxes && taxes.length > 0 && selectedTaxes.length === 0) {
+    if (isOpen && taxes && taxes.length > 0 && !selectedTax) {
       const defaultTax = taxes.find(tax => tax.isDefault)
       if (defaultTax) {
-        setSelectedTaxes([defaultTax])
+        setSelectedTax(defaultTax)
       } else {
-        // If no default tax, add first tax or empty slot
-        setSelectedTaxes([taxes[0]])
+        // If no default tax, use first tax
+        setSelectedTax(taxes[0])
       }
     }
   }, [isOpen, taxes])
@@ -246,22 +245,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     }
   }
 
-  const addSelectedTax = () => {
-    setSelectedTaxes([...selectedTaxes, null])
-    setTaxDropdownIndex(selectedTaxes.length)
-    setShowTaxDropdown(true)
-  }
-
-  const removeSelectedTax = (index) => {
-    setSelectedTaxes(selectedTaxes.filter((_, i) => i !== index))
-  }
-
-  const handleTaxSelect = (tax, index) => {
-    const newSelectedTaxes = [...selectedTaxes]
-    newSelectedTaxes[index] = tax
-    setSelectedTaxes(newSelectedTaxes)
+  const handleTaxSelect = (tax) => {
+    setSelectedTax(tax)
     setShowTaxDropdown(false)
-    setTaxDropdownIndex(null)
   }
 
   const handleAddNewTax = () => {
@@ -275,9 +261,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   const handleTaxSave = (newTax) => {
     onTaxUpdate([...taxes, newTax])
-    if (taxDropdownIndex !== null) {
-      handleTaxSelect(newTax, taxDropdownIndex)
-    }
+    setSelectedTax(newTax)
     setIsTaxPopupOpen(false)
   }
 
@@ -299,13 +283,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const calculateTax = () => {
-    const subtotal = calculateSubtotal()
-    return selectedTaxes.reduce((sum, tax) => {
-      if (tax) {
-        return sum + (subtotal * tax.rate / 100)
-      }
-      return sum
-    }, 0)
+    if (selectedTax) {
+      const subtotal = calculateSubtotal()
+      return subtotal * selectedTax.rate / 100
+    }
+    return 0
   }
 
   const calculateTotal = () => {
@@ -588,63 +570,40 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                   <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
                 </div>
 
-                {/* Tax Items */}
-                {selectedTaxes.map((tax, index) => (
-                  <div key={index} className={styles.totalRow}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }} ref={taxDropdownIndex === index ? taxDropdownRef : null}>
-                      <div className={styles.taxSelectWrapper} style={{ position: 'relative', flex: 1 }}>
-                        <div
-                          className={styles.taxSelectButton}
-                          onClick={() => {
-                            setTaxDropdownIndex(index)
-                            setShowTaxDropdown(true)
-                          }}
-                        >
-                          <span>{tax ? `${tax.name} (${tax.rate}%)` : 'Select tax'}</span>
-                          <i className="fas fa-chevron-down"></i>
-                        </div>
-                        {showTaxDropdown && taxDropdownIndex === index && (
-                          <div className={styles.autocompleteDropdown}>
-                            <div
-                              className={styles.autocompleteOption + ' ' + styles.addNewOption}
-                              onClick={handleAddNewTax}
-                            >
-                              <i className="fas fa-plus"></i> Add New
-                            </div>
-                            {taxes.map((t) => (
-                              <div
-                                key={t.id}
-                                className={styles.autocompleteOption}
-                                onClick={() => handleTaxSelect(t, index)}
-                              >
-                                {t.name} ({t.rate}%)
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className={styles.totalValue}>
-                        {tax ? `$${(calculateSubtotal() * tax.rate / 100).toFixed(2)}` : '$0.00'}
-                      </span>
-                      <button
-                        className={styles.btnRemoveTax}
-                        onClick={() => removeSelectedTax(index)}
-                        title="Remove tax"
+                {/* Tax Dropdown */}
+                <div className={styles.totalRow}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }} ref={taxDropdownRef}>
+                    <span className={styles.totalLabel}>Tax:</span>
+                    <div className={styles.taxSelectWrapper} style={{ position: 'relative', flex: 1 }}>
+                      <div
+                        className={styles.taxSelectButton}
+                        onClick={() => setShowTaxDropdown(true)}
                       >
-                        <i className="fas fa-times"></i>
-                      </button>
+                        <span>{selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Select tax'}</span>
+                        <i className="fas fa-chevron-down"></i>
+                      </div>
+                      {showTaxDropdown && (
+                        <div className={styles.autocompleteDropdown}>
+                          <div
+                            className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                            onClick={handleAddNewTax}
+                          >
+                            <i className="fas fa-plus"></i> Add New
+                          </div>
+                          {taxes.map((t) => (
+                            <div
+                              key={t.id}
+                              className={styles.autocompleteOption}
+                              onClick={() => handleTaxSelect(t)}
+                            >
+                              {t.name} ({t.rate}%)
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
-
-                {/* Add More Tax Button */}
-                <div className={styles.totalRow}>
-                  <button className={styles.btnAddTax} onClick={addSelectedTax}>
-                    <i className="fas fa-plus"></i>
-                    Add
-                  </button>
+                  <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
                 </div>
 
                 <div className={styles.totalRow}>

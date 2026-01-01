@@ -139,6 +139,19 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     }
   }, [showTaxDropdown])
 
+  // Auto-populate default tax when invoice opens
+  useEffect(() => {
+    if (isOpen && taxes && taxes.length > 0 && selectedTaxes.length === 0) {
+      const defaultTax = taxes.find(tax => tax.isDefault)
+      if (defaultTax) {
+        setSelectedTaxes([defaultTax])
+      } else {
+        // If no default tax, add first tax or empty slot
+        setSelectedTaxes([taxes[0]])
+      }
+    }
+  }, [isOpen, taxes])
+
   if (!isOpen) return null
 
   const handleCustomerInputChange = (e) => {
@@ -626,11 +639,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                   </div>
                 ))}
 
-                {/* Add Tax Button */}
+                {/* Add More Tax Button */}
                 <div className={styles.totalRow}>
                   <button className={styles.btnAddTax} onClick={addSelectedTax}>
                     <i className="fas fa-plus"></i>
-                    Add Tax
+                    Add
                   </button>
                 </div>
 

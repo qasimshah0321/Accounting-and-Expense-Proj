@@ -572,9 +572,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
                 {/* Tax Dropdown */}
                 <div className={styles.totalRow}>
-                  <span className={styles.totalLabel}>Tax:</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '50%' }} ref={taxDropdownRef}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={styles.totalLabel}>Tax:</span>
+                    <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '200px' }} ref={taxDropdownRef}>
                       <div
                         className={styles.taxSelectButton}
                         onClick={() => setShowTaxDropdown(true)}
@@ -602,8 +602,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                         </div>
                       )}
                     </div>
-                    <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
                   </div>
+                  <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
                 </div>
 
                 <div className={styles.totalRow}>

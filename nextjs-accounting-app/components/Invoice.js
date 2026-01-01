@@ -63,6 +63,7 @@ export default function Invoice({ isOpen, onClose }) {
   const [terms, setTerms] = useState('Net 30')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
+  const [taxItems, setTaxItems] = useState([])
 
   const autocompleteRef = useRef(null)
 
@@ -209,6 +210,28 @@ export default function Invoice({ isOpen, onClose }) {
     }
   }
 
+  const addTaxItem = () => {
+    const newId = taxItems.length > 0 ? Math.max(...taxItems.map(item => item.id)) + 1 : 1
+    setTaxItems([...taxItems, { id: newId, name: 'Tax', rate: 0, amount: 0 }])
+  }
+
+  const removeTaxItem = (id) => {
+    setTaxItems(taxItems.filter(item => item.id !== id))
+  }
+
+  const updateTaxItem = (id, field, value) => {
+    setTaxItems(taxItems.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value }
+        if (field === 'rate') {
+          updatedItem.amount = calculateSubtotal() * (parseFloat(value) / 100)
+        }
+        return updatedItem
+      }
+      return item
+    }))
+  }
+
   const updateLineItem = (id, field, value) => {
     setLineItems(lineItems.map(item => {
       if (item.id === id) {
@@ -227,7 +250,7 @@ export default function Invoice({ isOpen, onClose }) {
   }
 
   const calculateTax = () => {
-    return calculateSubtotal() * 0.1 // 10% tax
+    return taxItems.reduce((sum, item) => sum + item.amount, 0)
   }
 
   const calculateTotal = () => {
@@ -509,10 +532,50 @@ export default function Invoice({ isOpen, onClose }) {
                   <span className={styles.totalLabel}>Subtotal:</span>
                   <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
                 </div>
+
+                {/* Tax Items */}
+                {taxItems.map((tax) => (
+                  <div key={tax.id} className={styles.totalRow}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <input
+                        type="text"
+                        className={styles.taxNameInput}
+                        placeholder="Tax name"
+                        value={tax.name}
+                        onChange={(e) => updateTaxItem(tax.id, 'name', e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        className={styles.taxRateInput}
+                        placeholder="%"
+                        value={tax.rate}
+                        min="0"
+                        step="0.01"
+                        onChange={(e) => updateTaxItem(tax.id, 'rate', e.target.value)}
+                      />
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>%</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className={styles.totalValue}>${tax.amount.toFixed(2)}</span>
+                      <button
+                        className={styles.btnRemoveTax}
+                        onClick={() => removeTaxItem(tax.id)}
+                        title="Remove tax"
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add Tax Button */}
                 <div className={styles.totalRow}>
-                  <span className={styles.totalLabel}>Tax (10%):</span>
-                  <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+                  <button className={styles.btnAddTax} onClick={addTaxItem}>
+                    <i className="fas fa-plus"></i>
+                    Add Tax
+                  </button>
                 </div>
+
                 <div className={styles.totalRow}>
                   <span className={styles.totalLabel}>Discount:</span>
                   <span className={styles.totalValue}>

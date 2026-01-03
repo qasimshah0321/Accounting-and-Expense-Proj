@@ -7,7 +7,7 @@ import TaxPopup from './TaxPopup'
 
 export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [lineItems, setLineItems] = useState([
-    { id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }
+    { id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }
   ])
 
   const [customers, setCustomers] = useState([
@@ -67,7 +67,6 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
-  const [discount, setDiscount] = useState(0)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -230,7 +229,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
-    setLineItems([...lineItems, { id: newId, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
+    setLineItems([...lineItems, { id: newId, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
   }
 
   const handleFieldFocus = (itemId) => {
@@ -270,8 +269,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     setLineItems(lineItems.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value }
-        if (field === 'quantity' || field === 'rate') {
-          updatedItem.amount = updatedItem.quantity * updatedItem.rate
+        if (field === 'quantity' || field === 'rate' || field === 'discount') {
+          updatedItem.amount = (updatedItem.quantity * updatedItem.rate) - updatedItem.discount
         }
         return updatedItem
       }
@@ -283,6 +282,10 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     return lineItems.reduce((sum, item) => sum + item.amount, 0)
   }
 
+  const calculateDiscount = () => {
+    return lineItems.reduce((sum, item) => sum + (item.discount || 0), 0)
+  }
+
   const calculateTax = () => {
     if (selectedTax) {
       const subtotal = calculateSubtotal()
@@ -292,7 +295,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax() - discount
+    return calculateSubtotal() + calculateTax()
   }
 
   const formatAddress = (address, city, state, postalCode, country) => {
@@ -466,6 +469,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                   <th className={styles.colDescription}>Description</th>
                   <th className={styles.colQuantity}>Quantity</th>
                   <th className={styles.colRate}>Rate</th>
+                  <th className={styles.colDiscount}>Discount</th>
                   <th className={styles.colAmount}>Amount</th>
                   <th className={styles.colAction}></th>
                 </tr>
@@ -511,6 +515,17 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                         min="0"
                         step="0.01"
                         onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        onFocus={() => handleFieldFocus(item.id)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className={styles.formControlTable}
+                        value={item.discount}
+                        min="0"
+                        step="0.01"
+                        onChange={(e) => updateLineItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
                         onFocus={() => handleFieldFocus(item.id)}
                       />
                     </td>
@@ -609,16 +624,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
                 <div className={styles.totalRow}>
                   <span className={styles.totalLabel}>Discount:</span>
-                  <span className={styles.totalValue}>
-                    <input
-                      type="number"
-                      className={styles.discountInput}
-                      value={discount}
-                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                      step="0.01"
-                      min="0"
-                    />
-                  </span>
+                  <span className={styles.totalValue}>${calculateDiscount().toFixed(2)}</span>
                 </div>
                 <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                   <span className={styles.totalLabel}>Total:</span>

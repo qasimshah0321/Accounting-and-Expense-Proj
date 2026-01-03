@@ -441,23 +441,27 @@ textarea.formControlStandard {
 }
 
 .colSku {
-  width: 15%;
-}
-
-.colDescription {
-  width: 30%;
-}
-
-.colQuantity {
   width: 12%;
 }
 
+.colDescription {
+  width: 28%;
+}
+
+.colQuantity {
+  width: 10%;
+}
+
 .colRate {
-  width: 18%;
+  width: 15%;
+}
+
+.colDiscount {
+  width: 12%;
 }
 
 .colAmount {
-  width: 18%;
+  width: 16%;
   text-align: right;
 }
 

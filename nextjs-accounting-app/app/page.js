@@ -8,10 +8,12 @@ import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
 import SalesOrder from '@/components/SalesOrder'
 import Estimate from '@/components/Estimate'
+import DeliveryNote from '@/components/DeliveryNote'
 import CustomerCenter from '@/components/CustomerCenter'
 import VendorCenter from '@/components/VendorCenter'
 import ProductCenter from '@/components/ProductCenter'
 import TaxConfiguration from '@/components/TaxConfiguration'
+import ShipViaConfiguration from '@/components/ShipViaConfiguration'
 import styles from './page.module.css'
 
 export default function Home() {
@@ -22,13 +24,20 @@ export default function Home() {
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
   const [isEstimateOpen, setIsEstimateOpen] = useState(false)
+  const [isDeliveryNoteOpen, setIsDeliveryNoteOpen] = useState(false)
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
   const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
   const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
   const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
+  const [isShipViaConfigOpen, setIsShipViaConfigOpen] = useState(false)
   const [taxes, setTaxes] = useState([
     { id: 1, name: 'Sales Tax', rate: 10, description: 'Standard sales tax', isDefault: true },
     { id: 2, name: 'VAT', rate: 15, description: 'Value Added Tax', isDefault: false },
+  ])
+  const [shipVias, setShipVias] = useState([
+    { id: 1, name: 'FedEx', description: 'FedEx Express Shipping', isActive: true },
+    { id: 2, name: 'UPS', description: 'UPS Ground Shipping', isActive: true },
+    { id: 3, name: 'DHL', description: 'DHL International', isActive: false },
   ])
 
   const handleMenuClick = (menuName) => {
@@ -49,6 +58,11 @@ export default function Home() {
       setIsEstimateOpen(true)
     }
 
+    // Open delivery note popup if Delivery Note or Delivery Notes is clicked
+    if (menuName === 'Delivery Note' || menuName === 'Delivery Notes') {
+      setIsDeliveryNoteOpen(true)
+    }
+
     // Open customer center if Customer Center is clicked
     if (menuName === 'Customer Center') {
       setIsCustomerCenterOpen(true)
@@ -67,6 +81,11 @@ export default function Home() {
     // Open tax configuration if Tax is clicked
     if (menuName === 'Tax') {
       setIsTaxConfigOpen(true)
+    }
+
+    // Open ship via configuration if Ship Via is clicked
+    if (menuName === 'Ship Via') {
+      setIsShipViaConfigOpen(true)
     }
 
     // Close sidebar and create menu on mobile after selection
@@ -90,6 +109,10 @@ export default function Home() {
     setIsEstimateOpen(false)
   }
 
+  const handleDeliveryNoteClose = () => {
+    setIsDeliveryNoteOpen(false)
+  }
+
   const handleCustomerCenterClose = () => {
     setIsCustomerCenterOpen(false)
   }
@@ -106,8 +129,16 @@ export default function Home() {
     setIsTaxConfigOpen(false)
   }
 
+  const handleShipViaConfigClose = () => {
+    setIsShipViaConfigOpen(false)
+  }
+
   const handleTaxUpdate = (updatedTaxes) => {
     setTaxes(updatedTaxes)
+  }
+
+  const handleShipViaUpdate = (updatedShipVias) => {
+    setShipVias(updatedShipVias)
   }
 
   const handleMenuToggle = () => {
@@ -142,6 +173,8 @@ export default function Home() {
 
       <Estimate isOpen={isEstimateOpen} onClose={handleEstimateClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
+      <DeliveryNote isOpen={isDeliveryNoteOpen} onClose={handleDeliveryNoteClose} shipVias={shipVias} onShipViaUpdate={handleShipViaUpdate} />
+
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
 
       <VendorCenter isOpen={isVendorCenterOpen} onClose={handleVendorCenterClose} />
@@ -149,6 +182,8 @@ export default function Home() {
       <ProductCenter isOpen={isProductCenterOpen} onClose={handleProductCenterClose} />
 
       <TaxConfiguration isOpen={isTaxConfigOpen} onClose={handleTaxConfigClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
+
+      <ShipViaConfiguration isOpen={isShipViaConfigOpen} onClose={handleShipViaConfigClose} shipVias={shipVias} onShipViaUpdate={handleShipViaUpdate} />
 
       <div className={styles.mainContainer}>
         <Sidebar

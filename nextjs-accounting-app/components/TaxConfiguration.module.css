@@ -247,6 +247,34 @@
   font-weight: 600;
 }
 
+/* Status Badge */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.statusBadge:hover {
+  opacity: 0.8;
+}
+
+.statusActive {
+  background-color: #e8f5e9;
+  color: var(--primary-green);
+}
+
+.statusInactive {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
 /* Action Buttons */
 .actionButtons {
   display: flex;

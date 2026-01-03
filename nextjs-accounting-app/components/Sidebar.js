@@ -150,6 +150,7 @@ const menuItems = [
     icon: 'fa-sliders-h',
     submenus: [
       { id: 'tax', name: 'Tax' },
+      { id: 'ship-via', name: 'Ship Via' },
     ]
   },
 ]

@@ -6,6 +6,17 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 
 export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
+  // Auto-generate Sales Order Number (read-only)
+  const generateSalesOrderNumber = () => {
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = String(today.getMonth() + 1).padStart(2, '0')
+    const day = String(today.getDate()).padStart(2, '0')
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    return `SO-${year}${month}${day}-${random}`
+  }
+
+  const [salesOrderNumber] = useState(generateSalesOrderNumber())
   const [lineItems, setLineItems] = useState([
     { id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }
   ])
@@ -264,18 +275,6 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     const parts = [address, city, state, postalCode, country].filter(part => part && part.trim() !== '')
     return parts.join(', ')
   }
-
-  // Auto-generate Sales Order Number (read-only)
-  const generateSalesOrderNumber = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `SO-${year}${month}${day}-${random}`
-  }
-
-  const [salesOrderNumber] = useState(generateSalesOrderNumber())
 
   return (
     <div className={styles.invoicePopupOverlay}>

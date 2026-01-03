@@ -6,14 +6,14 @@ import CustomerPopup from './CustomerPopup'
 import ShipViaPopup from './ShipViaPopup'
 
 export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdate }) {
-  // Auto-generate Delivery Note Number (EN#)
+  // Auto-generate Delivery Note Number (DN#)
   const generateDeliveryNoteNumber = () => {
     const today = new Date()
     const year = today.getFullYear()
     const month = String(today.getMonth() + 1).padStart(2, '0')
     const day = String(today.getDate()).padStart(2, '0')
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `EN-${year}${month}${day}-${random}`
+    return `DN-${year}${month}${day}-${random}`
   }
 
   const [deliveryNoteNumber] = useState(generateDeliveryNoteNumber())
@@ -370,64 +370,64 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 />
               </div>
 
-              {/* Horizontal row for Ref No, Shipment Date, Ship Via */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '16px' }}>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>Ref. No.</label>
-                  <input
-                    type="text"
+              {/* Additional fields - full width like PO No */}
+              <div className={styles.formGroup}>
+                <label>Ref. No.</label>
+                <input
+                  type="text"
+                  className={styles.formControlStandard}
+                  placeholder="REF-12345"
+                  value={refNumber}
+                  onChange={(e) => setRefNumber(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Shipment Date</label>
+                <input
+                  type="date"
+                  className={styles.formControlStandard}
+                  value={shipmentDate}
+                  onChange={(e) => setShipmentDate(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>Ship Via</label>
+                <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
+                  <div
                     className={styles.formControlStandard}
-                    placeholder="REF-12345"
-                    value={refNumber}
-                    onChange={(e) => setRefNumber(e.target.value)}
-                  />
-                </div>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>Shipment Date</label>
-                  <input
-                    type="date"
-                    className={styles.formControlStandard}
-                    value={shipmentDate}
-                    onChange={(e) => setShipmentDate(e.target.value)}
-                  />
-                </div>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>Ship Via</label>
-                  <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
-                    <div
-                      className={styles.formControlStandard}
-                      onClick={() => setShowShipViaDropdown(true)}
-                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                    >
-                      <span>{selectedShipVia ? selectedShipVia.name : 'Select shipping method'}</span>
-                      <i className="fas fa-chevron-down"></i>
-                    </div>
-                    {showShipViaDropdown && (
-                      <div className={styles.autocompleteDropdown}>
-                        <div
-                          className={styles.autocompleteOption + ' ' + styles.addNewOption}
-                          onClick={handleAddNewShipVia}
-                        >
-                          <i className="fas fa-plus"></i> Add New
-                        </div>
-                        {activeShipVias.length > 0 ? (
-                          activeShipVias.map(shipVia => (
-                            <div
-                              key={shipVia.id}
-                              className={styles.autocompleteOption}
-                              onClick={() => handleShipViaSelect(shipVia)}
-                            >
-                              {shipVia.name}
-                            </div>
-                          ))
-                        ) : (
-                          <div className={styles.autocompleteOption + ' ' + styles.noResults}>
-                            No active shipping methods
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    onClick={() => setShowShipViaDropdown(true)}
+                    style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <span>{selectedShipVia ? selectedShipVia.name : 'Select shipping method'}</span>
+                    <i className="fas fa-chevron-down"></i>
                   </div>
+                  {showShipViaDropdown && (
+                    <div className={styles.autocompleteDropdown}>
+                      <div
+                        className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                        onClick={handleAddNewShipVia}
+                      >
+                        <i className="fas fa-plus"></i> Add New
+                      </div>
+                      {activeShipVias.length > 0 ? (
+                        activeShipVias.map(shipVia => (
+                          <div
+                            key={shipVia.id}
+                            className={styles.autocompleteOption}
+                            onClick={() => handleShipViaSelect(shipVia)}
+                          >
+                            {shipVia.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className={styles.autocompleteOption + ' ' + styles.noResults}>
+                          No active shipping methods
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

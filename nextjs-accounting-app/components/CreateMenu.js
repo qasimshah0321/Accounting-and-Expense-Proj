@@ -9,7 +9,7 @@ const createMenuData = [
     icon: 'fa-shopping-cart',
     items: [
       { id: 'invoices', name: 'Invoice' },
-      { id: 'sales-order', name: 'Sale Order' },
+      { id: 'sales-order', name: 'Sales Order' },
       { id: 'delivery-notes', name: 'Delivery Note' },
       { id: 'estimates', name: 'Estimate' },
     ]

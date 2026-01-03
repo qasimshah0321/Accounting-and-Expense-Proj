@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar'
 import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
+import SalesOrder from '@/components/SalesOrder'
 import CustomerCenter from '@/components/CustomerCenter'
 import VendorCenter from '@/components/VendorCenter'
 import ProductCenter from '@/components/ProductCenter'
@@ -18,6 +19,7 @@ export default function Home() {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
+  const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
   const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
   const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
@@ -33,6 +35,11 @@ export default function Home() {
     // Open invoice popup if Invoices or Invoice is clicked
     if (menuName === 'Invoices' || menuName === 'Invoice') {
       setIsInvoiceOpen(true)
+    }
+
+    // Open sales order popup if Sales Order or Sale Order is clicked
+    if (menuName === 'Sales Order' || menuName === 'Sale Order') {
+      setIsSalesOrderOpen(true)
     }
 
     // Open customer center if Customer Center is clicked
@@ -66,6 +73,10 @@ export default function Home() {
 
   const handleInvoiceClose = () => {
     setIsInvoiceOpen(false)
+  }
+
+  const handleSalesOrderClose = () => {
+    setIsSalesOrderOpen(false)
   }
 
   const handleCustomerCenterClose = () => {
@@ -115,6 +126,8 @@ export default function Home() {
       />
 
       <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
+
+      <SalesOrder isOpen={isSalesOrderOpen} onClose={handleSalesOrderClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
 

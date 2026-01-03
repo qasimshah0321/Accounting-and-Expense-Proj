@@ -435,7 +435,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
             {/* Right Side - Delivery Note Details Column */}
             <div className={styles.invoiceDetailsColumn}>
               <div className={styles.formGroup}>
-                <label>EN#</label>
+                <label>DN No</label>
                 <input
                   type="text"
                   className={styles.formControlStandard}
@@ -453,28 +453,24 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   onChange={(e) => setDeliveryDate(e.target.value)}
                 />
               </div>
-
-              {/* Horizontal row for PO No and Due Date */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '16px' }}>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>PO No.</label>
-                  <input
-                    type="text"
-                    className={styles.formControlStandard}
-                    placeholder="PO-12345"
-                    value={poNumber}
-                    onChange={(e) => setPoNumber(e.target.value)}
-                  />
-                </div>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>Due Date</label>
-                  <input
-                    type="date"
-                    className={styles.formControlStandard}
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
+              <div className={styles.formGroup}>
+                <label>PO No.</label>
+                <input
+                  type="text"
+                  className={styles.formControlStandard}
+                  placeholder="PO-12345"
+                  value={poNumber}
+                  onChange={(e) => setPoNumber(e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Due Date</label>
+                <input
+                  type="date"
+                  className={styles.formControlStandard}
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
               </div>
             </div>
           </div>

@@ -370,27 +370,8 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 />
               </div>
 
-              {/* Horizontal row for all additional fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginTop: '16px' }}>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>PO No.</label>
-                  <input
-                    type="text"
-                    className={styles.formControlStandard}
-                    placeholder="PO-12345"
-                    value={poNumber}
-                    onChange={(e) => setPoNumber(e.target.value)}
-                  />
-                </div>
-                <div className={styles.formGroup} style={{ margin: 0 }}>
-                  <label>Due Date</label>
-                  <input
-                    type="date"
-                    className={styles.formControlStandard}
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
+              {/* Horizontal row for Ref No, Shipment Date, Ship Via */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '16px' }}>
                 <div className={styles.formGroup} style={{ margin: 0 }}>
                   <label>Ref. No.</label>
                   <input
@@ -471,6 +452,29 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                 />
+              </div>
+
+              {/* Horizontal row for PO No and Due Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '16px' }}>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>PO No.</label>
+                  <input
+                    type="text"
+                    className={styles.formControlStandard}
+                    placeholder="PO-12345"
+                    value={poNumber}
+                    onChange={(e) => setPoNumber(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>Due Date</label>
+                  <input
+                    type="date"
+                    className={styles.formControlStandard}
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -369,6 +369,86 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   rows="3"
                 />
               </div>
+
+              {/* Horizontal row for all additional fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginTop: '16px' }}>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>PO No.</label>
+                  <input
+                    type="text"
+                    className={styles.formControlStandard}
+                    placeholder="PO-12345"
+                    value={poNumber}
+                    onChange={(e) => setPoNumber(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>Due Date</label>
+                  <input
+                    type="date"
+                    className={styles.formControlStandard}
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>Ref. No.</label>
+                  <input
+                    type="text"
+                    className={styles.formControlStandard}
+                    placeholder="REF-12345"
+                    value={refNumber}
+                    onChange={(e) => setRefNumber(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>Shipment Date</label>
+                  <input
+                    type="date"
+                    className={styles.formControlStandard}
+                    value={shipmentDate}
+                    onChange={(e) => setShipmentDate(e.target.value)}
+                  />
+                </div>
+                <div className={styles.formGroup} style={{ margin: 0 }}>
+                  <label>Ship Via</label>
+                  <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
+                    <div
+                      className={styles.formControlStandard}
+                      onClick={() => setShowShipViaDropdown(true)}
+                      style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <span>{selectedShipVia ? selectedShipVia.name : 'Select shipping method'}</span>
+                      <i className="fas fa-chevron-down"></i>
+                    </div>
+                    {showShipViaDropdown && (
+                      <div className={styles.autocompleteDropdown}>
+                        <div
+                          className={styles.autocompleteOption + ' ' + styles.addNewOption}
+                          onClick={handleAddNewShipVia}
+                        >
+                          <i className="fas fa-plus"></i> Add New
+                        </div>
+                        {activeShipVias.length > 0 ? (
+                          activeShipVias.map(shipVia => (
+                            <div
+                              key={shipVia.id}
+                              className={styles.autocompleteOption}
+                              onClick={() => handleShipViaSelect(shipVia)}
+                            >
+                              {shipVia.name}
+                            </div>
+                          ))
+                        ) : (
+                          <div className={styles.autocompleteOption + ' ' + styles.noResults}>
+                            No active shipping methods
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Right Side - Delivery Note Details Column */}
@@ -391,82 +471,6 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                 />
-              </div>
-              <div className={styles.formGroup}>
-                <label>PO No.</label>
-                <input
-                  type="text"
-                  className={styles.formControlStandard}
-                  placeholder="PO-12345"
-                  value={poNumber}
-                  onChange={(e) => setPoNumber(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Due Date</label>
-                <input
-                  type="date"
-                  className={styles.formControlStandard}
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Ref. No.</label>
-                <input
-                  type="text"
-                  className={styles.formControlStandard}
-                  placeholder="REF-12345"
-                  value={refNumber}
-                  onChange={(e) => setRefNumber(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Shipment Date</label>
-                <input
-                  type="date"
-                  className={styles.formControlStandard}
-                  value={shipmentDate}
-                  onChange={(e) => setShipmentDate(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>Ship Via</label>
-                <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
-                  <div
-                    className={styles.formControlStandard}
-                    onClick={() => setShowShipViaDropdown(true)}
-                    style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  >
-                    <span>{selectedShipVia ? selectedShipVia.name : 'Select shipping method'}</span>
-                    <i className="fas fa-chevron-down"></i>
-                  </div>
-                  {showShipViaDropdown && (
-                    <div className={styles.autocompleteDropdown}>
-                      <div
-                        className={styles.autocompleteOption + ' ' + styles.addNewOption}
-                        onClick={handleAddNewShipVia}
-                      >
-                        <i className="fas fa-plus"></i> Add New
-                      </div>
-                      {activeShipVias.length > 0 ? (
-                        activeShipVias.map(shipVia => (
-                          <div
-                            key={shipVia.id}
-                            className={styles.autocompleteOption}
-                            onClick={() => handleShipViaSelect(shipVia)}
-                          >
-                            {shipVia.name}
-                          </div>
-                        ))
-                      ) : (
-                        <div className={styles.autocompleteOption + ' ' + styles.noResults}>
-                          No active shipping methods
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>

@@ -71,7 +71,6 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
   const [estimateDate, setEstimateDate] = useState(new Date().toISOString().split('T')[0])
-  const [poNumber, setPoNumber] = useState('')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
   const [selectedTax, setSelectedTax] = useState(null)
@@ -375,7 +374,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
             {/* Right Side - Estimate Details Column */}
             <div className={styles.invoiceDetailsColumn}>
               <div className={styles.formGroup}>
-                <label>Estimate / Quotation No.</label>
+                <label>Est./Quotation No.</label>
                 <input
                   type="text"
                   className={styles.formControlStandard}
@@ -391,16 +390,6 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
                   className={styles.formControlStandard}
                   value={estimateDate}
                   onChange={(e) => setEstimateDate(e.target.value)}
-                />
-              </div>
-              <div className={styles.formGroup}>
-                <label>PO No.</label>
-                <input
-                  type="text"
-                  className={styles.formControlStandard}
-                  placeholder="PO-12345"
-                  value={poNumber}
-                  onChange={(e) => setPoNumber(e.target.value)}
                 />
               </div>
             </div>

@@ -394,11 +394,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                 />
               </div>
               <div className={styles.formGroup}>
-                <label>PO No.</label>
+                <label>Ref. No.</label>
                 <input
                   type="text"
                   className={styles.formControlStandard}
-                  placeholder="PO-12345"
+                  placeholder="REF-12345"
                   value={poNumber}
                   onChange={(e) => setPoNumber(e.target.value)}
                 />

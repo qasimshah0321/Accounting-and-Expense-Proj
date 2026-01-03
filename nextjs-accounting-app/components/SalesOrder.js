@@ -71,6 +71,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
   const [salesOrderDate, setSalesOrderDate] = useState(new Date().toISOString().split('T')[0])
+  const [dueDate, setDueDate] = useState('')
   const [poNumber, setPoNumber] = useState('')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
@@ -391,6 +392,15 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                   className={styles.formControlStandard}
                   value={salesOrderDate}
                   onChange={(e) => setSalesOrderDate(e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Due Date</label>
+                <input
+                  type="date"
+                  className={styles.formControlStandard}
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
                 />
               </div>
               <div className={styles.formGroup}>

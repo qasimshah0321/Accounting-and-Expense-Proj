@@ -7,6 +7,7 @@ import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
 import SalesOrder from '@/components/SalesOrder'
+import Estimate from '@/components/Estimate'
 import CustomerCenter from '@/components/CustomerCenter'
 import VendorCenter from '@/components/VendorCenter'
 import ProductCenter from '@/components/ProductCenter'
@@ -20,6 +21,7 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
+  const [isEstimateOpen, setIsEstimateOpen] = useState(false)
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
   const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
   const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
@@ -40,6 +42,11 @@ export default function Home() {
     // Open sales order popup if Sales Order or Sale Order is clicked
     if (menuName === 'Sales Order' || menuName === 'Sale Order') {
       setIsSalesOrderOpen(true)
+    }
+
+    // Open estimate popup if Estimate or Estimates/Quotations is clicked
+    if (menuName === 'Estimate' || menuName === 'Estimates/Quotations') {
+      setIsEstimateOpen(true)
     }
 
     // Open customer center if Customer Center is clicked
@@ -77,6 +84,10 @@ export default function Home() {
 
   const handleSalesOrderClose = () => {
     setIsSalesOrderOpen(false)
+  }
+
+  const handleEstimateClose = () => {
+    setIsEstimateOpen(false)
   }
 
   const handleCustomerCenterClose = () => {
@@ -128,6 +139,8 @@ export default function Home() {
       <Invoice isOpen={isInvoiceOpen} onClose={handleInvoiceClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
       <SalesOrder isOpen={isSalesOrderOpen} onClose={handleSalesOrderClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
+
+      <Estimate isOpen={isEstimateOpen} onClose={handleEstimateClose} taxes={taxes} onTaxUpdate={handleTaxUpdate} />
 
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={handleCustomerCenterClose} />
 

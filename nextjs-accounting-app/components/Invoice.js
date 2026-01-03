@@ -67,6 +67,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [discount, setDiscount] = useState(0)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -291,7 +292,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax()
+    return calculateSubtotal() + calculateTax() - discount
   }
 
   const formatAddress = (address, city, state, postalCode, country) => {
@@ -612,8 +613,10 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                     <input
                       type="number"
                       className={styles.discountInput}
-                      defaultValue="0.00"
+                      value={discount}
+                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                       step="0.01"
+                      min="0"
                     />
                   </span>
                 </div>

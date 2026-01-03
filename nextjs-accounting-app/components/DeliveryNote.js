@@ -383,16 +383,6 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
               </div>
 
               <div className={styles.formGroup}>
-                <label>Shipment Date</label>
-                <input
-                  type="date"
-                  className={styles.formControlStandard}
-                  value={shipmentDate}
-                  onChange={(e) => setShipmentDate(e.target.value)}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
                 <label>Ship Via</label>
                 <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
                   <div
@@ -470,6 +460,15 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   className={styles.formControlStandard}
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Shipment Date</label>
+                <input
+                  type="date"
+                  className={styles.formControlStandard}
+                  value={shipmentDate}
+                  onChange={(e) => setShipmentDate(e.target.value)}
                 />
               </div>
             </div>
@@ -564,9 +563,8 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
             </table>
           </div>
 
-          {/* Bottom Row - Notes/Attachments and Totals */}
+          {/* Bottom Row - Notes and Attachments */}
           <div className={styles.bottomRow}>
-            {/* Left Side - Notes and Attachments */}
             <div className={styles.notesAttachmentsSection}>
               <div className={styles.formGroup}>
                 <label>Notes</label>
@@ -591,24 +589,6 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                     <span>Click to upload or drag and drop</span>
                     <small>PDF, DOC, JPG, PNG (Max 10MB each)</small>
                   </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Side - Quantity Totals */}
-            <div className={styles.totalsSection}>
-              <div className={styles.totalsGrid}>
-                <div className={styles.totalRow}>
-                  <span className={styles.totalLabel}>Total Ordered:</span>
-                  <span className={styles.totalValue}>{calculateTotalOrdered()}</span>
-                </div>
-                <div className={styles.totalRow}>
-                  <span className={styles.totalLabel}>Total Shipped:</span>
-                  <span className={styles.totalValue}>{calculateTotalShipped()}</span>
-                </div>
-                <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-                  <span className={styles.totalLabel}>Total Backordered:</span>
-                  <span className={styles.totalValue}>{calculateTotalBackordered()}</span>
                 </div>
               </div>
             </div>

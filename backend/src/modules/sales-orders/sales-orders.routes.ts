@@ -6,6 +6,7 @@ import * as ctrl from './sales-orders.controller';
 const router = Router();
 router.use(authenticate, tenantIsolation);
 
+router.get('/next-number', ctrl.getNextNumber);
 router.get('/', ctrl.list);
 router.post('/', ctrl.create);
 router.get('/:id', ctrl.getById);

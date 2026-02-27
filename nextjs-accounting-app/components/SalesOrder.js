@@ -34,6 +34,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [orderNo, setOrderNo] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -104,7 +105,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     return parts.join(', ')
   }
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
@@ -117,9 +118,14 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
+    try {
+      const res = await api.getNextSalesOrderNumber()
+      setOrderNo(res.data?.sales_order_no || res.sales_order_no || '')
+    } catch { setOrderNo('') }
   }
 
   const populateForm = (order) => {
+    setOrderNo(order.sales_order_no || '')
     setSelectedCustomer(order.customer_name || '')
     setSelectedCustomerId(order.customer_id)
     setCustomerSearchText(order.customer_name || '')
@@ -150,8 +156,8 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   // ─── List actions ─────────────────────────────────────────────────────────
-  const handleNewOrder = () => {
-    resetForm()
+  const handleNewOrder = async () => {
+    await resetForm()
     setEditingOrder(null)
     setShowForm(true)
   }
@@ -284,6 +290,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
+      ...(orderNo && !editingOrder ? { sales_order_no: orderNo } : {}),
       customer_id: selectedCustomerId,
       order_date: salesOrderDate,
       due_date: dueDate || undefined,
@@ -321,7 +328,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredOrders = orders.filter(o =>
-    (o.order_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (o.sales_order_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (o.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -407,11 +414,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                 <tbody>
                   {filteredOrders.map((o) => (
                     <tr key={o.id}>
-                      <td><strong>{o.order_number || '-'}</strong></td>
+                      <td><strong>{o.sales_order_no || '-'}</strong></td>
                       <td>{o.customer_name || '-'}</td>
                       <td>{formatDate(o.order_date)}</td>
                       <td>{formatDate(o.due_date)}</td>
-                      <td>{formatCurrency(o.total_amount)}</td>
+                      <td>{formatCurrency(o.grand_total)}</td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusClass(o.status)}`}>
                           {o.status || 'draft'}
@@ -449,7 +456,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingOrder ? `Edit Sales Order ${editingOrder.order_number || ''}` : 'Create Sales Order'}</h2>
+                <h2>{editingOrder ? `Edit Sales Order ${editingOrder.sales_order_no || ''}` : 'Create Sales Order'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -507,7 +514,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>Sales Order No.</label>
-                        <input type="text" className={styles.formControlStandard} value={editingOrder?.order_number || ''} placeholder="Auto-generated" readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+                        <input type="text" className={styles.formControlStandard} value={orderNo} placeholder="e.g. SO-001" onChange={(e) => setOrderNo(e.target.value)} readOnly={!!editingOrder} style={editingOrder ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

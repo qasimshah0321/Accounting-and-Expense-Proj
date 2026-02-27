@@ -14,6 +14,7 @@ const lineItemSchema = z.object({
 });
 
 export const createEstimateSchema = z.object({
+  estimate_no: z.string().optional(),
   customer_id: z.string().uuid('Invalid customer ID'),
   reference_no: z.string().optional(),
   estimate_date: z.string().min(1, 'Estimate date required'),

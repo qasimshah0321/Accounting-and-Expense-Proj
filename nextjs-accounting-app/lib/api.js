@@ -232,6 +232,9 @@ export const deleteInvoice = (id) =>
   }).then(handle)
 
 // ─── Sales Orders ────────────────────────────────────────────────────────────
+export const getNextSalesOrderNumber = () =>
+  fetch(`${API_BASE}/sales-orders/next-number`, { headers: buildHeaders() }).then(handle)
+
 export const getSalesOrders = () =>
   fetch(`${API_BASE}/sales-orders?limit=200`, { headers: buildHeaders() }).then(handle)
 
@@ -259,6 +262,9 @@ export const deleteSalesOrder = (id) =>
   }).then(handle)
 
 // ─── Estimates ───────────────────────────────────────────────────────────────
+export const getNextEstimateNumber = () =>
+  fetch(`${API_BASE}/estimates/next-number`, { headers: buildHeaders() }).then(handle)
+
 export const getEstimates = () =>
   fetch(`${API_BASE}/estimates?limit=200`, { headers: buildHeaders() }).then(handle)
 

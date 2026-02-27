@@ -14,6 +14,7 @@ const lineItemSchema = z.object({
 });
 
 export const createSalesOrderSchema = z.object({
+  sales_order_no: z.string().optional(),
   customer_id: z.string().uuid(),
   reference_no: z.string().optional(),
   po_number: z.string().optional(),

@@ -20,6 +20,22 @@ const calculateTotals = (lineItems: any[], discountAmount = 0) => {
   return { subtotal, tax_amount: taxAmount, grand_total: Math.max(0, grandTotal) };
 };
 
+export const peekNextEstimateNumber = async (companyId: string): Promise<string> => {
+  const { rows } = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='estimate'`,
+    [companyId]
+  );
+  if (!rows.length) return 'EST-001';
+  const { prefix, next_number, padding, include_date } = rows[0];
+  const parts: string[] = [prefix];
+  if (include_date) {
+    const d = new Date();
+    parts.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  }
+  parts.push(String(next_number).padStart(padding, '0'));
+  return parts.join('-');
+};
+
 export const listEstimates = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
@@ -60,7 +76,7 @@ export const createEstimate = async (companyId: string, userId: string, userName
     if (!custRes.rows.length) throw new ValidationError('Customer not found');
     const customer = custRes.rows[0];
 
-    const estimateNo = await generateDocumentNumber(companyId, 'estimate', client);
+    const estimateNo = data.estimate_no || await generateDocumentNumber(companyId, 'estimate', client);
     const { subtotal, tax_amount, grand_total } = calculateTotals(data.line_items, data.discount_amount);
 
     const { rows: [est] } = await client.query(

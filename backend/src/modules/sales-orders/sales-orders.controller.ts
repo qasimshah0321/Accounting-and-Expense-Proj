@@ -7,6 +7,10 @@ import { getPagination } from '../../utils/pagination';
 import { ValidationError } from '../../utils/errors';
 import { getCompanyId, getUserName } from '../../middleware/multiTenant';
 
+export const getNextNumber = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try { sendSuccess(res, { sales_order_no: await service.peekNextSalesOrderNumber(getCompanyId(req)) }, 'Next sales order number'); } catch (err) { next(err); }
+};
+
 export const list = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { page, limit, offset } = getPagination(req);

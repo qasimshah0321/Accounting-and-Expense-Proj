@@ -21,6 +21,22 @@ const calcTotals = (items: any[], discountAmount = 0) => {
   return { subtotal, tax_amount: taxAmount, grand_total: grandTotal, total_ordered_qty: totalOrderedQty };
 };
 
+export const peekNextSalesOrderNumber = async (companyId: string): Promise<string> => {
+  const { rows } = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='sales_order'`,
+    [companyId]
+  );
+  if (!rows.length) return 'SO-001';
+  const { prefix, next_number, padding, include_date } = rows[0];
+  const parts: string[] = [prefix];
+  if (include_date) {
+    const d = new Date();
+    parts.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  }
+  parts.push(String(next_number).padStart(padding, '0'));
+  return parts.join('-');
+};
+
 export const listSalesOrders = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
@@ -56,7 +72,7 @@ export const createSalesOrder = async (companyId: string, userId: string, userNa
     if (!custRes.rows.length) throw new ValidationError('Customer not found');
     const cust = custRes.rows[0];
 
-    const soNo = await generateDocumentNumber(companyId, 'sales_order', client);
+    const soNo = data.sales_order_no || await generateDocumentNumber(companyId, 'sales_order', client);
     const { subtotal, tax_amount, grand_total, total_ordered_qty } = calcTotals(data.line_items, data.discount_amount);
 
     const { rows: [so] } = await client.query(

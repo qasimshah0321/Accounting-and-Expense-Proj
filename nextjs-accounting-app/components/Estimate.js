@@ -32,6 +32,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [estimateNo, setEstimateNo] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -101,7 +102,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
     return parts.join(', ')
   }
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
@@ -112,9 +113,14 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
+    try {
+      const res = await api.getNextEstimateNumber()
+      setEstimateNo(res.data?.estimate_no || res.estimate_no || '')
+    } catch { setEstimateNo('') }
   }
 
   const populateForm = (estimate) => {
+    setEstimateNo(estimate.estimate_no || '')
     setSelectedCustomer(estimate.customer_name || '')
     setSelectedCustomerId(estimate.customer_id)
     setCustomerSearchText(estimate.customer_name || '')
@@ -143,8 +149,8 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   // ─── List actions ─────────────────────────────────────────────────────────
-  const handleNewEstimate = () => {
-    resetForm()
+  const handleNewEstimate = async () => {
+    await resetForm()
     setEditingEstimate(null)
     setShowForm(true)
   }
@@ -264,6 +270,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
+      ...(estimateNo && !editingEstimate ? { estimate_no: estimateNo } : {}),
       customer_id: selectedCustomerId,
       estimate_date: estimateDate,
       bill_to: billTo,
@@ -299,7 +306,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredEstimates = estimates.filter(e =>
-    (e.estimate_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (e.estimate_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (e.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -384,10 +391,10 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
                 <tbody>
                   {filteredEstimates.map((e) => (
                     <tr key={e.id}>
-                      <td><strong>{e.estimate_number || '-'}</strong></td>
+                      <td><strong>{e.estimate_no || '-'}</strong></td>
                       <td>{e.customer_name || '-'}</td>
                       <td>{formatDate(e.estimate_date)}</td>
-                      <td>{formatCurrency(e.total_amount)}</td>
+                      <td>{formatCurrency(e.grand_total)}</td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusClass(e.status)}`}>
                           {e.status || 'draft'}
@@ -425,7 +432,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingEstimate ? `Edit Estimate ${editingEstimate.estimate_number || ''}` : 'Create Estimate / Quotation'}</h2>
+                <h2>{editingEstimate ? `Edit Estimate ${editingEstimate.estimate_no || ''}` : 'Create Estimate / Quotation'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -483,7 +490,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>Est./Quotation No.</label>
-                        <input type="text" className={styles.formControlStandard} value={editingEstimate?.estimate_number || ''} placeholder="Auto-generated" readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+                        <input type="text" className={styles.formControlStandard} value={estimateNo} placeholder="e.g. EST-001" onChange={(e) => setEstimateNo(e.target.value)} readOnly={!!editingEstimate} style={editingEstimate ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

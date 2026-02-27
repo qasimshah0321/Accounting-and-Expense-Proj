@@ -192,6 +192,9 @@ export const toggleShipViaActive = (id) =>
 export const getInvoices = () =>
   fetch(`${API_BASE}/invoices?limit=200`, { headers: buildHeaders() }).then(handle)
 
+export const getInvoice = (id) =>
+  fetch(`${API_BASE}/invoices/${id}`, { headers: buildHeaders() }).then(handle)
+
 export const createInvoice = (data) =>
   fetch(`${API_BASE}/invoices`, {
     method: 'POST',

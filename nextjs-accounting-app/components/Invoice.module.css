@@ -1,3 +1,294 @@
+/* ── Invoice List View ──────────────────────────────────────────────────── */
+.invoiceListOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--white);
+  z-index: 2900;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.2s ease;
+}
+
+.invoiceListContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.listHeaderLeft h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.listHeaderRight {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btnNewInvoice {
+  padding: 9px 18px;
+  background-color: var(--primary-green);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnNewInvoice:hover {
+  background-color: var(--dark-green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(44, 160, 28, 0.3);
+}
+
+.searchSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 30px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.searchWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--sidebar-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0 14px;
+}
+
+.searchWrapper i {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.btnRefresh {
+  width: 38px;
+  height: 38px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btnRefresh:hover {
+  background-color: var(--sidebar-hover);
+  color: var(--primary-green);
+  border-color: var(--primary-green);
+}
+
+.errorBanner {
+  margin: 12px 30px 0;
+  padding: 12px 16px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.invoiceGridContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 30px;
+}
+
+.invoiceTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoiceTable thead {
+  background-color: var(--sidebar-bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.invoiceTable th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.invoiceTable td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.invoiceTable tbody tr:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.statusDraft {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.statusSent {
+  background-color: #eff6ff;
+  color: #3b82f6;
+}
+
+.statusPaid {
+  background-color: #f0fdf4;
+  color: #16a34a;
+}
+
+.statusOverdue {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.statusCancelled {
+  background-color: #f9fafb;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btnEdit {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.btnEdit:hover {
+  background-color: #eff6ff;
+  color: #3b82f6;
+  border-color: #93c5fd;
+}
+
+.btnDelete {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.btnDelete:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.loadingState,
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.loadingState i,
+.emptyState i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--border-color);
+}
+
+.emptyState h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Invoice Form Popup ──────────────────────────────────────────────────── */
 /* Full-Screen Popup Overlay */
 .invoicePopupOverlay {
   position: fixed;
@@ -132,7 +423,7 @@
 /* Popup Footer - Fixed */
 .popupFooter {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 20px 30px;
   border-top: 1px solid var(--border-color);
@@ -142,7 +433,9 @@
 }
 
 .footerLeft {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .footerRight {

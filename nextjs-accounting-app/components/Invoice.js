@@ -167,7 +167,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
         quantity: parseFloat(item.quantity) || 1,
         rate: parseFloat(item.rate) || 0,
         discount: parseFloat(item.discount_per_item) || 0,
-        amount: parseFloat(item.amount) || 0,
+        amount: (parseFloat(item.quantity) || 1) * (parseFloat(item.rate) || 0) - (parseFloat(item.discount_per_item) || 0),
       })))
     } else {
       setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
@@ -305,7 +305,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   const calculateSubtotal = () => lineItems.reduce((sum, item) => sum + item.amount, 0)
   const calculateDiscount = () => lineItems.reduce((sum, item) => sum + (item.discount || 0), 0)
-  const calculateTax = () => selectedTax ? calculateSubtotal() * selectedTax.rate / 100 : 0
+  const calculateTax = () => selectedTax ? calculateSubtotal() * Number(selectedTax.rate) / 100 : 0
   const calculateTotal = () => calculateSubtotal() + calculateTax()
 
   const handleSave = async () => {

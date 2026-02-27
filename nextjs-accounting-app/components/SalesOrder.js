@@ -142,7 +142,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
         description: item.description || '',
         quantity: parseFloat(item.ordered_qty) || 1,
         rate: parseFloat(item.rate) || 0,
-        amount: parseFloat(item.amount) || 0,
+        amount: (parseFloat(item.ordered_qty) || 1) * (parseFloat(item.rate) || 0),
       })))
     } else {
       setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
@@ -278,7 +278,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const calculateSubtotal = () => lineItems.reduce((sum, item) => sum + item.amount, 0)
-  const calculateTax = () => selectedTax ? calculateSubtotal() * selectedTax.rate / 100 : 0
+  const calculateTax = () => selectedTax ? calculateSubtotal() * Number(selectedTax.rate) / 100 : 0
   const calculateTotal = () => calculateSubtotal() + calculateTax()
 
   const handleSave = async () => {

@@ -35,6 +35,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [invoiceNo, setInvoiceNo] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -126,7 +127,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     return parts.join(', ')
   }
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
@@ -140,9 +141,14 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
+    try {
+      const res = await api.getNextInvoiceNumber()
+      setInvoiceNo(res.data?.invoice_no || res.invoice_no || '')
+    } catch { setInvoiceNo('') }
   }
 
   const populateForm = (invoice) => {
+    setInvoiceNo(invoice.invoice_no || '')
     setSelectedCustomer(invoice.customer_name || '')
     setSelectedCustomerId(invoice.customer_id)
     setCustomerSearchText(invoice.customer_name || '')
@@ -176,8 +182,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   // ─── List actions ─────────────────────────────────────────────────────────
-  const handleNewInvoice = () => {
-    resetForm()
+  const handleNewInvoice = async () => {
+    await resetForm()
     setEditingInvoice(null)
     setShowForm(true)
   }
@@ -312,6 +318,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
+      ...(invoiceNo && !editingInvoice ? { invoice_no: invoiceNo } : {}),
       customer_id: selectedCustomerId,
       invoice_date: invoiceDate,
       due_date: dueDate,
@@ -351,7 +358,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredInvoices = invoices.filter(inv =>
-    (inv.invoice_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (inv.invoice_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (inv.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -440,11 +447,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                 <tbody>
                   {filteredInvoices.map((inv) => (
                     <tr key={inv.id}>
-                      <td><strong>{inv.invoice_number || '-'}</strong></td>
+                      <td><strong>{inv.invoice_no || '-'}</strong></td>
                       <td>{inv.customer_name || '-'}</td>
                       <td>{formatDate(inv.invoice_date)}</td>
                       <td>{formatDate(inv.due_date)}</td>
-                      <td>{formatCurrency(inv.total_amount)}</td>
+                      <td>{formatCurrency(inv.grand_total)}</td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusClass(inv.status)}`}>
                           {inv.status || 'draft'}
@@ -492,7 +499,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
             {/* Header */}
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingInvoice ? `Edit Invoice ${editingInvoice.invoice_number || ''}` : 'Create Invoice'}</h2>
+                <h2>{editingInvoice ? `Edit Invoice ${editingInvoice.invoice_no || ''}` : 'Create Invoice'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -581,10 +588,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
                         <input
                           type="text"
                           className={styles.formControlStandard}
-                          value={editingInvoice?.invoice_number || ''}
-                          placeholder="Auto-generated"
-                          readOnly
-                          style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
+                          value={invoiceNo}
+                          placeholder="e.g. INV-001"
+                          onChange={(e) => setInvoiceNo(e.target.value)}
+                          readOnly={!!editingInvoice}
+                          style={editingInvoice ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
                         />
                       </div>
                       <div className={styles.formGroup}>

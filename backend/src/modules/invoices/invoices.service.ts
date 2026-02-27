@@ -4,6 +4,22 @@ import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
 
+export const peekNextInvoiceNumber = async (companyId: string): Promise<string> => {
+  const { rows } = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='invoice'`,
+    [companyId]
+  );
+  if (!rows.length) return 'INV-001';
+  const { prefix, next_number, padding, include_date } = rows[0];
+  const parts: string[] = [prefix];
+  if (include_date) {
+    const d = new Date();
+    parts.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  }
+  parts.push(String(next_number).padStart(padding, '0'));
+  return parts.join('-');
+};
+
 export const listInvoices = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
@@ -40,7 +56,7 @@ export const createInvoice = async (companyId: string, userId: string, _userName
     if (!custRes.rows.length) throw new ValidationError('Customer not found');
     const cust = custRes.rows[0];
 
-    const invNo = await generateDocumentNumber(companyId, 'invoice', client);
+    const invNo = data.invoice_no || await generateDocumentNumber(companyId, 'invoice', client);
     const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate - (li.discount_per_item || 0), 0);
     const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
     const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);

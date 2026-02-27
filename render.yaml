@@ -14,7 +14,7 @@ services:
     runtime: node
     rootDir: backend
     buildCommand: npm install && npm run build
-    startCommand: node dist/server.js
+    startCommand: node dist/database/migrate.js && node dist/server.js
     envVars:
       - key: NODE_ENV
         value: production

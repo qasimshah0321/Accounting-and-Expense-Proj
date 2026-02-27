@@ -52,7 +52,7 @@ export const generateDocumentNumber = async (
     const defaultPrefix = DEFAULT_PREFIXES[documentType] || documentType.toUpperCase();
     await query(
       `INSERT INTO document_sequences (company_id, document_type, prefix, next_number, padding, include_date)
-       VALUES ($1, $2, $3, 2, 4, true)
+       VALUES ($1, $2, $3, 2, 3, false)
        ON CONFLICT (company_id, document_type) DO UPDATE SET next_number = document_sequences.next_number + 1
        RETURNING prefix, next_number - 1 AS current_number, padding, include_date`,
       [companyId, documentType, defaultPrefix]
@@ -79,7 +79,7 @@ export const ensureDocumentSequences = async (companyId: string, existingClient?
     for (const [type, prefix] of Object.entries(DEFAULT_PREFIXES)) {
       await client.query(
         `INSERT INTO document_sequences (company_id, document_type, prefix, next_number, padding, include_date)
-         VALUES ($1, $2, $3, 1, 4, true)
+         VALUES ($1, $2, $3, 1, 3, false)
          ON CONFLICT (company_id, document_type) DO NOTHING`,
         [companyId, type, prefix]
       );

@@ -202,6 +202,9 @@ export const toggleShipViaActive = (id) =>
   }).then(handle)
 
 // ─── Invoices ────────────────────────────────────────────────────────────────
+export const getNextInvoiceNumber = () =>
+  fetch(`${API_BASE}/invoices/next-number`, { headers: buildHeaders() }).then(handle)
+
 export const getInvoices = () =>
   fetch(`${API_BASE}/invoices?limit=200`, { headers: buildHeaders() }).then(handle)
 

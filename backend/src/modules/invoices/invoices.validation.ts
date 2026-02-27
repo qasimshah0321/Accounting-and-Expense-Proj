@@ -14,6 +14,7 @@ const lineItemSchema = z.object({
 });
 
 export const createInvoiceSchema = z.object({
+  invoice_no: z.string().optional(),
   customer_id: z.string().uuid(),
   sales_order_id: z.string().uuid().optional().nullable(),
   delivery_note_id: z.string().uuid().optional().nullable(),

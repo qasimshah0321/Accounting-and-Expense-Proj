@@ -1,5 +1,15 @@
 services:
   - type: web
+    name: zero-point-accounts
+    runtime: static
+    rootDir: nextjs-accounting-app
+    buildCommand: npm install && npm run build
+    staticPublishPath: out
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://zeropoint-backend.onrender.com/api/v1
+
+  - type: web
     name: zeropoint-backend
     runtime: node
     rootDir: backend

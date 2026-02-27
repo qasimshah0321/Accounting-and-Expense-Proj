@@ -219,6 +219,9 @@ export const deleteInvoice = (id) =>
 export const getSalesOrders = () =>
   fetch(`${API_BASE}/sales-orders?limit=200`, { headers: buildHeaders() }).then(handle)
 
+export const getSalesOrder = (id) =>
+  fetch(`${API_BASE}/sales-orders/${id}`, { headers: buildHeaders() }).then(handle)
+
 export const createSalesOrder = (data) =>
   fetch(`${API_BASE}/sales-orders`, {
     method: 'POST',
@@ -243,6 +246,9 @@ export const deleteSalesOrder = (id) =>
 export const getEstimates = () =>
   fetch(`${API_BASE}/estimates?limit=200`, { headers: buildHeaders() }).then(handle)
 
+export const getEstimate = (id) =>
+  fetch(`${API_BASE}/estimates/${id}`, { headers: buildHeaders() }).then(handle)
+
 export const createEstimate = (data) =>
   fetch(`${API_BASE}/estimates`, {
     method: 'POST',
@@ -266,6 +272,9 @@ export const deleteEstimate = (id) =>
 // ─── Delivery Notes ──────────────────────────────────────────────────────────
 export const getDeliveryNotes = () =>
   fetch(`${API_BASE}/delivery-notes?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getDeliveryNote = (id) =>
+  fetch(`${API_BASE}/delivery-notes/${id}`, { headers: buildHeaders() }).then(handle)
 
 export const createDeliveryNote = (data) =>
   fetch(`${API_BASE}/delivery-notes`, {

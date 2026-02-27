@@ -1,72 +1,18 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
+import * as api from '../lib/api'
 
 export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
-  // Auto-generate Sales Order Number (read-only)
-  const generateSalesOrderNumber = () => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = String(today.getMonth() + 1).padStart(2, '0')
-    const day = String(today.getDate()).padStart(2, '0')
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-    return `SO-${year}${month}${day}-${random}`
-  }
-
-  const [salesOrderNumber] = useState(generateSalesOrderNumber())
   const [lineItems, setLineItems] = useState([
     { id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }
   ])
-
-  const [customers, setCustomers] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      billingAddress: '123 Main St',
-      billingCity: 'New York',
-      billingState: 'NY',
-      billingPostalCode: '10001',
-      billingCountry: 'USA',
-      shippingAddress: '123 Main St',
-      shippingCity: 'New York',
-      shippingState: 'NY',
-      shippingPostalCode: '10001',
-      shippingCountry: 'USA'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      billingAddress: '456 Oak Avenue',
-      billingCity: 'Los Angeles',
-      billingState: 'CA',
-      billingPostalCode: '90001',
-      billingCountry: 'USA',
-      shippingAddress: '789 Pine Street',
-      shippingCity: 'San Francisco',
-      shippingState: 'CA',
-      shippingPostalCode: '94102',
-      shippingCountry: 'USA'
-    },
-    {
-      id: 3,
-      name: 'ABC Corporation',
-      billingAddress: '999 Business Blvd',
-      billingCity: 'Chicago',
-      billingState: 'IL',
-      billingPostalCode: '60601',
-      billingCountry: 'USA',
-      shippingAddress: '999 Business Blvd',
-      shippingCity: 'Chicago',
-      shippingState: 'IL',
-      shippingPostalCode: '60601',
-      shippingCountry: 'USA'
-    }
-  ])
-
+  const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null)
   const [customerSearchText, setCustomerSearchText] = useState('')
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
@@ -75,61 +21,63 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [poNumber, setPoNumber] = useState('')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
+  const [notes, setNotes] = useState('')
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
 
-  // Click away handler for autocomplete dropdown
+  const loadCustomers = useCallback(async () => {
+    try {
+      const res = await api.getCustomers()
+      setCustomers(res.data?.customers || res.customers || [])
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) {
+      loadCustomers()
+      setError('')
+    }
+  }, [isOpen, loadCustomers])
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target)) {
         setShowCustomerDropdown(false)
       }
     }
-
-    if (showCustomerDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    if (showCustomerDropdown) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showCustomerDropdown])
 
-  // Click away handler for tax dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (taxDropdownRef.current && !taxDropdownRef.current.contains(event.target)) {
         setShowTaxDropdown(false)
       }
     }
-
-    if (showTaxDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
+    if (showTaxDropdown) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showTaxDropdown])
 
-  // Auto-populate default tax when sales order opens
   useEffect(() => {
     if (isOpen && taxes && taxes.length > 0 && !selectedTax) {
-      const defaultTax = taxes.find(tax => tax.isDefault)
-      if (defaultTax) {
-        setSelectedTax(defaultTax)
-      } else {
-        // If no default tax, use first tax
-        setSelectedTax(taxes[0])
-      }
+      const defaultTax = taxes.find(tax => tax.is_default)
+      setSelectedTax(defaultTax || taxes[0])
     }
   }, [isOpen, taxes])
 
   if (!isOpen) return null
+
+  const formatAddress = (address, city, state, postalCode, country) => {
+    const parts = [address, city, state, postalCode, country].filter(p => p && p.trim() !== '')
+    return parts.join(', ')
+  }
 
   const handleCustomerInputChange = (e) => {
     const value = e.target.value
@@ -137,33 +85,19 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     setShowCustomerDropdown(true)
     if (value === '') {
       setSelectedCustomer('')
+      setSelectedCustomerId(null)
     }
   }
 
   const handleCustomerSelect = (customerName) => {
+    const customer = customers.find(c => c.name === customerName)
     setSelectedCustomer(customerName)
+    setSelectedCustomerId(customer?.id || null)
     setCustomerSearchText(customerName)
     setShowCustomerDropdown(false)
-
-    // Find the selected customer and populate addresses
-    const customer = customers.find(c => c.name === customerName)
     if (customer) {
-      const billingAddress = formatAddress(
-        customer.billingAddress,
-        customer.billingCity,
-        customer.billingState,
-        customer.billingPostalCode,
-        customer.billingCountry
-      )
-      const shippingAddress = formatAddress(
-        customer.shippingAddress,
-        customer.shippingCity,
-        customer.shippingState,
-        customer.shippingPostalCode,
-        customer.shippingCountry
-      )
-      setBillTo(billingAddress)
-      setShipTo(shippingAddress)
+      setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
+      setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
     }
   }
 
@@ -172,38 +106,21 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     setShowCustomerDropdown(false)
   }
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(customerSearchText.toLowerCase())
+  const filteredCustomers = customers.filter(c =>
+    c.name.toLowerCase().includes(customerSearchText.toLowerCase())
   )
 
   const handleCustomerSave = (newCustomer) => {
     setCustomers(prev => [...prev, newCustomer])
     setSelectedCustomer(newCustomer.name)
+    setSelectedCustomerId(newCustomer.id)
     setCustomerSearchText(newCustomer.name)
     setIsCustomerPopupOpen(false)
-
-    // Populate addresses for the new customer
-    const billingAddress = formatAddress(
-      newCustomer.billingAddress,
-      newCustomer.billingCity,
-      newCustomer.billingState,
-      newCustomer.billingPostalCode,
-      newCustomer.billingCountry
-    )
-    const shippingAddress = formatAddress(
-      newCustomer.shippingAddress,
-      newCustomer.shippingCity,
-      newCustomer.shippingState,
-      newCustomer.shippingPostalCode,
-      newCustomer.shippingCountry
-    )
-    setBillTo(billingAddress)
-    setShipTo(shippingAddress)
+    setBillTo(formatAddress(newCustomer.billing_address, newCustomer.billing_city, newCustomer.billing_state, newCustomer.billing_postal_code, newCustomer.billing_country))
+    setShipTo(formatAddress(newCustomer.shipping_address, newCustomer.shipping_city, newCustomer.shipping_state, newCustomer.shipping_postal_code, newCustomer.shipping_country))
   }
 
-  const handleCustomerPopupClose = () => {
-    setIsCustomerPopupOpen(false)
-  }
+  const handleCustomerPopupClose = () => setIsCustomerPopupOpen(false)
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
@@ -211,16 +128,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const handleFieldFocus = (itemId) => {
-    const isLastRow = lineItems[lineItems.length - 1].id === itemId
-    if (isLastRow) {
-      addLineItem()
-    }
+    if (lineItems[lineItems.length - 1].id === itemId) addLineItem()
   }
 
   const removeLineItem = (id) => {
-    if (lineItems.length > 1) {
-      setLineItems(lineItems.filter(item => item.id !== id))
-    }
+    if (lineItems.length > 1) setLineItems(lineItems.filter(item => item.id !== id))
   }
 
   const handleTaxSelect = (tax) => {
@@ -233,9 +145,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     setShowTaxDropdown(false)
   }
 
-  const handleTaxPopupClose = () => {
-    setIsTaxPopupOpen(false)
-  }
+  const handleTaxPopupClose = () => setIsTaxPopupOpen(false)
 
   const handleTaxSave = (newTax) => {
     onTaxUpdate([...taxes, newTax])
@@ -245,36 +155,53 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   const updateLineItem = (id, field, value) => {
     setLineItems(lineItems.map(item => {
-      if (item.id === id) {
-        const updatedItem = { ...item, [field]: value }
-        if (field === 'quantity' || field === 'rate') {
-          updatedItem.amount = updatedItem.quantity * updatedItem.rate
-        }
-        return updatedItem
+      if (item.id !== id) return item
+      const updated = { ...item, [field]: value }
+      if (field === 'quantity' || field === 'rate') {
+        updated.amount = updated.quantity * updated.rate
       }
-      return item
+      return updated
     }))
   }
 
-  const calculateSubtotal = () => {
-    return lineItems.reduce((sum, item) => sum + item.amount, 0)
-  }
+  const calculateSubtotal = () => lineItems.reduce((sum, item) => sum + item.amount, 0)
+  const calculateTax = () => selectedTax ? calculateSubtotal() * selectedTax.rate / 100 : 0
+  const calculateTotal = () => calculateSubtotal() + calculateTax()
 
-  const calculateTax = () => {
-    if (selectedTax) {
-      const subtotal = calculateSubtotal()
-      return subtotal * selectedTax.rate / 100
+  const handleSave = async () => {
+    setError('')
+    if (!selectedCustomerId) { setError('Please select a customer'); return }
+    const validItems = lineItems.filter(item => item.description.trim())
+    if (validItems.length === 0) { setError('Add at least one line item with a description'); return }
+    if (!salesOrderDate) { setError('Order date is required'); return }
+    setSaving(true)
+    try {
+      await api.createSalesOrder({
+        customer_id: selectedCustomerId,
+        order_date: salesOrderDate,
+        due_date: dueDate || undefined,
+        po_number: poNumber || undefined,
+        bill_to: billTo,
+        ship_to: shipTo,
+        tax_id: selectedTax?.id || null,
+        tax_rate: selectedTax?.rate || 0,
+        notes: notes || undefined,
+        line_items: validItems.map(item => ({
+          sku: item.sku || undefined,
+          description: item.description,
+          ordered_qty: item.quantity,
+          rate: item.rate,
+          tax_id: selectedTax?.id || null,
+          tax_rate: selectedTax?.rate || 0,
+          tax_amount: selectedTax ? (item.amount * selectedTax.rate / 100) : 0,
+        })),
+      })
+      onClose()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
     }
-    return 0
-  }
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax()
-  }
-
-  const formatAddress = (address, city, state, postalCode, country) => {
-    const parts = [address, city, state, postalCode, country].filter(part => part && part.trim() !== '')
-    return parts.join(', ')
   }
 
   return (
@@ -286,14 +213,6 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
             <h2>Create Sales Order</h2>
           </div>
           <div className={styles.headerRight}>
-            <button className={styles.headerBtn}>
-              <i className="fas fa-file-pdf"></i>
-              View PDF
-            </button>
-            <button className={styles.headerBtn}>
-              <i className="fas fa-edit"></i>
-              Edit
-            </button>
             <button className={styles.closeBtn} onClick={onClose}>
               <i className="fas fa-times"></i>
             </button>
@@ -380,7 +299,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                 <input
                   type="text"
                   className={styles.formControlStandard}
-                  value={salesOrderNumber}
+                  placeholder="Auto-generated"
                   readOnly
                   style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                 />
@@ -509,6 +428,8 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                   className={styles.formControlStandard}
                   rows="3"
                   placeholder="Add any additional notes or instructions..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                 ></textarea>
               </div>
 
@@ -517,11 +438,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                 <div className={styles.attachmentArea}>
                   <input
                     type="file"
-                    id="fileUpload"
+                    id="soFileUpload"
                     className={styles.fileInput}
                     multiple
                   />
-                  <label htmlFor="fileUpload" className={styles.fileUploadLabel}>
+                  <label htmlFor="soFileUpload" className={styles.fileUploadLabel}>
                     <i className="fas fa-cloud-upload-alt"></i>
                     <span>Click to upload or drag and drop</span>
                     <small>PDF, DOC, JPG, PNG (Max 10MB each)</small>
@@ -589,16 +510,13 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
         {/* Fixed Footer */}
         <div className={styles.popupFooter}>
           <div className={styles.footerLeft}>
+            {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
             <button className={styles.btnCancel} onClick={onClose}>Cancel</button>
           </div>
           <div className={styles.footerRight}>
-            <button className={styles.btnSecondary}>
-              <i className="fas fa-save"></i>
-              Save
-            </button>
-            <button className={styles.btnPrimary}>
-              <i className="fas fa-paper-plane"></i>
-              Review & Send
+            <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
+              <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

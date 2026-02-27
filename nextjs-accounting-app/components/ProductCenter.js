@@ -1,44 +1,78 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './ProductCenter.module.css'
 import ProductPopup from './ProductPopup'
+import * as api from '@/lib/api'
 
 export default function ProductCenter({ isOpen, onClose }) {
-  const [products, setProducts] = useState([
-    { id: 1, name: 'Consulting Service', salesDescription: 'Business consulting', qtyOnHand: 0, category: 'Services', sku: 'CONS-001', type: 'Services', price: 150.00, cost: 0, image: null },
-    { id: 2, name: 'Office Chair', salesDescription: 'Ergonomic office chair', qtyOnHand: 25, category: 'Furniture', sku: 'FURN-001', type: 'Inventory item', price: 299.99, cost: 150.00, image: null },
-    { id: 3, name: 'Software License', salesDescription: 'Annual software subscription', qtyOnHand: 100, category: 'Software', sku: 'SOFT-001', type: 'Non-Inventory', price: 999.00, cost: 500.00, image: null }
-  ])
-
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [isProductPopupOpen, setIsProductPopupOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.getProducts(searchTerm)
+      const list = res.data?.products || res.products || []
+      setProducts(list)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (isOpen) fetchProducts()
+  }, [isOpen, fetchProducts])
 
   if (!isOpen) return null
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   const handleAddProductClick = () => {
+    setEditingProduct(null)
+    setIsProductPopupOpen(true)
+  }
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product)
     setIsProductPopupOpen(true)
   }
 
   const handleProductPopupClose = () => {
     setIsProductPopupOpen(false)
+    setEditingProduct(null)
   }
 
-  const handleProductSave = (newProduct) => {
-    setProducts(prev => [...prev, newProduct])
+  const handleProductSave = (savedProduct) => {
+    if (editingProduct) {
+      setProducts((prev) => prev.map((p) => (p.id === savedProduct.id ? savedProduct : p)))
+    } else {
+      setProducts((prev) => [...prev, savedProduct])
+    }
     setIsProductPopupOpen(false)
+    setEditingProduct(null)
   }
 
-  const handleDeleteProduct = (id) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(product => product.id !== id))
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('Are you sure you want to delete this product?')) return
+    try {
+      await api.deleteProduct(id)
+      setProducts((prev) => prev.filter((p) => p.id !== id))
+    } catch (err) {
+      alert('Delete failed: ' + err.message)
     }
   }
+
+  const filteredProducts = products.filter(
+    (p) =>
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className={styles.productCenterOverlay}>
@@ -71,11 +105,25 @@ export default function ProductCenter({ isOpen, onClose }) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button className={styles.btnRefresh} onClick={fetchProducts} title="Refresh">
+            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+          </button>
         </div>
+
+        {error && (
+          <div className={styles.errorBanner}>
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </div>
+        )}
 
         {/* Product Grid Table */}
         <div className={styles.productGridContainer}>
-          {filteredProducts.length > 0 ? (
+          {loading ? (
+            <div className={styles.loadingState}>
+              <i className="fas fa-spinner fa-spin"></i>
+              <p>Loading products...</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <table className={styles.productTable}>
               <thead>
                 <tr>
@@ -96,8 +144,8 @@ export default function ProductCenter({ isOpen, onClose }) {
                     <td>
                       <div className={styles.nameCell}>
                         <div className={styles.productImage}>
-                          {product.image ? (
-                            <img src={product.image} alt={product.name} />
+                          {product.image_url ? (
+                            <img src={product.image_url} alt={product.name} />
                           ) : (
                             <i className="fas fa-box"></i>
                           )}
@@ -105,23 +153,19 @@ export default function ProductCenter({ isOpen, onClose }) {
                         <span>{product.name}</span>
                       </div>
                     </td>
-                    <td>{product.salesDescription || '-'}</td>
-                    <td className={styles.qtyCell}>{product.qtyOnHand}</td>
+                    <td>{product.description || '-'}</td>
+                    <td className={styles.qtyCell}>{product.current_stock ?? 0}</td>
                     <td>{product.category || '-'}</td>
                     <td>{product.sku || '-'}</td>
-                    <td>{product.type}</td>
-                    <td className={styles.priceCell}>${product.price.toFixed(2)}</td>
-                    <td className={styles.costCell}>${product.cost.toFixed(2)}</td>
+                    <td>{api.productTypeToFrontend(product.product_type)}</td>
+                    <td className={styles.priceCell}>${parseFloat(product.selling_price || 0).toFixed(2)}</td>
+                    <td className={styles.costCell}>${parseFloat(product.cost_price || 0).toFixed(2)}</td>
                     <td>
                       <div className={styles.actionButtons}>
-                        <button className={styles.btnEdit} title="Edit">
+                        <button className={styles.btnEdit} title="Edit" onClick={() => handleEditProduct(product)}>
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button
-                          className={styles.btnDelete}
-                          title="Delete"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
+                        <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteProduct(product.id)}>
                           <i className="fas fa-trash"></i>
                         </button>
                       </div>
@@ -140,11 +184,12 @@ export default function ProductCenter({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Product Creation Popup */}
+      {/* Product Creation / Edit Popup */}
       <ProductPopup
         isOpen={isProductPopupOpen}
         onClose={handleProductPopupClose}
         onSave={handleProductSave}
+        editProduct={editingProduct}
       />
     </div>
   )

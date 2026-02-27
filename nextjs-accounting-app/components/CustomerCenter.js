@@ -1,37 +1,78 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './CustomerCenter.module.css'
 import CustomerPopup from './CustomerPopup'
+import * as api from '@/lib/api'
 
 export default function CustomerCenter({ isOpen, onClose }) {
-  const [customers, setCustomers] = useState([
-    { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '098-765-4321' },
-    { id: 3, name: 'ABC Corporation', email: 'info@abc.com', phone: '555-123-4567' }
-  ])
-
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+
+  const fetchCustomers = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.getCustomers(searchTerm)
+      const list = res.data?.customers || res.customers || []
+      setCustomers(list)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (isOpen) fetchCustomers()
+  }, [isOpen, fetchCustomers])
 
   if (!isOpen) return null
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   const handleAddCustomerClick = () => {
+    setEditingCustomer(null)
+    setIsCustomerPopupOpen(true)
+  }
+
+  const handleEditCustomer = (customer) => {
+    setEditingCustomer(customer)
     setIsCustomerPopupOpen(true)
   }
 
   const handleCustomerPopupClose = () => {
     setIsCustomerPopupOpen(false)
+    setEditingCustomer(null)
   }
 
-  const handleCustomerSave = (newCustomer) => {
-    setCustomers(prev => [...prev, newCustomer])
+  const handleCustomerSave = (savedCustomer) => {
+    if (editingCustomer) {
+      setCustomers((prev) => prev.map((c) => (c.id === savedCustomer.id ? savedCustomer : c)))
+    } else {
+      setCustomers((prev) => [...prev, savedCustomer])
+    }
     setIsCustomerPopupOpen(false)
+    setEditingCustomer(null)
   }
+
+  const handleDeleteCustomer = async (id) => {
+    if (!confirm('Are you sure you want to delete this customer?')) return
+    try {
+      await api.deleteCustomer(id)
+      setCustomers((prev) => prev.filter((c) => c.id !== id))
+    } catch (err) {
+      alert('Delete failed: ' + err.message)
+    }
+  }
+
+  const filteredCustomers = customers.filter(
+    (c) =>
+      c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className={styles.customerCenterOverlay}>
@@ -64,11 +105,25 @@ export default function CustomerCenter({ isOpen, onClose }) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button className={styles.btnRefresh} onClick={fetchCustomers} title="Refresh">
+            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+          </button>
         </div>
+
+        {error && (
+          <div className={styles.errorBanner}>
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </div>
+        )}
 
         {/* Customer Grid Table */}
         <div className={styles.customerGridContainer}>
-          {filteredCustomers.length > 0 ? (
+          {loading ? (
+            <div className={styles.loadingState}>
+              <i className="fas fa-spinner fa-spin"></i>
+              <p>Loading customers...</p>
+            </div>
+          ) : filteredCustomers.length > 0 ? (
             <table className={styles.customerTable}>
               <thead>
                 <tr>
@@ -93,11 +148,19 @@ export default function CustomerCenter({ isOpen, onClose }) {
                     <td>{customer.phone || '-'}</td>
                     <td>
                       <div className={styles.actionButtons}>
-                        <button className={styles.btnEdit} title="Edit">
+                        <button
+                          className={styles.btnEdit}
+                          title="Edit"
+                          onClick={() => handleEditCustomer(customer)}
+                        >
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className={styles.btnView} title="View">
-                          <i className="fas fa-eye"></i>
+                        <button
+                          className={styles.btnDelete}
+                          title="Delete"
+                          onClick={() => handleDeleteCustomer(customer.id)}
+                        >
+                          <i className="fas fa-trash"></i>
                         </button>
                       </div>
                     </td>
@@ -115,11 +178,12 @@ export default function CustomerCenter({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Customer Creation Popup */}
+      {/* Customer Creation / Edit Popup */}
       <CustomerPopup
         isOpen={isCustomerPopupOpen}
         onClose={handleCustomerPopupClose}
         onSave={handleCustomerSave}
+        editCustomer={editingCustomer}
       />
     </div>
   )

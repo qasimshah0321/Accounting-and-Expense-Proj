@@ -1,37 +1,78 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import styles from './VendorCenter.module.css'
 import VendorPopup from './VendorPopup'
+import * as api from '@/lib/api'
 
 export default function VendorCenter({ isOpen, onClose }) {
-  const [vendors, setVendors] = useState([
-    { id: 1, name: 'Tech Suppliers Inc', email: 'contact@techsuppliers.com', phone: '555-100-2000' },
-    { id: 2, name: 'Office Solutions Ltd', email: 'info@officesolutions.com', phone: '555-200-3000' },
-    { id: 3, name: 'Global Parts Co', email: 'sales@globalparts.com', phone: '555-300-4000' }
-  ])
-
+  const [vendors, setVendors] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [isVendorPopupOpen, setIsVendorPopupOpen] = useState(false)
+  const [editingVendor, setEditingVendor] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+
+  const fetchVendors = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await api.getVendors(searchTerm)
+      const list = res.data?.vendors || res.vendors || []
+      setVendors(list)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [searchTerm])
+
+  useEffect(() => {
+    if (isOpen) fetchVendors()
+  }, [isOpen, fetchVendors])
 
   if (!isOpen) return null
 
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
   const handleAddVendorClick = () => {
+    setEditingVendor(null)
+    setIsVendorPopupOpen(true)
+  }
+
+  const handleEditVendor = (vendor) => {
+    setEditingVendor(vendor)
     setIsVendorPopupOpen(true)
   }
 
   const handleVendorPopupClose = () => {
     setIsVendorPopupOpen(false)
+    setEditingVendor(null)
   }
 
-  const handleVendorSave = (newVendor) => {
-    setVendors(prev => [...prev, newVendor])
+  const handleVendorSave = (savedVendor) => {
+    if (editingVendor) {
+      setVendors((prev) => prev.map((v) => (v.id === savedVendor.id ? savedVendor : v)))
+    } else {
+      setVendors((prev) => [...prev, savedVendor])
+    }
     setIsVendorPopupOpen(false)
+    setEditingVendor(null)
   }
+
+  const handleDeleteVendor = async (id) => {
+    if (!confirm('Are you sure you want to delete this vendor?')) return
+    try {
+      await api.deleteVendor(id)
+      setVendors((prev) => prev.filter((v) => v.id !== id))
+    } catch (err) {
+      alert('Delete failed: ' + err.message)
+    }
+  }
+
+  const filteredVendors = vendors.filter(
+    (v) =>
+      v.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      v.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className={styles.vendorCenterOverlay}>
@@ -64,11 +105,25 @@ export default function VendorCenter({ isOpen, onClose }) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <button className={styles.btnRefresh} onClick={fetchVendors} title="Refresh">
+            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+          </button>
         </div>
+
+        {error && (
+          <div className={styles.errorBanner}>
+            <i className="fas fa-exclamation-circle"></i> {error}
+          </div>
+        )}
 
         {/* Vendor Grid Table */}
         <div className={styles.vendorGridContainer}>
-          {filteredVendors.length > 0 ? (
+          {loading ? (
+            <div className={styles.loadingState}>
+              <i className="fas fa-spinner fa-spin"></i>
+              <p>Loading vendors...</p>
+            </div>
+          ) : filteredVendors.length > 0 ? (
             <table className={styles.vendorTable}>
               <thead>
                 <tr>
@@ -93,11 +148,11 @@ export default function VendorCenter({ isOpen, onClose }) {
                     <td>{vendor.phone || '-'}</td>
                     <td>
                       <div className={styles.actionButtons}>
-                        <button className={styles.btnEdit} title="Edit">
+                        <button className={styles.btnEdit} title="Edit" onClick={() => handleEditVendor(vendor)}>
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className={styles.btnView} title="View">
-                          <i className="fas fa-eye"></i>
+                        <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteVendor(vendor.id)}>
+                          <i className="fas fa-trash"></i>
                         </button>
                       </div>
                     </td>
@@ -115,11 +170,12 @@ export default function VendorCenter({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Vendor Creation Popup */}
+      {/* Vendor Creation / Edit Popup */}
       <VendorPopup
         isOpen={isVendorPopupOpen}
         onClose={handleVendorPopupClose}
         onSave={handleVendorSave}
+        editVendor={editingVendor}
       />
     </div>
   )

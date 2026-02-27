@@ -2,7 +2,7 @@
 
 import styles from './Header.module.css'
 
-export default function Header({ onMenuToggle }) {
+export default function Header({ onMenuToggle, onLogout, user }) {
   return (
     <header className={styles.header}>
       <div className={styles.headerLeft}>
@@ -44,6 +44,11 @@ export default function Header({ onMenuToggle }) {
         <button className={styles.iconBtn}>
           <i className="fas fa-question-circle"></i>
         </button>
+        {onLogout && (
+          <button className={styles.iconBtn} onClick={onLogout} title={`Sign out${user ? ` (${user.email || user.username || ''})` : ''}`} style={{ color: '#ef4444' }}>
+            <i className="fas fa-sign-out-alt"></i>
+          </button>
+        )}
       </div>
 
       <button className={styles.mobileMenuToggle} onClick={onMenuToggle}>

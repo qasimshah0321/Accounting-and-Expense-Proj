@@ -107,6 +107,9 @@
 /* Search Section */
 .searchSection {
   padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background-color: #FAFAFA;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
@@ -142,6 +145,13 @@
   border-color: var(--primary-green);
   box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
 }
+
+/* Shared utilities */
+.btnRefresh { width: 38px; height: 38px; background: var(--white); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-secondary); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+.btnRefresh:hover { background: var(--sidebar-hover); color: var(--text-primary); }
+.errorBanner { background: #fef2f2; border-left: 4px solid #dc2626; color: #dc2626; padding: 12px 20px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.loadingState { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; color: var(--text-secondary); gap: 12px; font-size: 14px; }
+.loadingState i { font-size: 32px; color: var(--primary-green); }
 
 /* Product Grid Container */
 .productGridContainer {

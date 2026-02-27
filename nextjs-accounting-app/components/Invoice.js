@@ -310,6 +310,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
     if (!invoiceDate) { setError('Invoice date is required'); return }
     if (!dueDate) { setError('Due date is required'); return }
     setSaving(true)
+    const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
       customer_id: selectedCustomerId,
       invoice_date: invoiceDate,
@@ -318,18 +319,18 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
       bill_to: billTo,
       ship_to: shipTo,
       tax_id: selectedTax?.id || null,
-      tax_rate: selectedTax?.rate || 0,
+      tax_rate: taxRate,
       discount_amount: calculateDiscount(),
       notes: notes || undefined,
       line_items: validItems.map(item => ({
         sku: item.sku || undefined,
         description: item.description,
-        quantity: item.quantity,
-        rate: item.rate,
-        discount_per_item: item.discount || 0,
+        quantity: Number(item.quantity) || 1,
+        rate: Number(item.rate) || 0,
+        discount_per_item: Number(item.discount) || 0,
         tax_id: selectedTax?.id || null,
-        tax_rate: selectedTax?.rate || 0,
-        tax_amount: selectedTax ? (item.amount * selectedTax.rate / 100) : 0,
+        tax_rate: taxRate,
+        tax_amount: selectedTax ? Number((item.amount * taxRate / 100).toFixed(4)) : 0,
       })),
     }
     try {

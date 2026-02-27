@@ -282,6 +282,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
     if (validItems.length === 0) { setError('Add at least one line item with a description'); return }
     if (!salesOrderDate) { setError('Order date is required'); return }
     setSaving(true)
+    const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
       customer_id: selectedCustomerId,
       order_date: salesOrderDate,
@@ -290,16 +291,16 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
       bill_to: billTo,
       ship_to: shipTo,
       tax_id: selectedTax?.id || null,
-      tax_rate: selectedTax?.rate || 0,
+      tax_rate: taxRate,
       notes: notes || undefined,
       line_items: validItems.map(item => ({
         sku: item.sku || undefined,
         description: item.description,
-        ordered_qty: item.quantity,
-        rate: item.rate,
+        ordered_qty: Number(item.quantity) || 1,
+        rate: Number(item.rate) || 0,
         tax_id: selectedTax?.id || null,
-        tax_rate: selectedTax?.rate || 0,
-        tax_amount: selectedTax ? (item.amount * selectedTax.rate / 100) : 0,
+        tax_rate: taxRate,
+        tax_amount: selectedTax ? Number((item.amount * taxRate / 100).toFixed(4)) : 0,
       })),
     }
     try {

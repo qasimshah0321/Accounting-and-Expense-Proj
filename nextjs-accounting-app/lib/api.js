@@ -15,7 +15,20 @@ const buildHeaders = () => {
 
 const handle = async (res) => {
   const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.message || data.error || `Request failed (${res.status})`)
+  if (!res.ok) {
+    // On 401, clear stale token and reload so the login screen appears
+    if (res.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token')
+      window.location.reload()
+    }
+    // Backend wraps errors as { error: { code, message, details } }
+    const baseMsg = data.error?.message || data.message || `Request failed (${res.status})`
+    const details = data.error?.details
+    const msg = details?.length
+      ? `${baseMsg}: ${details.map(d => d.message || JSON.stringify(d)).join('; ')}`
+      : baseMsg
+    throw new Error(msg)
+  }
   return data
 }
 

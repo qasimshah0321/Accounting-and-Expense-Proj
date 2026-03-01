@@ -231,6 +231,36 @@ export const deleteInvoice = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+// ─── Purchase Orders ─────────────────────────────────────────────────────────
+export const getNextPurchaseOrderNumber = () =>
+  fetch(`${API_BASE}/purchase-orders/next-number`, { headers: buildHeaders() }).then(handle)
+
+export const getPurchaseOrders = () =>
+  fetch(`${API_BASE}/purchase-orders?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getPurchaseOrder = (id) =>
+  fetch(`${API_BASE}/purchase-orders/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createPurchaseOrder = (data) =>
+  fetch(`${API_BASE}/purchase-orders`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updatePurchaseOrder = (id, data) =>
+  fetch(`${API_BASE}/purchase-orders/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deletePurchaseOrder = (id) =>
+  fetch(`${API_BASE}/purchase-orders/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
 // ─── Sales Orders ────────────────────────────────────────────────────────────
 export const getNextSalesOrderNumber = () =>
   fetch(`${API_BASE}/sales-orders/next-number`, { headers: buildHeaders() }).then(handle)

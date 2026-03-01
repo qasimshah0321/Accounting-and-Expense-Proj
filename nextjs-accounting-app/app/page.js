@@ -7,6 +7,7 @@ import Dashboard from '@/components/Dashboard'
 import CreateMenu from '@/components/CreateMenu'
 import Invoice from '@/components/Invoice'
 import SalesOrder from '@/components/SalesOrder'
+import PurchaseOrder from '@/components/PurchaseOrder'
 import Estimate from '@/components/Estimate'
 import DeliveryNote from '@/components/DeliveryNote'
 import CustomerCenter from '@/components/CustomerCenter'
@@ -33,6 +34,7 @@ export default function Home() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
+  const [isPurchaseOrderOpen, setIsPurchaseOrderOpen] = useState(false)
   const [isEstimateOpen, setIsEstimateOpen] = useState(false)
   const [isDeliveryNoteOpen, setIsDeliveryNoteOpen] = useState(false)
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
@@ -85,6 +87,7 @@ export default function Home() {
 
     if (menuName === 'Invoices' || menuName === 'Invoice') setIsInvoiceOpen(true)
     if (menuName === 'Sales Order' || menuName === 'Sale Order') setIsSalesOrderOpen(true)
+    if (menuName === 'Purchase Order' || menuName === 'Purchase Orders') setIsPurchaseOrderOpen(true)
     if (menuName === 'Estimate' || menuName === 'Estimates/Quotations') setIsEstimateOpen(true)
     if (menuName === 'Delivery Note' || menuName === 'Delivery Notes') setIsDeliveryNoteOpen(true)
     if (menuName === 'Customer Center') setIsCustomerCenterOpen(true)
@@ -131,6 +134,13 @@ export default function Home() {
       <SalesOrder
         isOpen={isSalesOrderOpen}
         onClose={() => setIsSalesOrderOpen(false)}
+        taxes={taxes}
+        onTaxUpdate={setTaxes}
+      />
+
+      <PurchaseOrder
+        isOpen={isPurchaseOrderOpen}
+        onClose={() => setIsPurchaseOrderOpen(false)}
         taxes={taxes}
         onTaxUpdate={setTaxes}
       />

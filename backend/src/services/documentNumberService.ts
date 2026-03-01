@@ -5,6 +5,7 @@ import { formatDate } from '../utils/dateUtils';
 export type DocumentType =
   | 'invoice'
   | 'sales_order'
+  | 'purchase_order'
   | 'estimate'
   | 'delivery_note'
   | 'bill'
@@ -17,6 +18,7 @@ export type DocumentType =
 const DEFAULT_PREFIXES: Record<DocumentType, string> = {
   invoice: 'INV',
   sales_order: 'SO',
+  purchase_order: 'PO',
   estimate: 'EST',
   delivery_note: 'DN',
   bill: 'BILL',

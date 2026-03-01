@@ -153,9 +153,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
         id: idx + 1,
         sku: item.sku || '',
         description: item.description || '',
-        ordered: parseFloat(item.ordered_qty) || 0,
-        shipped: parseFloat(item.shipped_qty) || 0,
-        backordered: Math.max(0, (parseFloat(item.ordered_qty) || 0) - (parseFloat(item.shipped_qty) || 0)),
+        ordered: parseInt(item.ordered_qty) || 0,
+        shipped: parseInt(item.shipped_qty) || 0,
+        backordered: Math.max(0, (parseInt(item.ordered_qty) || 0) - (parseInt(item.shipped_qty) || 0)),
       })))
     } else {
       setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }])
@@ -583,9 +583,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                           <tr key={item.id}>
                             <td><input type="text" className={styles.formControlTable} placeholder="SKU" value={item.sku} onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="text" className={styles.formControlTable} placeholder="Item description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.ordered} min="0" onChange={(e) => updateLineItem(item.id, 'ordered', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.shipped} min="0" onChange={(e) => updateLineItem(item.id, 'shipped', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.backordered} min="0" onChange={(e) => updateLineItem(item.id, 'backordered', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.ordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'ordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.shipped} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'shipped', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.backordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'backordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td className={styles.actionCell}>
                               <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>
                                 <i className="fas fa-trash"></i>

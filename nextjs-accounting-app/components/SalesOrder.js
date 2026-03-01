@@ -140,9 +140,9 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
         id: idx + 1,
         sku: item.sku || '',
         description: item.description || '',
-        quantity: parseFloat(item.ordered_qty) || 1,
+        quantity: parseInt(item.ordered_qty) || 1,
         rate: parseFloat(item.rate) || 0,
-        amount: (parseFloat(item.ordered_qty) || 1) * (parseFloat(item.rate) || 0),
+        amount: (parseInt(item.ordered_qty) || 1) * (parseFloat(item.rate) || 0),
       })))
     } else {
       setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, amount: 0 }])
@@ -553,7 +553,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
                           <tr key={item.id}>
                             <td><input type="text" className={styles.formControlTable} placeholder="SKU" value={item.sku} onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="text" className={styles.formControlTable} placeholder="Item description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td className={styles.amountCell}>${item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>

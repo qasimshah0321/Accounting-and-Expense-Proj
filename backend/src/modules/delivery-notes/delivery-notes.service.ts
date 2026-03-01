@@ -13,6 +13,22 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   cancelled: [],
 };
 
+export const peekNextDeliveryNoteNumber = async (companyId: string): Promise<string> => {
+  const { rows } = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='delivery_note'`,
+    [companyId]
+  );
+  if (!rows.length) return 'DN-001';
+  const { prefix, next_number, padding, include_date } = rows[0];
+  const parts: string[] = [prefix];
+  if (include_date) {
+    const d = new Date();
+    parts.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  }
+  parts.push(String(next_number).padStart(padding, '0'));
+  return parts.join('-');
+};
+
 export const listDeliveryNotes = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
@@ -27,7 +43,7 @@ export const listDeliveryNotes = async (companyId: string, filters: any) => {
   const countRes = await pool.query(`SELECT COUNT(*) FROM delivery_notes WHERE ${where}`, params);
   const total = parseInt(countRes.rows[0].count, 10);
   const { rows } = await pool.query(
-    `SELECT id,delivery_note_no,customer_id,customer_name,delivery_date,status,total_shipped_qty,invoiced,created_at FROM delivery_notes WHERE ${where} ORDER BY delivery_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+    `SELECT id,delivery_note_no,customer_id,customer_name,delivery_date,shipment_date,ship_via_name,status,total_ordered_qty,total_shipped_qty,total_backordered_qty,invoiced,created_at FROM delivery_notes WHERE ${where} ORDER BY delivery_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
     [...params, filters.limit, filters.offset]
   );
   return { delivery_notes: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
@@ -79,8 +95,20 @@ export const updateDeliveryNote = async (companyId: string, dnId: string, userId
   if (dn.status !== 'draft') throw new ConflictError('Only draft delivery notes can be edited');
 
   return withTransaction(async (client) => {
+    let shipViaName = dn.ship_via_name;
+    if (data.ship_via_id !== undefined) {
+      if (data.ship_via_id) {
+        const svRes = await client.query('SELECT name FROM ship_via WHERE id=$1 AND company_id=$2', [data.ship_via_id, companyId]);
+        shipViaName = svRes.rows.length ? svRes.rows[0].name : null;
+      } else {
+        shipViaName = null;
+      }
+    }
+
     if (data.line_items) {
       await client.query('DELETE FROM delivery_note_line_items WHERE delivery_note_id=$1', [dnId]);
+      const totalOrderedQty = data.line_items.reduce((s: number, li: any) => s + li.ordered_qty, 0);
+      const totalShippedQty = data.line_items.reduce((s: number, li: any) => s + li.shipped_qty, 0);
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
         await client.query(
@@ -88,8 +116,40 @@ export const updateDeliveryNote = async (companyId: string, dnId: string, userId
           [dnId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.shipped_qty, li.unit_of_measure || 'pcs', li.stock_location || null]
         );
       }
+      await client.query(
+        'UPDATE delivery_notes SET total_ordered_qty=$1,total_shipped_qty=$2,total_backordered_qty=$3 WHERE id=$4',
+        [totalOrderedQty, totalShippedQty, Math.max(0, totalOrderedQty - totalShippedQty), dnId]
+      );
     }
-    await client.query('UPDATE delivery_notes SET updated_by=$1,updated_at=NOW() WHERE id=$2', [userId, dnId]);
+
+    await client.query(
+      `UPDATE delivery_notes SET
+        po_number=COALESCE($1, po_number),
+        reference_no=COALESCE($2, reference_no),
+        delivery_date=COALESCE($3, delivery_date),
+        due_date=$4,
+        shipment_date=$5,
+        ship_via_id=$6,
+        ship_via_name=$7,
+        ship_to=COALESCE($8, ship_to),
+        notes=COALESCE($9, notes),
+        updated_by=$10,
+        updated_at=NOW()
+       WHERE id=$11`,
+      [
+        data.po_number !== undefined ? data.po_number : null,
+        data.reference_no !== undefined ? data.reference_no : null,
+        data.delivery_date || null,
+        data.due_date !== undefined ? data.due_date : dn.due_date,
+        data.shipment_date !== undefined ? data.shipment_date : dn.shipment_date,
+        data.ship_via_id !== undefined ? data.ship_via_id : dn.ship_via_id,
+        shipViaName,
+        data.ship_to !== undefined ? data.ship_to : null,
+        data.notes !== undefined ? data.notes : null,
+        userId,
+        dnId,
+      ]
+    );
     return getDeliveryNoteById(companyId, dnId);
   });
 };

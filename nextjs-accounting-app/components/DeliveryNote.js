@@ -16,6 +16,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const [editingNote, setEditingNote] = useState(null)
 
   // ─── Form state ───────────────────────────────────────────────────────────
+  const [deliveryNoteNo, setDeliveryNoteNo] = useState('')
   const [lineItems, setLineItems] = useState([
     { id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }
   ])
@@ -105,7 +106,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     return parts.join(', ')
   }
 
-  const resetForm = () => {
+  const resetForm = async () => {
     setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
@@ -121,9 +122,16 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     const activeShipVias = shipVias ? shipVias.filter(sv => sv.is_active) : []
     setSelectedShipVia(activeShipVias[0] || null)
     setError('')
+    try {
+      const res = await api.getNextDeliveryNoteNumber()
+      setDeliveryNoteNo(res.data?.next_number || 'DN-001')
+    } catch {
+      setDeliveryNoteNo('DN-001')
+    }
   }
 
   const populateForm = (note) => {
+    setDeliveryNoteNo(note.delivery_note_no || '')
     setSelectedCustomer(note.customer_name || '')
     setSelectedCustomerId(note.customer_id)
     setCustomerSearchText(note.customer_name || '')
@@ -156,8 +164,8 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   }
 
   // ─── List actions ─────────────────────────────────────────────────────────
-  const handleNewNote = () => {
-    resetForm()
+  const handleNewNote = async () => {
+    await resetForm()
     setEditingNote(null)
     setShowForm(true)
   }
@@ -307,7 +315,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredNotes = deliveryNotes.filter(n =>
-    (n.delivery_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (n.delivery_note_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (n.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -385,6 +393,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                     <th>Date</th>
                     <th>Shipment Date</th>
                     <th>Ship Via</th>
+                    <th>Ordered</th>
+                    <th>Shipped</th>
+                    <th>Backordered</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -392,11 +403,14 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 <tbody>
                   {filteredNotes.map((n) => (
                     <tr key={n.id}>
-                      <td><strong>{n.delivery_number || '-'}</strong></td>
+                      <td><strong>{n.delivery_note_no || '-'}</strong></td>
                       <td>{n.customer_name || '-'}</td>
                       <td>{formatDate(n.delivery_date)}</td>
                       <td>{formatDate(n.shipment_date)}</td>
                       <td>{n.ship_via_name || '-'}</td>
+                      <td>{n.total_ordered_qty ?? '-'}</td>
+                      <td>{n.total_shipped_qty ?? '-'}</td>
+                      <td>{n.total_backordered_qty ?? '-'}</td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusClass(n.status)}`}>
                           {n.status || 'draft'}
@@ -434,7 +448,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingNote ? `Edit Delivery Note ${editingNote.delivery_number || ''}` : 'Create Delivery Note'}</h2>
+                <h2>{editingNote ? `Edit Delivery Note ${editingNote.delivery_note_no || ''}` : 'Create Delivery Note'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -525,7 +539,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>DN No</label>
-                        <input type="text" className={styles.formControlStandard} value={editingNote?.delivery_number || ''} placeholder="Auto-generated" readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+                        <input type="text" className={styles.formControlStandard} value={deliveryNoteNo} placeholder="Auto-generated" readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

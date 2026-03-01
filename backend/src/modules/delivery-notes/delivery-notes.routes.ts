@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticate, tenantIsolation);
 
 router.get('/', ctrl.list);
+router.get('/next-number', ctrl.peekNextNumber);
 router.post('/', ctrl.create);
 router.get('/:id', ctrl.getById);
 router.put('/:id', ctrl.update);

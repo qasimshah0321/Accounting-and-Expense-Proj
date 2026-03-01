@@ -292,6 +292,9 @@ export const deleteEstimate = (id) =>
   }).then(handle)
 
 // ─── Delivery Notes ──────────────────────────────────────────────────────────
+export const getNextDeliveryNoteNumber = () =>
+  fetch(`${API_BASE}/delivery-notes/next-number`, { headers: buildHeaders() }).then(handle)
+
 export const getDeliveryNotes = () =>
   fetch(`${API_BASE}/delivery-notes?limit=200`, { headers: buildHeaders() }).then(handle)
 

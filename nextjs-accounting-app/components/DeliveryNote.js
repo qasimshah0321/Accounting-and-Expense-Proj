@@ -409,9 +409,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       <td>{formatDate(n.delivery_date)}</td>
                       <td>{formatDate(n.shipment_date)}</td>
                       <td>{n.ship_via_name || '-'}</td>
-                      <td>{n.total_ordered_qty ?? '-'}</td>
-                      <td>{n.total_shipped_qty ?? '-'}</td>
-                      <td>{n.total_backordered_qty ?? '-'}</td>
+                      <td>{n.total_ordered_qty != null ? parseInt(n.total_ordered_qty) : '-'}</td>
+                      <td>{n.total_shipped_qty != null ? parseInt(n.total_shipped_qty) : '-'}</td>
+                      <td>{n.total_backordered_qty != null ? parseInt(n.total_backordered_qty) : '-'}</td>
                       <td>
                         <span className={`${styles.statusBadge} ${getStatusClass(n.status)}`}>
                           {n.status || 'draft'}

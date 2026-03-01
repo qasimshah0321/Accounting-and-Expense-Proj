@@ -11,6 +11,7 @@ const lineItemSchema = z.object({
 });
 
 export const createDeliveryNoteSchema = z.object({
+  delivery_note_no: z.string().optional(),
   customer_id: z.string().uuid(),
   sales_order_id: z.string().uuid().optional().nullable(),
   po_number: z.string().optional(),

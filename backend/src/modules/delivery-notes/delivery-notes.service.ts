@@ -67,7 +67,7 @@ export const createDeliveryNote = async (companyId: string, userId: string, user
       if (svRes.rows.length) shipViaName = svRes.rows[0].name;
     }
 
-    const dnNo = await generateDocumentNumber(companyId, 'delivery_note', client);
+    const dnNo = data.delivery_note_no || await generateDocumentNumber(companyId, 'delivery_note', client);
     const totalOrderedQty = data.line_items.reduce((s: number, li: any) => s + li.ordered_qty, 0);
     const totalShippedQty = data.line_items.reduce((s: number, li: any) => s + li.shipped_qty, 0);
 

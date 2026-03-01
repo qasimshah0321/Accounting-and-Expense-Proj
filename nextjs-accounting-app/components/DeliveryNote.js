@@ -281,6 +281,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     if (!deliveryDate) { setError('Delivery date is required'); return }
     setSaving(true)
     const payload = {
+      ...(deliveryNoteNo && !editingNote ? { delivery_note_no: deliveryNoteNo } : {}),
       customer_id: selectedCustomerId,
       delivery_date: deliveryDate,
       due_date: dueDate || undefined,
@@ -539,7 +540,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>DN No</label>
-                        <input type="text" className={styles.formControlStandard} value={deliveryNoteNo} placeholder="Auto-generated" readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
+                        <input type="text" className={styles.formControlStandard} value={deliveryNoteNo} placeholder="e.g. DN-001" onChange={(e) => setDeliveryNoteNo(e.target.value)} readOnly={!!editingNote} style={editingNote ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

@@ -40,7 +40,7 @@ export const createBill = async (companyId: string, userId: string, data: any) =
 
     const billNo = await generateDocumentNumber(companyId, 'bill', client);
     const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate, 0);
-    const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
+    const taxAmount = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate * (li.tax_rate || 0) / 100, 0);
     const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);
 
     const { rows: [bill] } = await client.query(
@@ -69,7 +69,7 @@ export const updateBill = async (companyId: string, billId: string, userId: stri
     if (data.line_items) {
       await client.query('DELETE FROM bill_line_items WHERE bill_id=$1', [billId]);
       const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate, 0);
-      const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
+      const taxAmount = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate * (li.tax_rate || 0) / 100, 0);
       const grandTotal = subtotal + taxAmount + (data.shipping_charges || bill.shipping_charges || 0) - (data.discount_amount || bill.discount_amount || 0);
       await client.query('UPDATE bills SET subtotal=$1,tax_amount=$2,grand_total=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [subtotal, taxAmount, grandTotal, userId, billId]);
       for (let i = 0; i < data.line_items.length; i++) {

@@ -264,6 +264,11 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
 
   const handleSave = async () => {
     setError('')
+    if (typeof window !== 'undefined' && !localStorage.getItem('auth_token')) {
+      setError('Session expired. Please log in again.')
+      setTimeout(() => window.location.reload(), 1200)
+      return
+    }
     if (!selectedVendorId) { setError('Please select a vendor'); return }
     const validItems = lineItems.filter(item => item.description.trim())
     if (validItems.length === 0) { setError('Add at least one line item with a description'); return }

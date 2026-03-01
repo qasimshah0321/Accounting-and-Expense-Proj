@@ -1,4 +1,4 @@
--- Recalculate tax_amount and grand_total for bills
+-- Recalculate tax_amount and total_amount for bills
 -- Fixes records where tax_amount was stored as (qty * rate * tax_rate) instead of (qty * rate * tax_rate / 100)
 
 -- Fix bill line items tax_amount
@@ -10,7 +10,7 @@ UPDATE bills b
 SET
   subtotal = sub.correct_subtotal,
   tax_amount = sub.correct_tax,
-  grand_total = GREATEST(0, sub.correct_subtotal + sub.correct_tax + COALESCE(b.shipping_charges, 0) - COALESCE(b.discount_amount, 0))
+  total_amount = GREATEST(0, sub.correct_subtotal + sub.correct_tax - COALESCE(b.discount_amount, 0))
 FROM (
   SELECT
     bill_id,

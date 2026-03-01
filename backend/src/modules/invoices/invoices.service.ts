@@ -58,7 +58,7 @@ export const createInvoice = async (companyId: string, userId: string, _userName
 
     const invNo = data.invoice_no || await generateDocumentNumber(companyId, 'invoice', client);
     const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate - (li.discount_per_item || 0), 0);
-    const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
+    const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.quantity * li.rate - (li.discount_per_item || 0)) * (li.tax_rate || 0) / 100, 0);
     const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);
 
     const { rows: [inv] } = await client.query(
@@ -88,7 +88,7 @@ export const updateInvoice = async (companyId: string, invoiceId: string, userId
     if (data.line_items) {
       await client.query('DELETE FROM invoice_line_items WHERE invoice_id=$1', [invoiceId]);
       const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate - (li.discount_per_item || 0), 0);
-      const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
+      const taxAmount = data.line_items.reduce((s: number, li: any) => s + (li.quantity * li.rate - (li.discount_per_item || 0)) * (li.tax_rate || 0) / 100, 0);
       const grandTotal = subtotal + taxAmount + (data.shipping_charges || inv.shipping_charges || 0) - (data.discount_amount || inv.discount_amount || 0);
       await client.query('UPDATE invoices SET subtotal=$1,tax_amount=$2,grand_total=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [subtotal, taxAmount, grandTotal, userId, invoiceId]);
       for (let i = 0; i < data.line_items.length; i++) {

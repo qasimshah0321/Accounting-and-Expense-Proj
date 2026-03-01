@@ -15,7 +15,7 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
 
 const calculateTotals = (lineItems: any[], discountAmount = 0) => {
   const subtotal = lineItems.reduce((s, li) => s + li.ordered_qty * li.rate, 0);
-  const taxAmount = lineItems.reduce((s, li) => s + (li.tax_amount || 0), 0);
+  const taxAmount = lineItems.reduce((s, li) => s + li.ordered_qty * li.rate * (li.tax_rate || 0) / 100, 0);
   const grandTotal = subtotal + taxAmount - discountAmount;
   return { subtotal, tax_amount: taxAmount, grand_total: Math.max(0, grandTotal) };
 };

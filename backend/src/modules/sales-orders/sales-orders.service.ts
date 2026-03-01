@@ -15,7 +15,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 const calcTotals = (items: any[], discountAmount = 0) => {
   const subtotal = items.reduce((s: number, li: any) => s + li.ordered_qty * li.rate, 0);
-  const taxAmount = items.reduce((s: number, li: any) => s + (li.tax_amount || 0), 0);
+  const taxAmount = items.reduce((s: number, li: any) => s + li.ordered_qty * li.rate * (li.tax_rate || 0) / 100, 0);
   const grandTotal = Math.max(0, subtotal + taxAmount - discountAmount);
   const totalOrderedQty = items.reduce((s: number, li: any) => s + li.ordered_qty, 0);
   return { subtotal, tax_amount: taxAmount, grand_total: grandTotal, total_ordered_qty: totalOrderedQty };
@@ -208,7 +208,7 @@ export const convertToInvoice = async (companyId: string, orderId: string, userI
     const invNo = await generateDocumentNumber(companyId, 'invoice', client);
 
     const subtotal = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty) * parseFloat(li.rate), 0);
-    const taxAmount = items.reduce((s: number, li: any) => s + parseFloat(li.tax_amount || 0), 0);
+    const taxAmount = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty) * parseFloat(li.rate) * parseFloat(li.tax_rate || 0) / 100, 0);
     const grandTotal = subtotal + taxAmount - parseFloat(so.discount_amount || 0);
 
     const { rows: [inv] } = await client.query(

@@ -15,6 +15,12 @@ import VendorCenter from '@/components/VendorCenter'
 import ProductCenter from '@/components/ProductCenter'
 import TaxConfiguration from '@/components/TaxConfiguration'
 import ShipViaConfiguration from '@/components/ShipViaConfiguration'
+import BillCenter from '@/components/BillCenter'
+import ExpenseCenter from '@/components/ExpenseCenter'
+import CustomerPayments from '@/components/CustomerPayments'
+import VendorPayments from '@/components/VendorPayments'
+import ReportsDashboard from '@/components/ReportsDashboard'
+import InventoryCenter from '@/components/InventoryCenter'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
@@ -32,16 +38,34 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+
+  // Sales
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
   const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
-  const [isPurchaseOrderOpen, setIsPurchaseOrderOpen] = useState(false)
   const [isEstimateOpen, setIsEstimateOpen] = useState(false)
   const [isDeliveryNoteOpen, setIsDeliveryNoteOpen] = useState(false)
+
+  // Purchases
+  const [isPurchaseOrderOpen, setIsPurchaseOrderOpen] = useState(false)
+  const [isBillCenterOpen, setIsBillCenterOpen] = useState(false)
+  const [isExpenseCenterOpen, setIsExpenseCenterOpen] = useState(false)
+
+  // Payments
+  const [isCustomerPaymentsOpen, setIsCustomerPaymentsOpen] = useState(false)
+  const [isVendorPaymentsOpen, setIsVendorPaymentsOpen] = useState(false)
+
+  // Centers
   const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
   const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
   const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
+  const [isInventoryCenterOpen, setIsInventoryCenterOpen] = useState(false)
+
+  // Settings
   const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
   const [isShipViaConfigOpen, setIsShipViaConfigOpen] = useState(false)
+
+  // Reports
+  const [isReportsDashboardOpen, setIsReportsDashboardOpen] = useState(false)
 
   // Check for existing auth token on mount
   useEffect(() => {
@@ -85,14 +109,47 @@ export default function Home() {
   const handleMenuClick = (menuName) => {
     setActiveMenu(menuName)
 
+    // Sales
     if (menuName === 'Invoices' || menuName === 'Invoice') setIsInvoiceOpen(true)
     if (menuName === 'Sales Order' || menuName === 'Sale Order') setIsSalesOrderOpen(true)
-    if (menuName === 'Purchase Order' || menuName === 'Purchase Orders') setIsPurchaseOrderOpen(true)
     if (menuName === 'Estimate' || menuName === 'Estimates/Quotations') setIsEstimateOpen(true)
     if (menuName === 'Delivery Note' || menuName === 'Delivery Notes') setIsDeliveryNoteOpen(true)
+    if (menuName === 'Customer Payments') setIsCustomerPaymentsOpen(true)
+
+    // Purchases
+    if (menuName === 'Purchase Order' || menuName === 'Purchase Orders') setIsPurchaseOrderOpen(true)
+    if (menuName === 'Bills') setIsBillCenterOpen(true)
+    if (menuName === 'Expenses') setIsExpenseCenterOpen(true)
+    if (menuName === 'Bill Payments') setIsVendorPaymentsOpen(true)
+
+    // Payments
+    if (menuName === 'Receive Payment') setIsCustomerPaymentsOpen(true)
+    if (menuName === 'Make Payment') setIsVendorPaymentsOpen(true)
+
+    // Centers
     if (menuName === 'Customer Center') setIsCustomerCenterOpen(true)
     if (menuName === 'Vendor Center') setIsVendorCenterOpen(true)
     if (menuName === 'Product Center') setIsProductCenterOpen(true)
+
+    // Inventory
+    if (
+      menuName === 'Stock Valuation' ||
+      menuName === 'Stock Locations' ||
+      menuName === 'Stock Mobility' ||
+      menuName === 'Reorder Planning' ||
+      menuName === 'Inventory Analytics'
+    ) setIsInventoryCenterOpen(true)
+
+    // Reports
+    if (
+      menuName === 'Financial Statements' ||
+      menuName === 'Revenue & Sales Analysis' ||
+      menuName === 'Cost & Expense Analytics' ||
+      menuName === 'Receivables & Payables' ||
+      menuName === 'Planning & Performance Analysis'
+    ) setIsReportsDashboardOpen(true)
+
+    // Settings
     if (menuName === 'Tax') setIsTaxConfigOpen(true)
     if (menuName === 'Ship Via') setIsShipViaConfigOpen(true)
 
@@ -124,34 +181,25 @@ export default function Home() {
         onMenuClick={handleMenuClick}
       />
 
+      {/* Sales */}
       <Invoice
         isOpen={isInvoiceOpen}
         onClose={() => setIsInvoiceOpen(false)}
         taxes={taxes}
         onTaxUpdate={setTaxes}
       />
-
       <SalesOrder
         isOpen={isSalesOrderOpen}
         onClose={() => setIsSalesOrderOpen(false)}
         taxes={taxes}
         onTaxUpdate={setTaxes}
       />
-
-      <PurchaseOrder
-        isOpen={isPurchaseOrderOpen}
-        onClose={() => setIsPurchaseOrderOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-
       <Estimate
         isOpen={isEstimateOpen}
         onClose={() => setIsEstimateOpen(false)}
         taxes={taxes}
         onTaxUpdate={setTaxes}
       />
-
       <DeliveryNote
         isOpen={isDeliveryNoteOpen}
         onClose={() => setIsDeliveryNoteOpen(false)}
@@ -159,22 +207,57 @@ export default function Home() {
         onShipViaUpdate={setShipVias}
       />
 
+      {/* Purchases */}
+      <PurchaseOrder
+        isOpen={isPurchaseOrderOpen}
+        onClose={() => setIsPurchaseOrderOpen(false)}
+        taxes={taxes}
+        onTaxUpdate={setTaxes}
+      />
+      <BillCenter
+        isOpen={isBillCenterOpen}
+        onClose={() => setIsBillCenterOpen(false)}
+        taxes={taxes}
+        onTaxUpdate={setTaxes}
+      />
+      <ExpenseCenter
+        isOpen={isExpenseCenterOpen}
+        onClose={() => setIsExpenseCenterOpen(false)}
+        taxes={taxes}
+      />
+
+      {/* Payments */}
+      <CustomerPayments
+        isOpen={isCustomerPaymentsOpen}
+        onClose={() => setIsCustomerPaymentsOpen(false)}
+      />
+      <VendorPayments
+        isOpen={isVendorPaymentsOpen}
+        onClose={() => setIsVendorPaymentsOpen(false)}
+      />
+
+      {/* Centers */}
       <CustomerCenter isOpen={isCustomerCenterOpen} onClose={() => setIsCustomerCenterOpen(false)} />
-
       <VendorCenter isOpen={isVendorCenterOpen} onClose={() => setIsVendorCenterOpen(false)} />
-
       <ProductCenter isOpen={isProductCenterOpen} onClose={() => setIsProductCenterOpen(false)} />
+      <InventoryCenter isOpen={isInventoryCenterOpen} onClose={() => setIsInventoryCenterOpen(false)} />
 
+      {/* Settings */}
       <TaxConfiguration
         isOpen={isTaxConfigOpen}
         onClose={() => setIsTaxConfigOpen(false)}
         onTaxesLoaded={setTaxes}
       />
-
       <ShipViaConfiguration
         isOpen={isShipViaConfigOpen}
         onClose={() => setIsShipViaConfigOpen(false)}
         onShipViasLoaded={setShipVias}
+      />
+
+      {/* Reports */}
+      <ReportsDashboard
+        isOpen={isReportsDashboardOpen}
+        onClose={() => setIsReportsDashboardOpen(false)}
       />
 
       <div className={styles.mainContainer}>

@@ -351,6 +351,202 @@ export const deleteDeliveryNote = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+// ─── Bills ──────────────────────────────────────────────────────────────────
+export const getBills = () =>
+  fetch(`${API_BASE}/bills?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getBill = (id) =>
+  fetch(`${API_BASE}/bills/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const getNextBillNumber = () =>
+  fetch(`${API_BASE}/bills/next-number`, { headers: buildHeaders() }).then(handle)
+
+export const createBill = (data) =>
+  fetch(`${API_BASE}/bills`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateBill = (id, data) =>
+  fetch(`${API_BASE}/bills/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteBill = (id) =>
+  fetch(`${API_BASE}/bills/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const updateBillStatus = (id, status) =>
+  fetch(`${API_BASE}/bills/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status }),
+  }).then(handle)
+
+export const recordBillPayment = (id, data) =>
+  fetch(`${API_BASE}/bills/${id}/record-payment`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const getOverdueBills = () =>
+  fetch(`${API_BASE}/bills/overdue`, { headers: buildHeaders() }).then(handle)
+
+// ─── Expenses ───────────────────────────────────────────────────────────────
+export const getExpenses = () =>
+  fetch(`${API_BASE}/expenses?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getExpense = (id) =>
+  fetch(`${API_BASE}/expenses/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createExpense = (data) =>
+  fetch(`${API_BASE}/expenses`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateExpense = (id, data) =>
+  fetch(`${API_BASE}/expenses/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteExpense = (id) =>
+  fetch(`${API_BASE}/expenses/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const approveExpense = (id) =>
+  fetch(`${API_BASE}/expenses/${id}/approve`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const markExpensePaid = (id) =>
+  fetch(`${API_BASE}/expenses/${id}/mark-paid`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+  }).then(handle)
+
+// ─── Customer Payments ──────────────────────────────────────────────────────
+export const getCustomerPayments = () =>
+  fetch(`${API_BASE}/customer-payments?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getCustomerPayment = (id) =>
+  fetch(`${API_BASE}/customer-payments/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createCustomerPayment = (data) =>
+  fetch(`${API_BASE}/customer-payments`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteCustomerPayment = (id) =>
+  fetch(`${API_BASE}/customer-payments/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+// ─── Vendor Payments ────────────────────────────────────────────────────────
+export const getVendorPayments = () =>
+  fetch(`${API_BASE}/vendor-payments?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getVendorPayment = (id) =>
+  fetch(`${API_BASE}/vendor-payments/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createVendorPayment = (data) =>
+  fetch(`${API_BASE}/vendor-payments`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteVendorPayment = (id) =>
+  fetch(`${API_BASE}/vendor-payments/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+// ─── Reports ────────────────────────────────────────────────────────────────
+export const getProfitLossReport = (startDate, endDate) =>
+  fetch(`${API_BASE}/reports/profit-loss?start_date=${startDate}&end_date=${endDate}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getSalesSummaryReport = (startDate, endDate) =>
+  fetch(`${API_BASE}/reports/sales-summary?start_date=${startDate}&end_date=${endDate}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getExpenseSummaryReport = (startDate, endDate) =>
+  fetch(`${API_BASE}/reports/expense-summary?start_date=${startDate}&end_date=${endDate}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getReceivablesAgingReport = () =>
+  fetch(`${API_BASE}/reports/receivables-aging`, { headers: buildHeaders() }).then(handle)
+
+export const getPayablesAgingReport = () =>
+  fetch(`${API_BASE}/reports/payables-aging`, { headers: buildHeaders() }).then(handle)
+
+// ─── Inventory ──────────────────────────────────────────────────────────────
+export const getLowStock = () =>
+  fetch(`${API_BASE}/inventory/low-stock`, { headers: buildHeaders() }).then(handle)
+
+export const getStockByLocation = () =>
+  fetch(`${API_BASE}/inventory/stock-by-location`, { headers: buildHeaders() }).then(handle)
+
+export const adjustInventory = (data) =>
+  fetch(`${API_BASE}/inventory/adjust`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const getInventoryTransactions = () =>
+  fetch(`${API_BASE}/inventory/transactions?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getInventoryLocations = () =>
+  fetch(`${API_BASE}/inventory/locations`, { headers: buildHeaders() }).then(handle)
+
+export const createInventoryLocation = (data) =>
+  fetch(`${API_BASE}/inventory/locations`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+// ─── Outstanding Invoices/Bills for Payment Allocation ─────────────────────
+export const getOutstandingInvoices = (customerId) =>
+  fetch(`${API_BASE}/invoices?customer_id=${customerId}&payment_status=unpaid&limit=200`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getPartiallyPaidInvoices = (customerId) =>
+  fetch(`${API_BASE}/invoices?customer_id=${customerId}&payment_status=partially_paid&limit=200`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getOutstandingBills = (vendorId) =>
+  fetch(`${API_BASE}/bills?vendor_id=${vendorId}&payment_status=unpaid&limit=200`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getPartiallyPaidBills = (vendorId) =>
+  fetch(`${API_BASE}/bills?vendor_id=${vendorId}&payment_status=partial&limit=200`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }

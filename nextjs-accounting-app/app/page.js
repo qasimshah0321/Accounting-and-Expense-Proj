@@ -21,6 +21,10 @@ import CustomerPayments from '@/components/CustomerPayments'
 import VendorPayments from '@/components/VendorPayments'
 import ReportsDashboard from '@/components/ReportsDashboard'
 import InventoryCenter from '@/components/InventoryCenter'
+import ChartOfAccounts from '@/components/ChartOfAccounts'
+import JournalEntryCenter from '@/components/JournalEntryCenter'
+import GeneralLedger from '@/components/GeneralLedger'
+import TrialBalance from '@/components/TrialBalance'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
@@ -63,6 +67,12 @@ export default function Home() {
   // Settings
   const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
   const [isShipViaConfigOpen, setIsShipViaConfigOpen] = useState(false)
+
+  // Accounting / GL
+  const [isChartOfAccountsOpen, setIsChartOfAccountsOpen] = useState(false)
+  const [isJournalEntryCenterOpen, setIsJournalEntryCenterOpen] = useState(false)
+  const [isGeneralLedgerOpen, setIsGeneralLedgerOpen] = useState(false)
+  const [isTrialBalanceOpen, setIsTrialBalanceOpen] = useState(false)
 
   // Reports
   const [isReportsDashboardOpen, setIsReportsDashboardOpen] = useState(false)
@@ -148,6 +158,12 @@ export default function Home() {
       menuName === 'Receivables & Payables' ||
       menuName === 'Planning & Performance Analysis'
     ) setIsReportsDashboardOpen(true)
+
+    // Accounting / GL
+    if (menuName === 'Chart of Accounts' || menuName === 'Accounting Center') setIsChartOfAccountsOpen(true)
+    if (menuName === 'Journal Entries') setIsJournalEntryCenterOpen(true)
+    if (menuName === 'General Ledger') setIsGeneralLedgerOpen(true)
+    if (menuName === 'Trial Balance') setIsTrialBalanceOpen(true)
 
     // Settings
     if (menuName === 'Tax') setIsTaxConfigOpen(true)
@@ -253,6 +269,12 @@ export default function Home() {
         onClose={() => setIsShipViaConfigOpen(false)}
         onShipViasLoaded={setShipVias}
       />
+
+      {/* Accounting / GL */}
+      <ChartOfAccounts isOpen={isChartOfAccountsOpen} onClose={() => setIsChartOfAccountsOpen(false)} />
+      <JournalEntryCenter isOpen={isJournalEntryCenterOpen} onClose={() => setIsJournalEntryCenterOpen(false)} />
+      <GeneralLedger isOpen={isGeneralLedgerOpen} onClose={() => setIsGeneralLedgerOpen(false)} />
+      <TrialBalance isOpen={isTrialBalanceOpen} onClose={() => setIsTrialBalanceOpen(false)} />
 
       {/* Reports */}
       <ReportsDashboard

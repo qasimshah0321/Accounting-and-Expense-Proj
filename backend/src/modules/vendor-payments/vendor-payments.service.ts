@@ -3,6 +3,7 @@ import { withTransaction } from '../../config/database';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const listVendorPayments = async (companyId: string, filters: any) => {
   const conditions = ['vp.company_id=$1', 'vp.deleted_at IS NULL'];
@@ -71,6 +72,20 @@ export const createVendorPayment = async (companyId: string, userId: string, dat
         );
         payment.unallocated_amount = unallocated;
       }
+    }
+
+    // GL auto-post: DR Accounts Payable, CR Cash
+    try {
+      const apAccountId = await getSystemAccount(companyId, '2000', client);
+      const cashAccountId = await getSystemAccount(companyId, '1000', client);
+      if (apAccountId && cashAccountId) {
+        await createAutoJournalEntry(companyId, userId, 'System', 'vendor_payment', payment.id, paymentNo, data.payment_date, [
+          { account_id: apAccountId, debit: data.amount, credit: 0, description: 'Accounts Payable' },
+          { account_id: cashAccountId, debit: 0, credit: data.amount, description: 'Cash payment' },
+        ], `Vendor payment ${paymentNo}`, client);
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for vendor payment:', glErr);
     }
 
     return payment;

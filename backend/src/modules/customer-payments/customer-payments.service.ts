@@ -3,6 +3,7 @@ import { withTransaction } from '../../config/database';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const listCustomerPayments = async (companyId: string, filters: any) => {
   const conditions = ['cp.company_id=$1', 'cp.deleted_at IS NULL'];
@@ -70,6 +71,20 @@ export const createCustomerPayment = async (companyId: string, userId: string, d
         );
         payment.unallocated_amount = unallocated;
       }
+    }
+
+    // GL auto-post: DR Cash, CR Accounts Receivable
+    try {
+      const cashAccountId = await getSystemAccount(companyId, '1000', client);
+      const arAccountId = await getSystemAccount(companyId, '1100', client);
+      if (cashAccountId && arAccountId) {
+        await createAutoJournalEntry(companyId, userId, 'System', 'customer_payment', payment.id, paymentNo, data.payment_date, [
+          { account_id: cashAccountId, debit: data.amount, credit: 0, description: 'Cash received' },
+          { account_id: arAccountId, debit: 0, credit: data.amount, description: 'Accounts Receivable' },
+        ], `Customer payment ${paymentNo}`, client);
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for customer payment:', glErr);
     }
 
     return payment;

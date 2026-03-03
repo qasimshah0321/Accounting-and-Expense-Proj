@@ -3,6 +3,7 @@ import { NotFoundError, ValidationError, ConflictError } from '../../utils/error
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const peekNextInvoiceNumber = async (companyId: string): Promise<string> => {
   const { rows } = await pool.query(
@@ -116,6 +117,36 @@ export const updateStatus = async (companyId: string, invoiceId: string, userId:
     const inv = invRes.rows[0];
     await client.query('UPDATE invoices SET status=$1,updated_by=$2,updated_at=NOW() WHERE id=$3', [newStatus, userId, invoiceId]);
     await createStatusHistory({ company_id: companyId, document_type: 'invoice', document_id: invoiceId, document_no: inv.invoice_no, from_status: inv.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
+
+    // GL auto-post: when transitioning from draft to sent/approved
+    if (inv.status === 'draft' && (newStatus === 'sent' || newStatus === 'approved')) {
+      try {
+        const arAccountId = await getSystemAccount(companyId, '1100', client);
+        const revenueAccountId = await getSystemAccount(companyId, '4000', client);
+        const taxPayableAccountId = await getSystemAccount(companyId, '2200', client);
+        if (arAccountId && revenueAccountId) {
+          const grandTotal = parseFloat(inv.grand_total) || 0;
+          const subtotal = parseFloat(inv.subtotal) || 0;
+          const taxAmount = parseFloat(inv.tax_amount) || 0;
+          const lines: Array<{ account_id: string; debit: number; credit: number; description?: string }> = [
+            { account_id: arAccountId, debit: grandTotal, credit: 0, description: 'Accounts Receivable' },
+            { account_id: revenueAccountId, debit: 0, credit: subtotal, description: 'Sales Revenue' },
+          ];
+          if (taxAmount > 0 && taxPayableAccountId) {
+            lines.push({ account_id: taxPayableAccountId, debit: 0, credit: taxAmount, description: 'Sales Tax Payable' });
+          }
+          // Handle shipping + discount difference
+          const remainder = grandTotal - subtotal - taxAmount;
+          if (Math.abs(remainder) > 0.001) {
+            lines[1].credit = subtotal + remainder; // Adjust revenue to balance
+          }
+          await createAutoJournalEntry(companyId, userId, userName, 'invoice', invoiceId, inv.invoice_no, inv.invoice_date, lines, `Invoice ${inv.invoice_no} posted`, client);
+        }
+      } catch (glErr) {
+        console.error('GL auto-post failed for invoice status change:', glErr);
+      }
+    }
+
     return { ...inv, status: newStatus };
   });
 };
@@ -143,6 +174,20 @@ export const recordPayment = async (companyId: string, invoiceId: string, userId
 
     await client.query('UPDATE invoices SET amount_paid=$1,payment_status=$2,status=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [newAmountPaid, paymentStatus, newStatus, userId, invoiceId]);
     await createAuditLog({ company_id: companyId, entity_type: 'invoice', entity_id: invoiceId, action: 'payment', user_id: userId, user_name: userName, description: `Payment of ${data.amount} recorded` }, client);
+
+    // GL auto-post: DR Cash, CR Accounts Receivable
+    try {
+      const cashAccountId = await getSystemAccount(companyId, '1000', client);
+      const arAccountId = await getSystemAccount(companyId, '1100', client);
+      if (cashAccountId && arAccountId) {
+        await createAutoJournalEntry(companyId, userId, userName, 'payment', payment.id, payment.payment_no, data.payment_date, [
+          { account_id: cashAccountId, debit: data.amount, credit: 0, description: 'Cash received' },
+          { account_id: arAccountId, debit: 0, credit: data.amount, description: 'Accounts Receivable' },
+        ], `Payment ${payment.payment_no} for Invoice ${inv.invoice_no}`, client);
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for invoice payment:', glErr);
+    }
 
     return { payment, invoice_updated: { id: invoiceId, status: newStatus, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: Math.max(0, newAmountDue) } };
   });

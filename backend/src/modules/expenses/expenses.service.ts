@@ -3,6 +3,7 @@ import { NotFoundError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createStatusHistory } from '../../services/auditService';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const listExpenses = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
@@ -71,7 +72,24 @@ export const updateStatus = async (companyId: string, expenseId: string, userId:
 export const approveExpense = async (companyId: string, expenseId: string, userId: string, userName: string) => {
   const exp = await getExpenseById(companyId, expenseId);
   if (exp.status !== 'draft') throw new ConflictError('Only draft expenses can be approved');
-  return updateStatus(companyId, expenseId, userId, userName, 'approved');
+  const result = await updateStatus(companyId, expenseId, userId, userName, 'approved');
+
+  // GL auto-post: DR Other Expenses, CR Cash
+  try {
+    const expenseAccountId = await getSystemAccount(companyId, '5900');
+    const cashAccountId = await getSystemAccount(companyId, '1000');
+    if (expenseAccountId && cashAccountId) {
+      const totalAmount = parseFloat(exp.total_amount || exp.amount) || 0;
+      await createAutoJournalEntry(companyId, userId, userName, 'expense', expenseId, exp.expense_no, exp.expense_date, [
+        { account_id: expenseAccountId, debit: totalAmount, credit: 0, description: `Expense: ${exp.expense_category || ''}` },
+        { account_id: cashAccountId, debit: 0, credit: totalAmount, description: 'Cash payment' },
+      ], `Expense ${exp.expense_no} approved`);
+    }
+  } catch (glErr) {
+    console.error('GL auto-post failed for expense approval:', glErr);
+  }
+
+  return result;
 };
 
 export const markPaid = async (companyId: string, expenseId: string, userId: string, data: any) => {

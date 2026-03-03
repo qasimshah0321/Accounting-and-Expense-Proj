@@ -547,6 +547,75 @@ export const getPartiallyPaidBills = (vendorId) =>
     headers: buildHeaders(),
   }).then(handle)
 
+// ─── Accounting / GL ────────────────────────────────────────────────────────
+export const getAccounts = (type = '') =>
+  fetch(`${API_BASE}/accounting/accounts${type ? `?account_type=${type}` : ''}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const searchAccounts = (search) =>
+  fetch(`${API_BASE}/accounting/accounts?search=${encodeURIComponent(search)}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const createAccount = (data) =>
+  fetch(`${API_BASE}/accounting/accounts`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateAccount = (id, data) =>
+  fetch(`${API_BASE}/accounting/accounts/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteAccount = (id) =>
+  fetch(`${API_BASE}/accounting/accounts/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getNextJENumber = () =>
+  fetch(`${API_BASE}/accounting/journal-entries/next-number`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getJournalEntries = (params = '') =>
+  fetch(`${API_BASE}/accounting/journal-entries?limit=200${params ? `&${params}` : ''}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getJournalEntry = (id) =>
+  fetch(`${API_BASE}/accounting/journal-entries/${id}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const createJournalEntry = (data) =>
+  fetch(`${API_BASE}/accounting/journal-entries`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const reverseJournalEntry = (id) =>
+  fetch(`${API_BASE}/accounting/journal-entries/${id}/reverse`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getGeneralLedger = (accountId, startDate, endDate) =>
+  fetch(`${API_BASE}/accounting/general-ledger?account_id=${accountId}&start_date=${startDate}&end_date=${endDate}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getTrialBalance = (asOfDate) =>
+  fetch(`${API_BASE}/accounting/trial-balance${asOfDate ? `?as_of_date=${asOfDate}` : ''}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }

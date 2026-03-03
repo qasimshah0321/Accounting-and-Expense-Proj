@@ -3,6 +3,7 @@ import { NotFoundError, ValidationError, ConflictError } from '../../utils/error
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const listBills = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
@@ -97,6 +98,24 @@ export const updateStatus = async (companyId: string, billId: string, userId: st
     const bill = billRes.rows[0];
     await client.query('UPDATE bills SET status=$1,updated_by=$2,updated_at=NOW() WHERE id=$3', [newStatus, userId, billId]);
     await createStatusHistory({ company_id: companyId, document_type: 'bill', document_id: billId, document_no: bill.bill_no, from_status: bill.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
+
+    // GL auto-post: when transitioning from draft to received/approved
+    if (bill.status === 'draft' && (newStatus === 'received' || newStatus === 'approved' || newStatus === 'sent')) {
+      try {
+        const expenseAccountId = await getSystemAccount(companyId, '5900', client);
+        const apAccountId = await getSystemAccount(companyId, '2000', client);
+        if (expenseAccountId && apAccountId) {
+          const grandTotal = parseFloat(bill.grand_total) || 0;
+          await createAutoJournalEntry(companyId, userId, userName, 'bill', billId, bill.bill_no, bill.bill_date, [
+            { account_id: expenseAccountId, debit: grandTotal, credit: 0, description: 'Bill expense' },
+            { account_id: apAccountId, debit: 0, credit: grandTotal, description: 'Accounts Payable' },
+          ], `Bill ${bill.bill_no} posted`, client);
+        }
+      } catch (glErr) {
+        console.error('GL auto-post failed for bill status change:', glErr);
+      }
+    }
+
     return { ...bill, status: newStatus };
   });
 };
@@ -120,6 +139,20 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
     const newAmountDue = parseFloat(bill.grand_total) - newAmountPaid;
     const paymentStatus = newAmountDue <= 0.01 ? 'paid' : 'partially_paid';
     await client.query('UPDATE bills SET amount_paid=$1,payment_status=$2,status=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [newAmountPaid, paymentStatus, paymentStatus, userId, billId]);
+
+    // GL auto-post: DR Accounts Payable, CR Cash
+    try {
+      const apAccountId = await getSystemAccount(companyId, '2000', client);
+      const cashAccountId = await getSystemAccount(companyId, '1000', client);
+      if (apAccountId && cashAccountId) {
+        await createAutoJournalEntry(companyId, userId, userName, 'vendor_payment', payment.id, payment.payment_no, data.payment_date, [
+          { account_id: apAccountId, debit: data.amount, credit: 0, description: 'Accounts Payable' },
+          { account_id: cashAccountId, debit: 0, credit: data.amount, description: 'Cash payment' },
+        ], `Bill payment ${payment.payment_no} for Bill ${bill.bill_no}`, client);
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for bill payment:', glErr);
+    }
 
     return { payment, bill_updated: { id: billId, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: Math.max(0, newAmountDue) } };
   });

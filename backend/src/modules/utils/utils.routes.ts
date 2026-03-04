@@ -12,6 +12,8 @@ router.get('/health', ctrl.healthCheck as any);
 router.use(authenticate, tenantIsolation);
 router.get('/company', ctrl.getCompanyInfo);
 router.put('/company', ctrl.updateCompanyInfo);
+router.get('/company-profile', ctrl.getCompanyInfo);
+router.put('/company-profile', ctrl.updateCompanyInfo);
 router.get('/document-sequences', ctrl.getDocumentSequences);
 router.patch('/document-sequences/:document_type/reset', ctrl.resetDocumentSequence);
 

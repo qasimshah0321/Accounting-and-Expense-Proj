@@ -26,6 +26,8 @@ import ChartOfAccounts from '@/components/ChartOfAccounts'
 import JournalEntryCenter from '@/components/JournalEntryCenter'
 import GeneralLedger from '@/components/GeneralLedger'
 import TrialBalance from '@/components/TrialBalance'
+import RecurringCenter from '@/components/RecurringCenter'
+import CompanySettings from '@/components/CompanySettings'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
@@ -77,6 +79,12 @@ export default function Home() {
   const [isJournalEntryCenterOpen, setIsJournalEntryCenterOpen] = useState(false)
   const [isGeneralLedgerOpen, setIsGeneralLedgerOpen] = useState(false)
   const [isTrialBalanceOpen, setIsTrialBalanceOpen] = useState(false)
+
+  // Recurring
+  const [isRecurringCenterOpen, setIsRecurringCenterOpen] = useState(false)
+
+  // Company Settings
+  const [isCompanySettingsOpen, setIsCompanySettingsOpen] = useState(false)
 
   // Reports
   const [isReportsDashboardOpen, setIsReportsDashboardOpen] = useState(false)
@@ -174,6 +182,12 @@ export default function Home() {
     if (menuName === 'Journal Entries') setIsJournalEntryCenterOpen(true)
     if (menuName === 'General Ledger') setIsGeneralLedgerOpen(true)
     if (menuName === 'Trial Balance') setIsTrialBalanceOpen(true)
+
+    // Recurring
+    if (menuName === 'Recurring Documents' || menuName === 'Recurring') setIsRecurringCenterOpen(true)
+
+    // Company Settings
+    if (menuName === 'Company Settings' || menuName === 'Company') setIsCompanySettingsOpen(true)
 
     // Settings
     if (menuName === 'Tax') setIsTaxConfigOpen(true)
@@ -288,6 +302,12 @@ export default function Home() {
       <JournalEntryCenter isOpen={isJournalEntryCenterOpen} onClose={() => setIsJournalEntryCenterOpen(false)} />
       <GeneralLedger isOpen={isGeneralLedgerOpen} onClose={() => setIsGeneralLedgerOpen(false)} />
       <TrialBalance isOpen={isTrialBalanceOpen} onClose={() => setIsTrialBalanceOpen(false)} />
+
+      {/* Recurring */}
+      <RecurringCenter isOpen={isRecurringCenterOpen} onClose={() => setIsRecurringCenterOpen(false)} />
+
+      {/* Company Settings */}
+      <CompanySettings isOpen={isCompanySettingsOpen} onClose={() => setIsCompanySettingsOpen(false)} />
 
       {/* Reports */}
       <ReportsDashboard

@@ -707,6 +707,29 @@ export const completeBankReconciliation = (accountId, recId) =>
 export const getBankSummary = () =>
   fetch(`${API_BASE}/banking/bank-summary`, { headers: buildHeaders() }).then(handle)
 
+// ─── Recurring Documents ────────────────────────────────────────────────────
+export const getRecurringDocuments = () =>
+  fetch(`${API_BASE}/recurring`, { headers: buildHeaders() }).then(handle)
+
+export const createRecurringDocument = (data) =>
+  fetch(`${API_BASE}/recurring`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const updateRecurringDocument = (id, data) =>
+  fetch(`${API_BASE}/recurring/${id}`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const deleteRecurringDocument = (id) =>
+  fetch(`${API_BASE}/recurring/${id}`, { method: 'DELETE', headers: buildHeaders() }).then(handle)
+
+export const generateRecurringDocument = (id) =>
+  fetch(`${API_BASE}/recurring/${id}/generate`, { method: 'POST', headers: buildHeaders() }).then(handle)
+
+// ─── Company Settings ───────────────────────────────────────────────────────
+export const getCompanyProfile = () =>
+  fetch(`${API_BASE}/company-profile`, { headers: buildHeaders() }).then(handle)
+
+export const updateCompanyProfile = (data) =>
+  fetch(`${API_BASE}/company-profile`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }

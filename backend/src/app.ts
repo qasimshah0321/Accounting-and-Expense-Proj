@@ -26,6 +26,7 @@ import inventoryRoutes from './modules/inventory/inventory.routes';
 import reportRoutes from './modules/reports/reports.routes';
 import accountingRoutes from './modules/accounting/accounting.routes';
 import bankingRoutes from './modules/banking/banking.routes';
+import recurringRoutes from './modules/recurring/recurring.routes';
 import utilsRoutes from './modules/utils/utils.routes';
 
 const app = express();
@@ -72,6 +73,7 @@ app.use(`${API_PREFIX}/inventory`, inventoryRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/accounting`, accountingRoutes);
 app.use(`${API_PREFIX}/banking`, bankingRoutes);
+app.use(`${API_PREFIX}/recurring`, recurringRoutes);
 app.use(`${API_PREFIX}`, utilsRoutes);
 
 // Error handling

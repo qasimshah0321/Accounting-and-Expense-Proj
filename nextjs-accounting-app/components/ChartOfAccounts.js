@@ -129,15 +129,15 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.popup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1100, width: '95%' }}>
+    <div className={styles.invoicePopupOverlay} onClick={onClose}>
+      <div className={styles.invoicePopup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1100, width: '95%' }}>
         <div className={styles.popupHeader}>
           <h2>Chart of Accounts</h2>
           <button className={styles.closeBtn} onClick={onClose}><i className="fas fa-times" /></button>
         </div>
 
         {!showForm ? (
-          <div className={styles.popupBody}>
+          <div className={styles.popupContent}>
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
                 type="text" placeholder="Search accounts..."
@@ -151,7 +151,7 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
                 <option value="">All Types</option>
                 {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
               </select>
-              <button onClick={handleNewAccount} className={styles.saveBtn} style={{ padding: '8px 16px' }}>
+              <button onClick={handleNewAccount} className={styles.btnPrimary} style={{ padding: '8px 16px' }}>
                 <i className="fas fa-plus" style={{ marginRight: 6 }} /> New Account
               </button>
             </div>
@@ -227,7 +227,7 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
             )}
           </div>
         ) : (
-          <div className={styles.popupBody}>
+          <div className={styles.popupContent}>
             <h3 style={{ marginBottom: 16 }}>{editingAccount ? 'Edit Account' : 'New Account'}</h3>
             {error && <div style={{ color: '#dc2626', marginBottom: 10, padding: '8px 12px', background: '#fef2f2', borderRadius: 6 }}>{error}</div>}
 
@@ -319,7 +319,7 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
               <button onClick={() => { setShowForm(false); resetForm() }} style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving} className={styles.saveBtn} style={{ padding: '8px 20px' }}>
+              <button onClick={handleSave} disabled={saving} className={styles.btnPrimary} style={{ padding: '8px 20px' }}>
                 {saving ? <><i className="fas fa-spinner fa-spin" /> Saving...</> : (editingAccount ? 'Update Account' : 'Create Account')}
               </button>
             </div>

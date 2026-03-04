@@ -67,14 +67,14 @@ export default function GeneralLedger({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.popup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, width: '95%' }}>
+    <div className={styles.invoicePopupOverlay} onClick={onClose}>
+      <div className={styles.invoicePopup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1000, width: '95%' }}>
         <div className={styles.popupHeader}>
           <h2>General Ledger</h2>
           <button className={styles.closeBtn} onClick={onClose}><i className="fas fa-times" /></button>
         </div>
 
-        <div className={styles.popupBody}>
+        <div className={styles.popupContent}>
           {/* Filters */}
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div style={{ flex: 2, minWidth: 250 }}>
@@ -97,7 +97,7 @@ export default function GeneralLedger({ isOpen, onClose }) {
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }} />
             </div>
-            <button onClick={handleRunReport} disabled={loading} className={styles.saveBtn} style={{ padding: '8px 20px', height: 40 }}>
+            <button onClick={handleRunReport} disabled={loading} className={styles.btnPrimary} style={{ padding: '8px 20px', height: 40 }}>
               {loading ? <><i className="fas fa-spinner fa-spin" /> Running...</> : 'Run Report'}
             </button>
           </div>

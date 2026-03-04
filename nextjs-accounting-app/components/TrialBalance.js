@@ -43,21 +43,21 @@ export default function TrialBalance({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.popup} onClick={e => e.stopPropagation()} style={{ maxWidth: 800, width: '95%' }}>
+    <div className={styles.invoicePopupOverlay} onClick={onClose}>
+      <div className={styles.invoicePopup} onClick={e => e.stopPropagation()} style={{ maxWidth: 800, width: '95%' }}>
         <div className={styles.popupHeader}>
           <h2>Trial Balance</h2>
           <button className={styles.closeBtn} onClick={onClose}><i className="fas fa-times" /></button>
         </div>
 
-        <div className={styles.popupBody}>
+        <div className={styles.popupContent}>
           <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-end' }}>
             <div style={{ minWidth: 180 }}>
               <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>As of Date</label>
               <input type="date" value={asOfDate} onChange={e => setAsOfDate(e.target.value)}
                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }} />
             </div>
-            <button onClick={handleGenerate} disabled={loading} className={styles.saveBtn} style={{ padding: '8px 20px', height: 40 }}>
+            <button onClick={handleGenerate} disabled={loading} className={styles.btnPrimary} style={{ padding: '8px 20px', height: 40 }}>
               {loading ? <><i className="fas fa-spinner fa-spin" /> Generating...</> : 'Generate'}
             </button>
           </div>

@@ -192,8 +192,8 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.popup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1100, width: '95%' }}>
+    <div className={styles.invoicePopupOverlay} onClick={onClose}>
+      <div className={styles.invoicePopup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1100, width: '95%' }}>
         <div className={styles.popupHeader}>
           <h2>{viewingEntry ? `Journal Entry: ${viewingEntry.entry_no}` : (showForm ? 'New Journal Entry' : 'Journal Entries')}</h2>
           <button className={styles.closeBtn} onClick={() => { if (showForm) { setShowForm(false); resetForm() } else { onClose() } }}>
@@ -202,7 +202,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
         </div>
 
         {!showForm ? (
-          <div className={styles.popupBody}>
+          <div className={styles.popupContent}>
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
               <input
                 type="text" placeholder="Search by JE # or description..."
@@ -210,7 +210,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
                 onKeyDown={e => e.key === 'Enter' && loadEntries()}
                 style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
               />
-              <button onClick={handleNewEntry} className={styles.saveBtn} style={{ padding: '8px 16px' }}>
+              <button onClick={handleNewEntry} className={styles.btnPrimary} style={{ padding: '8px 16px' }}>
                 <i className="fas fa-plus" style={{ marginRight: 6 }} /> New Entry
               </button>
             </div>
@@ -259,7 +259,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
             )}
           </div>
         ) : viewingEntry ? (
-          <div className={styles.popupBody}>
+          <div className={styles.popupContent}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Entry No</span><div style={{ fontWeight: 600 }}>{viewingEntry.entry_no}</div></div>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Date</span><div style={{ fontWeight: 600 }}>{formatDate(viewingEntry.entry_date)}</div></div>
@@ -314,7 +314,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
             </div>
           </div>
         ) : (
-          <div className={styles.popupBody}>
+          <div className={styles.popupContent}>
             {error && <div style={{ color: '#dc2626', marginBottom: 10, padding: '8px 12px', background: '#fef2f2', borderRadius: 6 }}>{error}</div>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -434,7 +434,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
               <button onClick={() => { setShowForm(false); resetForm() }} style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving || !isBalanced} className={styles.saveBtn} style={{ padding: '8px 20px', opacity: (!isBalanced ? 0.5 : 1) }}>
+              <button onClick={handleSave} disabled={saving || !isBalanced} className={styles.btnPrimary} style={{ padding: '8px 20px', opacity: (!isBalanced ? 0.5 : 1) }}>
                 {saving ? <><i className="fas fa-spinner fa-spin" /> Posting...</> : 'Post Journal Entry'}
               </button>
             </div>

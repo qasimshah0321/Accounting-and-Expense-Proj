@@ -507,14 +507,21 @@ export const getStockByLocation = () =>
   fetch(`${API_BASE}/inventory/stock-by-location`, { headers: buildHeaders() }).then(handle)
 
 export const adjustInventory = (data) =>
-  fetch(`${API_BASE}/inventory/adjust`, {
+  fetch(`${API_BASE}/inventory/transactions/adjust`, {
     method: 'POST',
     headers: buildHeaders(),
     body: JSON.stringify(data),
   }).then(handle)
 
-export const getInventoryTransactions = () =>
-  fetch(`${API_BASE}/inventory/transactions?limit=200`, { headers: buildHeaders() }).then(handle)
+export const transferInventoryStock = (data) =>
+  fetch(`${API_BASE}/inventory/transactions/transfer`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const getInventoryTransactions = (params = '') =>
+  fetch(`${API_BASE}/inventory/transactions?limit=200${params ? `&${params}` : ''}`, { headers: buildHeaders() }).then(handle)
 
 export const getInventoryLocations = () =>
   fetch(`${API_BASE}/inventory/locations`, { headers: buildHeaders() }).then(handle)
@@ -524,6 +531,19 @@ export const createInventoryLocation = (data) =>
     method: 'POST',
     headers: buildHeaders(),
     body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateInventoryLocation = (id, data) =>
+  fetch(`${API_BASE}/inventory/locations/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteInventoryLocation = (id) =>
+  fetch(`${API_BASE}/inventory/locations/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
   }).then(handle)
 
 // ─── Outstanding Invoices/Bills for Payment Allocation ─────────────────────

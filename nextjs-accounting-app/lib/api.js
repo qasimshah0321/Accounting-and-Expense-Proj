@@ -616,6 +616,71 @@ export const getTrialBalance = (asOfDate) =>
     headers: buildHeaders(),
   }).then(handle)
 
+// ─── Banking ─────────────────────────────────────────────────────────────────
+export const getBankAccounts = () =>
+  fetch(`${API_BASE}/banking/bank-accounts`, { headers: buildHeaders() }).then(handle)
+
+export const getBankAccount = (id) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createBankAccount = (data) =>
+  fetch(`${API_BASE}/banking/bank-accounts`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateBankAccount = (id, data) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${id}`, {
+    method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteBankAccount = (id) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${id}`, {
+    method: 'DELETE', headers: buildHeaders(),
+  }).then(handle)
+
+export const getBankTransactions = (accountId, params = '') =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/transactions${params ? `?${params}` : ''}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const createBankTransaction = (accountId, data) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/transactions`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateBankTransaction = (accountId, txId, data) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/transactions/${txId}`, {
+    method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteBankTransaction = (accountId, txId) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/transactions/${txId}`, {
+    method: 'DELETE', headers: buildHeaders(),
+  }).then(handle)
+
+export const getBankReconciliation = (accountId) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/reconciliation`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const startBankReconciliation = (accountId, data) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/reconciliation/start`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify(data),
+  }).then(handle)
+
+export const markTransactionReconciled = (accountId, recId, txId, reconcile = true) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/reconciliation/${recId}/mark-reconciled/${txId}`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify({ reconcile }),
+  }).then(handle)
+
+export const completeBankReconciliation = (accountId, recId) =>
+  fetch(`${API_BASE}/banking/bank-accounts/${accountId}/reconciliation/${recId}/complete`, {
+    method: 'POST', headers: buildHeaders(),
+  }).then(handle)
+
+export const getBankSummary = () =>
+  fetch(`${API_BASE}/banking/bank-summary`, { headers: buildHeaders() }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }

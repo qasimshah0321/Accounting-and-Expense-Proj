@@ -25,6 +25,7 @@ import vendorPaymentRoutes from './modules/vendor-payments/vendor-payments.route
 import inventoryRoutes from './modules/inventory/inventory.routes';
 import reportRoutes from './modules/reports/reports.routes';
 import accountingRoutes from './modules/accounting/accounting.routes';
+import bankingRoutes from './modules/banking/banking.routes';
 import utilsRoutes from './modules/utils/utils.routes';
 
 const app = express();
@@ -70,6 +71,7 @@ app.use(`${API_PREFIX}/vendor-payments`, vendorPaymentRoutes);
 app.use(`${API_PREFIX}/inventory`, inventoryRoutes);
 app.use(`${API_PREFIX}/reports`, reportRoutes);
 app.use(`${API_PREFIX}/accounting`, accountingRoutes);
+app.use(`${API_PREFIX}/banking`, bankingRoutes);
 app.use(`${API_PREFIX}`, utilsRoutes);
 
 // Error handling

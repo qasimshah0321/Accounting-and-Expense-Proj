@@ -21,6 +21,7 @@ import CustomerPayments from '@/components/CustomerPayments'
 import VendorPayments from '@/components/VendorPayments'
 import ReportsDashboard from '@/components/ReportsDashboard'
 import InventoryCenter from '@/components/InventoryCenter'
+import BankingCenter from '@/components/BankingCenter'
 import ChartOfAccounts from '@/components/ChartOfAccounts'
 import JournalEntryCenter from '@/components/JournalEntryCenter'
 import GeneralLedger from '@/components/GeneralLedger'
@@ -67,6 +68,9 @@ export default function Home() {
   // Settings
   const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
   const [isShipViaConfigOpen, setIsShipViaConfigOpen] = useState(false)
+
+  // Banking
+  const [isBankingCenterOpen, setIsBankingCenterOpen] = useState(false)
 
   // Accounting / GL
   const [isChartOfAccountsOpen, setIsChartOfAccountsOpen] = useState(false)
@@ -158,6 +162,12 @@ export default function Home() {
       menuName === 'Receivables & Payables' ||
       menuName === 'Planning & Performance Analysis'
     ) setIsReportsDashboardOpen(true)
+
+    // Banking
+    if (
+      menuName === 'Banking Center' || menuName === 'Bank Accounts' || menuName === 'Bank Transactions' ||
+      menuName === 'Bank Reconciliation' || menuName === 'Transfers' || menuName === 'Cheque Management'
+    ) setIsBankingCenterOpen(true)
 
     // Accounting / GL
     if (menuName === 'Chart of Accounts' || menuName === 'Accounting Center') setIsChartOfAccountsOpen(true)
@@ -269,6 +279,9 @@ export default function Home() {
         onClose={() => setIsShipViaConfigOpen(false)}
         onShipViasLoaded={setShipVias}
       />
+
+      {/* Banking */}
+      <BankingCenter isOpen={isBankingCenterOpen} onClose={() => setIsBankingCenterOpen(false)} />
 
       {/* Accounting / GL */}
       <ChartOfAccounts isOpen={isChartOfAccountsOpen} onClose={() => setIsChartOfAccountsOpen(false)} />

@@ -478,26 +478,32 @@ export const deleteVendorPayment = (id) =>
   }).then(handle)
 
 // ─── Reports ────────────────────────────────────────────────────────────────
+export const getReportsDashboard = () =>
+  fetch(`${API_BASE}/reports/dashboard`, { headers: buildHeaders() }).then(handle)
+
 export const getProfitLossReport = (startDate, endDate) =>
-  fetch(`${API_BASE}/reports/profit-loss?start_date=${startDate}&end_date=${endDate}`, {
+  fetch(`${API_BASE}/reports/profit-loss?date_from=${startDate}&date_to=${endDate}`, {
     headers: buildHeaders(),
   }).then(handle)
 
 export const getSalesSummaryReport = (startDate, endDate) =>
-  fetch(`${API_BASE}/reports/sales-summary?start_date=${startDate}&end_date=${endDate}`, {
+  fetch(`${API_BASE}/reports/sales-summary?date_from=${startDate}&date_to=${endDate}`, {
     headers: buildHeaders(),
   }).then(handle)
 
 export const getExpenseSummaryReport = (startDate, endDate) =>
-  fetch(`${API_BASE}/reports/expense-summary?start_date=${startDate}&end_date=${endDate}`, {
+  fetch(`${API_BASE}/reports/expense-summary?date_from=${startDate}&date_to=${endDate}`, {
     headers: buildHeaders(),
   }).then(handle)
 
 export const getReceivablesAgingReport = () =>
-  fetch(`${API_BASE}/reports/receivables-aging`, { headers: buildHeaders() }).then(handle)
+  fetch(`${API_BASE}/reports/receivables-ageing`, { headers: buildHeaders() }).then(handle)
 
 export const getPayablesAgingReport = () =>
-  fetch(`${API_BASE}/reports/payables-aging`, { headers: buildHeaders() }).then(handle)
+  fetch(`${API_BASE}/reports/payables-ageing`, { headers: buildHeaders() }).then(handle)
+
+export const getInventoryValuationReport = () =>
+  fetch(`${API_BASE}/reports/inventory-valuation`, { headers: buildHeaders() }).then(handle)
 
 // ─── Inventory ──────────────────────────────────────────────────────────────
 export const getLowStock = () =>

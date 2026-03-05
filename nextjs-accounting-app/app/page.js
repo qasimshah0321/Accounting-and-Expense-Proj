@@ -228,107 +228,6 @@ export default function Home() {
         onMenuClick={handleMenuClick}
       />
 
-      {/* Sales */}
-      <Invoice
-        isOpen={isInvoiceOpen}
-        onClose={() => setIsInvoiceOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-      <SalesOrder
-        isOpen={isSalesOrderOpen}
-        onClose={() => setIsSalesOrderOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-      <Estimate
-        isOpen={isEstimateOpen}
-        onClose={() => setIsEstimateOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-      <DeliveryNote
-        isOpen={isDeliveryNoteOpen}
-        onClose={() => setIsDeliveryNoteOpen(false)}
-        shipVias={shipVias}
-        onShipViaUpdate={setShipVias}
-      />
-
-      {/* Purchases */}
-      <PurchaseOrder
-        isOpen={isPurchaseOrderOpen}
-        onClose={() => setIsPurchaseOrderOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-      <BillCenter
-        isOpen={isBillCenterOpen}
-        onClose={() => setIsBillCenterOpen(false)}
-        taxes={taxes}
-        onTaxUpdate={setTaxes}
-      />
-      <ExpenseCenter
-        isOpen={isExpenseCenterOpen}
-        onClose={() => setIsExpenseCenterOpen(false)}
-        taxes={taxes}
-      />
-
-      {/* Payments */}
-      <CustomerPayments
-        isOpen={isCustomerPaymentsOpen}
-        onClose={() => setIsCustomerPaymentsOpen(false)}
-      />
-      <VendorPayments
-        isOpen={isVendorPaymentsOpen}
-        onClose={() => setIsVendorPaymentsOpen(false)}
-      />
-
-      {/* Centers */}
-      <CustomerCenter isOpen={isCustomerCenterOpen} onClose={() => setIsCustomerCenterOpen(false)} />
-      <VendorCenter isOpen={isVendorCenterOpen} onClose={() => setIsVendorCenterOpen(false)} />
-      <ProductCenter isOpen={isProductCenterOpen} onClose={() => setIsProductCenterOpen(false)} />
-      <InventoryCenter isOpen={isInventoryCenterOpen} onClose={() => setIsInventoryCenterOpen(false)} />
-
-      {/* Settings */}
-      <TaxConfiguration
-        isOpen={isTaxConfigOpen}
-        onClose={() => setIsTaxConfigOpen(false)}
-        onTaxesLoaded={setTaxes}
-      />
-      <ShipViaConfiguration
-        isOpen={isShipViaConfigOpen}
-        onClose={() => setIsShipViaConfigOpen(false)}
-        onShipViasLoaded={setShipVias}
-      />
-
-      {/* Banking */}
-      <BankingCenter isOpen={isBankingCenterOpen} onClose={() => setIsBankingCenterOpen(false)} />
-
-      {/* Accounting / GL */}
-      <ChartOfAccounts isOpen={isChartOfAccountsOpen} onClose={() => setIsChartOfAccountsOpen(false)} />
-      <JournalEntryCenter isOpen={isJournalEntryCenterOpen} onClose={() => setIsJournalEntryCenterOpen(false)} />
-      <GeneralLedger isOpen={isGeneralLedgerOpen} onClose={() => setIsGeneralLedgerOpen(false)} />
-      <TrialBalance isOpen={isTrialBalanceOpen} onClose={() => setIsTrialBalanceOpen(false)} />
-
-      {/* Recurring */}
-      <RecurringCenter isOpen={isRecurringCenterOpen} onClose={() => setIsRecurringCenterOpen(false)} />
-
-      {/* Company Settings */}
-      <CompanySettings isOpen={isCompanySettingsOpen} onClose={() => setIsCompanySettingsOpen(false)} />
-
-      {/* ERP Flow */}
-      <ERPFlowDiagram
-        isOpen={isERPFlowOpen}
-        onClose={() => setIsERPFlowOpen(false)}
-        onNavigate={(menuName) => { setIsERPFlowOpen(false); handleMenuClick(menuName) }}
-      />
-
-      {/* Reports */}
-      <ReportsDashboard
-        isOpen={isReportsDashboardOpen}
-        onClose={() => setIsReportsDashboardOpen(false)}
-      />
-
       <div className={styles.mainContainer}>
         <Sidebar
           isOpen={isSidebarOpen}
@@ -340,6 +239,111 @@ export default function Home() {
         />
 
         <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
+
+          {/* ── All panels open inside the main area (overlays are constrained here via transform) ── */}
+
+          {/* Sales */}
+          <Invoice
+            isOpen={isInvoiceOpen}
+            onClose={() => setIsInvoiceOpen(false)}
+            taxes={taxes}
+            onTaxUpdate={setTaxes}
+          />
+          <SalesOrder
+            isOpen={isSalesOrderOpen}
+            onClose={() => setIsSalesOrderOpen(false)}
+            taxes={taxes}
+            onTaxUpdate={setTaxes}
+          />
+          <Estimate
+            isOpen={isEstimateOpen}
+            onClose={() => setIsEstimateOpen(false)}
+            taxes={taxes}
+            onTaxUpdate={setTaxes}
+          />
+          <DeliveryNote
+            isOpen={isDeliveryNoteOpen}
+            onClose={() => setIsDeliveryNoteOpen(false)}
+            shipVias={shipVias}
+            onShipViaUpdate={setShipVias}
+          />
+
+          {/* Purchases */}
+          <PurchaseOrder
+            isOpen={isPurchaseOrderOpen}
+            onClose={() => setIsPurchaseOrderOpen(false)}
+            taxes={taxes}
+            onTaxUpdate={setTaxes}
+          />
+          <BillCenter
+            isOpen={isBillCenterOpen}
+            onClose={() => setIsBillCenterOpen(false)}
+            taxes={taxes}
+            onTaxUpdate={setTaxes}
+          />
+          <ExpenseCenter
+            isOpen={isExpenseCenterOpen}
+            onClose={() => setIsExpenseCenterOpen(false)}
+            taxes={taxes}
+          />
+
+          {/* Payments */}
+          <CustomerPayments
+            isOpen={isCustomerPaymentsOpen}
+            onClose={() => setIsCustomerPaymentsOpen(false)}
+          />
+          <VendorPayments
+            isOpen={isVendorPaymentsOpen}
+            onClose={() => setIsVendorPaymentsOpen(false)}
+          />
+
+          {/* Centers */}
+          <CustomerCenter isOpen={isCustomerCenterOpen} onClose={() => setIsCustomerCenterOpen(false)} />
+          <VendorCenter isOpen={isVendorCenterOpen} onClose={() => setIsVendorCenterOpen(false)} />
+          <ProductCenter isOpen={isProductCenterOpen} onClose={() => setIsProductCenterOpen(false)} />
+          <InventoryCenter isOpen={isInventoryCenterOpen} onClose={() => setIsInventoryCenterOpen(false)} />
+
+          {/* Settings */}
+          <TaxConfiguration
+            isOpen={isTaxConfigOpen}
+            onClose={() => setIsTaxConfigOpen(false)}
+            onTaxesLoaded={setTaxes}
+          />
+          <ShipViaConfiguration
+            isOpen={isShipViaConfigOpen}
+            onClose={() => setIsShipViaConfigOpen(false)}
+            onShipViasLoaded={setShipVias}
+          />
+
+          {/* Banking */}
+          <BankingCenter isOpen={isBankingCenterOpen} onClose={() => setIsBankingCenterOpen(false)} />
+
+          {/* Accounting / GL */}
+          <ChartOfAccounts isOpen={isChartOfAccountsOpen} onClose={() => setIsChartOfAccountsOpen(false)} />
+          <JournalEntryCenter isOpen={isJournalEntryCenterOpen} onClose={() => setIsJournalEntryCenterOpen(false)} />
+          <GeneralLedger isOpen={isGeneralLedgerOpen} onClose={() => setIsGeneralLedgerOpen(false)} />
+          <TrialBalance isOpen={isTrialBalanceOpen} onClose={() => setIsTrialBalanceOpen(false)} />
+
+          {/* Recurring */}
+          <RecurringCenter isOpen={isRecurringCenterOpen} onClose={() => setIsRecurringCenterOpen(false)} />
+
+          {/* Company Settings */}
+          <CompanySettings isOpen={isCompanySettingsOpen} onClose={() => setIsCompanySettingsOpen(false)} />
+
+          {/* ERP Flow */}
+          <ERPFlowDiagram
+            isOpen={isERPFlowOpen}
+            onClose={() => setIsERPFlowOpen(false)}
+            onNavigate={(menuName) => { setIsERPFlowOpen(false); handleMenuClick(menuName) }}
+          />
+
+          {/* Reports */}
+          <ReportsDashboard
+            isOpen={isReportsDashboardOpen}
+            onClose={() => setIsReportsDashboardOpen(false)}
+          />
+
+          {/* ── Dashboard / placeholder content ── */}
           {activeMenu === 'Dashboard' ? (
             <Dashboard />
           ) : (
@@ -358,7 +362,7 @@ export default function Home() {
         </main>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
         <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)}></div>
       )}

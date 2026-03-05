@@ -151,6 +151,9 @@ const menuItems = [
     submenus: [
       { id: 'tax', name: 'Tax' },
       { id: 'ship-via', name: 'Ship Via' },
+      { id: 'recurring', name: 'Recurring Documents' },
+      { id: 'company-settings', name: 'Company Settings' },
+      { id: 'erp-flow', name: 'ERP Flow Guide' },
     ]
   },
 ]

@@ -28,6 +28,7 @@ import GeneralLedger from '@/components/GeneralLedger'
 import TrialBalance from '@/components/TrialBalance'
 import RecurringCenter from '@/components/RecurringCenter'
 import CompanySettings from '@/components/CompanySettings'
+import ERPFlowDiagram from '@/components/ERPFlowDiagram'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
@@ -85,6 +86,9 @@ export default function Home() {
 
   // Company Settings
   const [isCompanySettingsOpen, setIsCompanySettingsOpen] = useState(false)
+
+  // ERP Flow
+  const [isERPFlowOpen, setIsERPFlowOpen] = useState(false)
 
   // Reports
   const [isReportsDashboardOpen, setIsReportsDashboardOpen] = useState(false)
@@ -188,6 +192,9 @@ export default function Home() {
 
     // Company Settings
     if (menuName === 'Company Settings' || menuName === 'Company') setIsCompanySettingsOpen(true)
+
+    // ERP Flow
+    if (menuName === 'ERP Flow Guide' || menuName === 'ERP Flow') setIsERPFlowOpen(true)
 
     // Settings
     if (menuName === 'Tax') setIsTaxConfigOpen(true)
@@ -308,6 +315,13 @@ export default function Home() {
 
       {/* Company Settings */}
       <CompanySettings isOpen={isCompanySettingsOpen} onClose={() => setIsCompanySettingsOpen(false)} />
+
+      {/* ERP Flow */}
+      <ERPFlowDiagram
+        isOpen={isERPFlowOpen}
+        onClose={() => setIsERPFlowOpen(false)}
+        onNavigate={(menuName) => { setIsERPFlowOpen(false); handleMenuClick(menuName) }}
+      />
 
       {/* Reports */}
       <ReportsDashboard

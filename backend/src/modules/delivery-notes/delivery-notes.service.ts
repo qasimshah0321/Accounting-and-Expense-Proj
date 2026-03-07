@@ -212,14 +212,14 @@ export const shipDeliveryNote = async (companyId: string, dnId: string, userId: 
         await client.query(
           `INSERT INTO inventory_transactions (company_id,transaction_no,product_id,sku,transaction_type,transaction_date,quantity,unit_of_measure,balance_before,balance_after,stock_location,reference_type,reference_id,reference_no,created_by)
            VALUES ($1,$2,$3,$4,'delivery_note',NOW(),$5,$6,$7,$8,$9,'delivery_note',$10,$11,$12)`,
-          [companyId, txNo, item.product_id, product.sku, -shippedQty, product.unit_of_measure, balanceBefore, balanceAfter, data.stock_location || item.stock_location, dnId, dn.delivery_note_no, userId]
+          [companyId, txNo, product.id, product.sku, -shippedQty, product.unit_of_measure, balanceBefore, balanceAfter, data.stock_location || item.stock_location, dnId, dn.delivery_note_no, userId]
         );
 
-        await client.query('UPDATE products SET current_stock=$1,updated_at=NOW() WHERE id=$2', [balanceAfter, item.product_id]);
+        await client.query('UPDATE products SET current_stock=$1,updated_at=NOW() WHERE id=$2', [balanceAfter, product.id]);
         await client.query('UPDATE delivery_note_line_items SET inventory_deducted=true WHERE id=$1', [item.id]);
 
-        inventoryTransactions.push({ transaction_no: txNo, product_id: item.product_id, sku: product.sku, quantity: -shippedQty, balance_before: balanceBefore, balance_after: balanceAfter });
-        stockUpdates.push({ product_id: item.product_id, sku: product.sku, previous_stock: balanceBefore, new_stock: balanceAfter });
+        inventoryTransactions.push({ transaction_no: txNo, product_id: product.id, sku: product.sku, quantity: -shippedQty, balance_before: balanceBefore, balance_after: balanceAfter });
+        stockUpdates.push({ product_id: product.id, sku: product.sku, previous_stock: balanceBefore, new_stock: balanceAfter });
       }
     }
 

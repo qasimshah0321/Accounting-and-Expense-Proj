@@ -186,11 +186,18 @@ export const shipDeliveryNote = async (companyId: string, dnId: string, userId: 
 
     if (data.deduct_inventory !== false) {
       for (const item of items) {
-        if (!item.product_id) continue;
-        const prodRes = await client.query('SELECT * FROM products WHERE id=$1 AND company_id=$2 FOR UPDATE', [item.product_id, companyId]);
-        if (!prodRes.rows.length) continue;
+        // Look up product by id first, fall back to SKU for manually-entered items
+        let prodRes;
+        if (item.product_id) {
+          prodRes = await client.query('SELECT * FROM products WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [item.product_id, companyId]);
+        }
+        if ((!prodRes || !prodRes.rows.length) && item.sku) {
+          prodRes = await client.query('SELECT * FROM products WHERE sku=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [item.sku, companyId]);
+        }
+        if (!prodRes || !prodRes.rows.length) continue;
         const product = prodRes.rows[0];
-        if (!product.track_inventory) continue;
+        // Deduct stock for inventory-type products or products with track_inventory enabled
+        if (!product.track_inventory && product.product_type !== 'inventory') continue;
 
         const balanceBefore = parseFloat(product.current_stock);
         const shippedQty = parseFloat(item.shipped_qty);

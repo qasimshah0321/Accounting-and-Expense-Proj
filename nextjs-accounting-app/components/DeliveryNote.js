@@ -18,7 +18,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   // ─── Form state ───────────────────────────────────────────────────────────
   const [deliveryNoteNo, setDeliveryNoteNo] = useState('')
   const [lineItems, setLineItems] = useState([
-    { id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }
+    { id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0, product_id: null }
   ])
   const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState('')
@@ -111,7 +111,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   }
 
   const resetForm = async () => {
-    setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }])
+    setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0, product_id: null }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
     setCustomerSearchText('')
@@ -160,9 +160,10 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
         ordered: parseInt(item.ordered_qty) || 0,
         shipped: parseInt(item.shipped_qty) || 0,
         backordered: Math.max(0, (parseInt(item.ordered_qty) || 0) - (parseInt(item.shipped_qty) || 0)),
+        product_id: item.product_id || null,
       })))
     } else {
-      setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }])
+      setLineItems([{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0, product_id: null }])
     }
     setError('')
   }
@@ -270,7 +271,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
-    setLineItems([...lineItems, { id: newId, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0 }])
+    setLineItems([...lineItems, { id: newId, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0, product_id: null }])
   }
 
   const handleFieldFocus = (itemId) => {
@@ -321,6 +322,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       ship_to: shipTo,
       notes: notes || undefined,
       line_items: validItems.map(item => ({
+        product_id: item.product_id || undefined,
         sku: item.sku || undefined,
         description: item.description,
         ordered_qty: item.ordered,
@@ -384,6 +386,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       if (item.id !== targetId) return item
       return {
         ...item,
+        product_id: product.id,
         sku: product.sku || '',
         description: product.description || product.name || '',
       }

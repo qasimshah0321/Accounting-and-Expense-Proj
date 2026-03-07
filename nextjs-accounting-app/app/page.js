@@ -378,7 +378,7 @@ export default function Home() {
           />
 
           {/* ── Dashboard ── */}
-          {activeMenu === 'Dashboard' && <Dashboard />}
+          {activeMenu === 'Dashboard' && <Dashboard currencySymbol={currencySymbol} />}
         </main>
       </div>
 

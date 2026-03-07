@@ -40,7 +40,7 @@ const payableData = [
   { name: '91 AND OVER', value: 3, color: '#F59E0B' },
 ]
 
-export default function Dashboard() {
+export default function Dashboard({ currencySymbol = '$' }) {
   return (
     <div className={styles.dashboard}>
       <div className={styles.dashboardHeader}>
@@ -61,7 +61,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>$55,958</span>
+              <span className={styles.amount}>{currencySymbol}55,958</span>
               <span className={styles.percentage}>
                 <i className="fas fa-circle"></i> 100%
               </span>
@@ -71,14 +71,14 @@ export default function Dashboard() {
             </div>
             <div className={styles.barChart}>
               <div className={styles.barItem}>
-                <span className={styles.barLabel}>$224,609</span>
+                <span className={styles.barLabel}>{currencySymbol}224,609</span>
                 <div className={styles.barWrapper}>
                   <div className={styles.barIncome} style={{width: '80%'}}></div>
                 </div>
                 <span className={styles.barCategory}>Income</span>
               </div>
               <div className={styles.barItem}>
-                <span className={styles.barLabel}>$168,652</span>
+                <span className={styles.barLabel}>{currencySymbol}168,652</span>
                 <div className={styles.barWrapper}>
                   <div className={styles.barExpense} style={{width: '60%'}}></div>
                 </div>
@@ -101,7 +101,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>-$1,272</span>
+              <span className={styles.amount}>-{currencySymbol}1,272</span>
               <span className={styles.percentage}>
                 <i className="fas fa-circle"></i> 99%
               </span>
@@ -148,10 +148,10 @@ export default function Dashboard() {
           <div className={styles.cardBody}>
             <div className={styles.invoiceSection}>
               <div className={styles.invoiceHeader}>
-                <span>$768,919 Unpaid</span>
+                <span>{currencySymbol}768,919 Unpaid</span>
                 <span>Last 365 days</span>
               </div>
-              <div className={styles.invoiceAmount}>$563,901</div>
+              <div className={styles.invoiceAmount}>{currencySymbol}563,901</div>
               <div className={styles.invoiceLabel}>Overdue</div>
               <div className={styles.progressBar}>
                 <div className={styles.progressOverdue} style={{width: '73%'}}></div>
@@ -159,10 +159,10 @@ export default function Dashboard() {
             </div>
             <div className={styles.invoiceSection}>
               <div className={styles.invoiceHeader}>
-                <span>$65,745 Paid</span>
+                <span>{currencySymbol}65,745 Paid</span>
                 <span>Last 30 days</span>
               </div>
-              <div className={styles.invoiceAmount}>$0</div>
+              <div className={styles.invoiceAmount}>{currencySymbol}0</div>
               <div className={styles.invoiceLabel}>Not deposited</div>
               <div className={styles.progressBar}>
                 <div className={styles.progressPaid} style={{width: '100%'}}></div>
@@ -181,7 +181,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>$160,914</span>
+              <span className={styles.amount}>{currencySymbol}160,914</span>
               <i className="fas fa-info-circle" style={{color: '#3B82F6', fontSize: '16px'}}></i>
             </div>
             <div className={styles.accountsList}>
@@ -193,7 +193,7 @@ export default function Dashboard() {
                     <div className={styles.accountBank}>In QuickBooks</div>
                   </div>
                 </div>
-                <div className={styles.accountBalance}>$0</div>
+                <div className={styles.accountBalance}>{currencySymbol}0</div>
               </div>
               <div className={styles.accountItem}>
                 <div className={styles.accountInfo}>
@@ -205,8 +205,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className={styles.accountBalance}>
-                  <div>$160,914.25</div>
-                  <div className={styles.accountSecondary}>$117,744.70</div>
+                  <div>{currencySymbol}160,914.25</div>
+                  <div className={styles.accountSecondary}>{currencySymbol}117,744.70</div>
                   <div className={styles.accountReview}>17 to review</div>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>$1,059,402</span>
+              <span className={styles.amount}>{currencySymbol}1,059,402</span>
             </div>
             <div className={styles.lineChart}>
               <ResponsiveContainer width="100%" height={200}>
@@ -261,7 +261,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>$768,511</span>
+              <span className={styles.amount}>{currencySymbol}768,511</span>
             </div>
             <div className={styles.donutChart}>
               <ResponsiveContainer width="100%" height={180}>
@@ -307,7 +307,7 @@ export default function Dashboard() {
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>$648,733</span>
+              <span className={styles.amount}>{currencySymbol}648,733</span>
             </div>
             <div className={styles.donutChart}>
               <ResponsiveContainer width="100%" height={180}>

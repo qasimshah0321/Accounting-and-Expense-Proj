@@ -376,7 +376,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     return new Date(dateStr).toLocaleDateString()
   }
 
-  const formatCurrency = (amount) => '$' + (parseFloat(amount) || 0).toFixed(2)
+  const formatCurrency = (amount) => currencySymbol + (parseFloat(amount) || 0).toFixed(2)
 
   const getStatusClass = (status) => {
     switch (status) {

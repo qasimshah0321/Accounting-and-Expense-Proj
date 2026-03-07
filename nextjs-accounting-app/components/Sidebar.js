@@ -183,14 +183,16 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
         >
           <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
         </button>
-        <button
-          className={styles.createBtn}
-          onClick={onCreateClick}
-          title={isCollapsed ? "Create New" : ""}
-        >
-          <i className="fas fa-plus-circle"></i>
-          {!isCollapsed && <span>Create</span>}
-        </button>
+        {userRole !== 'customer' && (
+          <button
+            className={styles.createBtn}
+            onClick={onCreateClick}
+            title={isCollapsed ? "Create New" : ""}
+          >
+            <i className="fas fa-plus-circle"></i>
+            {!isCollapsed && <span>Create</span>}
+          </button>
+        )}
       </div>
 
       <nav className={styles.sidebarNav}>

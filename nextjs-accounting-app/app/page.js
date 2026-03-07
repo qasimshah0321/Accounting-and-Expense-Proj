@@ -141,6 +141,12 @@ export default function Home() {
       api.getMyMenus()
         .then((res) => setPermittedMenus(res.data?.menus ?? null))
         .catch(() => {})
+
+      // Customer users land on Orders instead of Dashboard
+      if (user.role === 'customer') {
+        setActiveMenu('Sales Order')
+        setActivePanel('SalesOrder')
+      }
     }
   }, [user])
 

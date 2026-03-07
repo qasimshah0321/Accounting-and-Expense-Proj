@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { pool, withTransaction } from '../../config/database';
 import { config } from '../../config/env';
 import { ensureDocumentSequences } from '../../services/documentNumberService';
+import { seedDefaultPermissions } from '../role-permissions/role-permissions.service';
 import { UnauthorizedError, NotFoundError, ValidationError } from '../../utils/errors';
 
 const signToken = (payload: object): string =>
@@ -76,6 +77,9 @@ export const register = async (data: {
 
     // Setup document sequences (use same transaction client)
     await ensureDocumentSequences(companyId, client);
+
+    // Seed RBAC default permissions
+    await seedDefaultPermissions(companyId, client);
 
     const token = signToken(user);
     return { token, user: { ...user, company_name: data.company_name } };

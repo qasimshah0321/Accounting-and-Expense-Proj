@@ -1,5 +1,5 @@
 import { pool, withTransaction } from '../../config/database';
-import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
+import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
@@ -37,23 +37,31 @@ export const peekNextSalesOrderNumber = async (companyId: string): Promise<strin
   return parts.join('-');
 };
 
-export const listSalesOrders = async (companyId: string, filters: any) => {
-  const conditions = ['company_id=$1', 'deleted_at IS NULL'];
+export const listSalesOrders = async (companyId: string, filters: any, userId?: string, role?: string) => {
+  const conditions = ['so.company_id=$1', 'so.deleted_at IS NULL'];
   const params: unknown[] = [companyId];
   let idx = 2;
+  let fromClause = 'sales_orders so';
 
-  if (filters.status) { conditions.push(`status=$${idx++}`); params.push(filters.status); }
-  if (filters.fulfillment_status) { conditions.push(`fulfillment_status=$${idx++}`); params.push(filters.fulfillment_status); }
-  if (filters.customer_id) { conditions.push(`customer_id=$${idx++}`); params.push(filters.customer_id); }
-  if (filters.search) { conditions.push(`(sales_order_no ILIKE $${idx} OR customer_name ILIKE $${idx} OR po_number ILIKE $${idx})`); params.push(`%${filters.search}%`); idx++; }
-  if (filters.date_from) { conditions.push(`order_date>=$${idx++}`); params.push(filters.date_from); }
-  if (filters.date_to) { conditions.push(`order_date<=$${idx++}`); params.push(filters.date_to); }
+  // Customer role: filter to only their linked customer's orders
+  if (role === 'customer' && userId) {
+    fromClause = 'sales_orders so JOIN user_customer_map ucm ON ucm.customer_id = so.customer_id';
+    conditions.push(`ucm.user_id=$${idx++}`);
+    params.push(userId);
+  }
+
+  if (filters.status) { conditions.push(`so.status=$${idx++}`); params.push(filters.status); }
+  if (filters.fulfillment_status) { conditions.push(`so.fulfillment_status=$${idx++}`); params.push(filters.fulfillment_status); }
+  if (filters.customer_id) { conditions.push(`so.customer_id=$${idx++}`); params.push(filters.customer_id); }
+  if (filters.search) { conditions.push(`(so.sales_order_no ILIKE $${idx} OR so.customer_name ILIKE $${idx} OR so.po_number ILIKE $${idx})`); params.push(`%${filters.search}%`); idx++; }
+  if (filters.date_from) { conditions.push(`so.order_date>=$${idx++}`); params.push(filters.date_from); }
+  if (filters.date_to) { conditions.push(`so.order_date<=$${idx++}`); params.push(filters.date_to); }
 
   const where = conditions.join(' AND ');
-  const countRes = await pool.query(`SELECT COUNT(*) FROM sales_orders WHERE ${where}`, params);
+  const countRes = await pool.query(`SELECT COUNT(*) FROM ${fromClause} WHERE ${where}`, params);
   const total = parseInt(countRes.rows[0].count, 10);
   const { rows } = await pool.query(
-    `SELECT id,sales_order_no,customer_id,customer_name,order_date,due_date,status,fulfillment_status,grand_total,total_ordered_qty,total_delivered_qty,created_at FROM sales_orders WHERE ${where} ORDER BY order_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+    `SELECT so.id,so.sales_order_no,so.customer_id,so.customer_name,so.order_date,so.due_date,so.status,so.fulfillment_status,so.grand_total,so.total_ordered_qty,so.total_delivered_qty,so.created_at FROM ${fromClause} WHERE ${where} ORDER BY so.order_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
     [...params, filters.limit, filters.offset]
   );
   return { sales_orders: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
@@ -66,8 +74,15 @@ export const getSalesOrderById = async (companyId: string, orderId: string) => {
   return { ...rows[0], line_items: items };
 };
 
-export const createSalesOrder = async (companyId: string, userId: string, userName: string, data: any) => {
+export const createSalesOrder = async (companyId: string, userId: string, userName: string, data: any, role?: string) => {
   return withTransaction(async (client) => {
+    // If customer role, auto-assign customer_id from user_customer_map
+    if (role === 'customer') {
+      const mapRes = await client.query('SELECT customer_id FROM user_customer_map WHERE user_id=$1 AND company_id=$2', [userId, companyId]);
+      if (!mapRes.rows.length) throw new ForbiddenError('No linked customer found for this user');
+      data.customer_id = mapRes.rows[0].customer_id;
+    }
+
     const custRes = await client.query('SELECT name,billing_address,shipping_address FROM customers WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [data.customer_id, companyId]);
     if (!custRes.rows.length) throw new ValidationError('Customer not found');
     const cust = custRes.rows[0];

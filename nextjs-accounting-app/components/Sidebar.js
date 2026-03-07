@@ -154,12 +154,17 @@ const menuItems = [
       { id: 'recurring', name: 'Recurring Documents' },
       { id: 'company-settings', name: 'Company Settings' },
       { id: 'erp-flow', name: 'ERP Flow Guide' },
+      { id: 'users-roles', name: 'Users & Roles' },
+      { id: 'role-perms', name: 'Role Permissions' },
     ]
   },
 ]
 
-export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, onCreateClick, onToggleCollapse }) {
+export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, onCreateClick, onToggleCollapse, permittedMenus, userRole }) {
   const [expandedMenus, setExpandedMenus] = useState({})
+
+  const allowed = permittedMenus ? new Set(permittedMenus.map(m => m.name)) : null
+  const labels = Object.fromEntries((permittedMenus || []).map(m => [m.name, m.display_name]))
 
   const toggleSubmenu = (menuId) => {
     setExpandedMenus(prev => ({
@@ -190,7 +195,15 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
 
       <nav className={styles.sidebarNav}>
         <ul className={styles.menuList}>
-          {menuItems.map((item) => (
+          {menuItems.map((item) => {
+            // Filter submenus by permissions
+            const visibleSubmenus = item.submenus
+              ? item.submenus.filter(sub => !allowed || allowed.has(sub.name))
+              : null
+            // If has submenus but all hidden, skip this group
+            if (item.submenus && visibleSubmenus.length === 0) return null
+
+            return (
             <li key={item.id} className={styles.menuItemWrapper}>
               {item.submenus ? (
                 // Menu item with submenus
@@ -216,7 +229,7 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
                     <ul className={`${styles.submenu} ${
                       expandedMenus[item.id] ? styles.expanded : ''
                     }`}>
-                      {item.submenus.map((submenu) => (
+                      {visibleSubmenus.map((submenu) => (
                         <li
                           key={submenu.id}
                           className={`${styles.submenuItem} ${
@@ -224,7 +237,7 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
                           }`}
                           onClick={() => onMenuClick(submenu.name)}
                         >
-                          {submenu.name}
+                          {labels[submenu.name] || submenu.name}
                         </li>
                       ))}
                     </ul>
@@ -244,7 +257,7 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
                 </div>
               )}
             </li>
-          ))}
+          )})}
         </ul>
       </nav>
 

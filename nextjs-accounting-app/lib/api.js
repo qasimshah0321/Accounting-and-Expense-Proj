@@ -758,6 +758,57 @@ export const getCompanyProfile = () =>
 export const updateCompanyProfile = (data) =>
   fetch(`${API_BASE}/company-profile`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
 
+// ─── Role Permissions ────────────────────────────────────────────────────────
+export const getMyMenus = () =>
+  fetch(`${API_BASE}/role-permissions/my-menus`, { headers: buildHeaders() }).then(handle)
+
+export const getAllRolePermissions = () =>
+  fetch(`${API_BASE}/role-permissions`, { headers: buildHeaders() }).then(handle)
+
+export const updateRolePermissions = (data) =>
+  fetch(`${API_BASE}/role-permissions`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+// ─── User Management (admin) ─────────────────────────────────────────────────
+export const getUsers = () =>
+  fetch(`${API_BASE}/users`, { headers: buildHeaders() }).then(handle)
+
+export const createUser = (data) =>
+  fetch(`${API_BASE}/users`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateUser = (id, data) =>
+  fetch(`${API_BASE}/users/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteUser = (id) =>
+  fetch(`${API_BASE}/users/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const linkCustomer = (userId, customerId) =>
+  fetch(`${API_BASE}/users/${userId}/link-customer`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify({ customer_id: customerId }),
+  }).then(handle)
+
+export const unlinkCustomer = (userId) =>
+  fetch(`${API_BASE}/users/${userId}/link-customer`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }

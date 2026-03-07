@@ -29,6 +29,8 @@ import TrialBalance from '@/components/TrialBalance'
 import RecurringCenter from '@/components/RecurringCenter'
 import CompanySettings from '@/components/CompanySettings'
 import ERPFlowDiagram from '@/components/ERPFlowDiagram'
+import UserManagement from '@/components/UserManagement'
+import RolePermissions from '@/components/RolePermissions'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
@@ -65,6 +67,8 @@ const MENU_PANEL_MAP = {
   'ERP Flow Guide': 'ERPFlowDiagram', 'ERP Flow': 'ERPFlowDiagram',
   'Tax': 'TaxConfiguration',
   'Ship Via': 'ShipViaConfiguration',
+  'Users & Roles': 'UserManagement',
+  'Role Permissions': 'RolePermissions',
 }
 
 export default function Home() {
@@ -74,6 +78,7 @@ export default function Home() {
   // Shared data loaded from backend
   const [taxes, setTaxes] = useState([])
   const [shipVias, setShipVias] = useState([])
+  const [permittedMenus, setPermittedMenus] = useState(null)
 
   // UI state
   const [activeMenu, setActiveMenu] = useState('Dashboard')
@@ -131,6 +136,10 @@ export default function Home() {
 
       api.getShipVias()
         .then((res) => setShipVias(res.data || []))
+        .catch(() => {})
+
+      api.getMyMenus()
+        .then((res) => setPermittedMenus(res.data?.menus ?? null))
         .catch(() => {})
     }
   }, [user])
@@ -220,6 +229,8 @@ export default function Home() {
           onMenuClick={handleMenuClick}
           onCreateClick={() => setIsCreateMenuOpen(true)}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          permittedMenus={permittedMenus}
+          userRole={user?.role}
         />
 
         <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
@@ -320,6 +331,10 @@ export default function Home() {
 
           {/* Company Settings */}
           <CompanySettings isOpen={activePanel === 'CompanySettings'} onClose={closePanel} />
+
+          {/* RBAC */}
+          <UserManagement isOpen={activePanel === 'UserManagement'} onClose={closePanel} />
+          <RolePermissions isOpen={activePanel === 'RolePermissions'} onClose={closePanel} />
 
           {/* ERP Flow */}
           <ERPFlowDiagram

@@ -15,7 +15,7 @@ export const list = async (req: AuthRequest, res: Response, next: NextFunction):
   try {
     const { page, limit, offset } = getPagination(req);
     const { status, fulfillment_status, customer_id, search, date_from, date_to } = req.query as Record<string, string>;
-    const result = await service.listSalesOrders(getCompanyId(req), { page, limit, offset, status, fulfillment_status, customer_id, search, date_from, date_to });
+    const result = await service.listSalesOrders(getCompanyId(req), { page, limit, offset, status, fulfillment_status, customer_id, search, date_from, date_to }, req.user!.id, req.user!.role);
     sendPaginated(res, result.sales_orders, result.pagination, 'sales_orders', 'Sales Orders retrieved');
   } catch (err) { next(err); }
 };
@@ -28,7 +28,7 @@ export const create = async (req: AuthRequest, res: Response, next: NextFunction
   try {
     const parsed = createSalesOrderSchema.safeParse(req.body);
     if (!parsed.success) throw new ValidationError('Validation failed', parsed.error.errors);
-    sendSuccess(res, await service.createSalesOrder(getCompanyId(req), req.user!.id, getUserName(req), parsed.data), 'Sales Order created', 201);
+    sendSuccess(res, await service.createSalesOrder(getCompanyId(req), req.user!.id, getUserName(req), parsed.data, req.user!.role), 'Sales Order created', 201);
   } catch (err) { next(err); }
 };
 

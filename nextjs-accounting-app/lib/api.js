@@ -261,6 +261,13 @@ export const deletePurchaseOrder = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+export const updatePurchaseOrderStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/purchase-orders/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, reason }),
+  }).then(handle)
+
 // ─── Sales Orders ────────────────────────────────────────────────────────────
 export const getNextSalesOrderNumber = () =>
   fetch(`${API_BASE}/sales-orders/next-number`, { headers: buildHeaders() }).then(handle)
@@ -289,6 +296,13 @@ export const deleteSalesOrder = (id) =>
   fetch(`${API_BASE}/sales-orders/${id}`, {
     method: 'DELETE',
     headers: buildHeaders(),
+  }).then(handle)
+
+export const updateSalesOrderStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/sales-orders/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, reason }),
   }).then(handle)
 
 // ─── Estimates ───────────────────────────────────────────────────────────────
@@ -349,6 +363,20 @@ export const deleteDeliveryNote = (id) =>
   fetch(`${API_BASE}/delivery-notes/${id}`, {
     method: 'DELETE',
     headers: buildHeaders(),
+  }).then(handle)
+
+export const updateDeliveryNoteStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/delivery-notes/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, reason }),
+  }).then(handle)
+
+export const shipDeliveryNote = (id, data = {}) =>
+  fetch(`${API_BASE}/delivery-notes/${id}/ship`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
   }).then(handle)
 
 // ─── Bills ──────────────────────────────────────────────────────────────────

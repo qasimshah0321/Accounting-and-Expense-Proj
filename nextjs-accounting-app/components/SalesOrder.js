@@ -198,6 +198,16 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     setEditingOrder(null)
   }
 
+  const handleOrderStatus = async (id, newStatus) => {
+    setListError('')
+    try {
+      await api.updateSalesOrderStatus(id, newStatus)
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o))
+    } catch (err) {
+      setListError('Status update failed: ' + err.message)
+    }
+  }
+
   // ─── Form event handlers ──────────────────────────────────────────────────
   const handleCustomerInputChange = (e) => {
     const value = e.target.value
@@ -466,12 +476,21 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          <button className={styles.btnEdit} title="Edit" onClick={() => handleEditOrder(o)}>
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteOrder(o.id)}>
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {o.status === 'draft' && (
+                            <button title="Confirm order" onClick={() => handleOrderStatus(o.id, 'confirmed')} style={{ fontSize: 11, padding: '2px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              Confirm
+                            </button>
+                          )}
+                          {o.status === 'draft' && (
+                            <button className={styles.btnEdit} title="Edit" onClick={() => handleEditOrder(o)}>
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {o.status === 'draft' && (
+                            <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteOrder(o.id)}>
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -206,6 +206,27 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     setEditingNote(null)
   }
 
+  const handleDnStatus = async (id, newStatus) => {
+    setListError('')
+    try {
+      await api.updateDeliveryNoteStatus(id, newStatus)
+      setDeliveryNotes(prev => prev.map(n => n.id === id ? { ...n, status: newStatus } : n))
+    } catch (err) {
+      setListError('Status update failed: ' + err.message)
+    }
+  }
+
+  const handleShipNote = async (n) => {
+    if (!confirm(`Ship delivery note ${n.delivery_note_no}? This will deduct stock from inventory.`)) return
+    setListError('')
+    try {
+      await api.shipDeliveryNote(n.id, { deduct_inventory: true })
+      setDeliveryNotes(prev => prev.map(dn => dn.id === n.id ? { ...dn, status: 'shipped' } : dn))
+    } catch (err) {
+      setListError('Ship failed: ' + err.message)
+    }
+  }
+
   // ─── Form event handlers ──────────────────────────────────────────────────
   const handleCustomerInputChange = (e) => {
     const value = e.target.value
@@ -455,12 +476,26 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          <button className={styles.btnEdit} title="Edit" onClick={() => handleEditNote(n)}>
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteNote(n.id)}>
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {n.status === 'draft' && (
+                            <button className={styles.btnSecondary} title="Mark Ready to Ship" onClick={() => handleDnStatus(n.id, 'ready_to_ship')} style={{ fontSize: 11, padding: '2px 8px' }}>
+                              Ready
+                            </button>
+                          )}
+                          {(n.status === 'draft' || n.status === 'ready_to_ship') && (
+                            <button className={styles.btnNew} title="Ship (deducts stock)" onClick={() => handleShipNote(n)} style={{ fontSize: 11, padding: '2px 8px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-truck"></i> Ship
+                            </button>
+                          )}
+                          {n.status === 'draft' && (
+                            <button className={styles.btnEdit} title="Edit" onClick={() => handleEditNote(n)}>
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {['draft', 'ready_to_ship'].includes(n.status) && (
+                            <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteNote(n.id)}>
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

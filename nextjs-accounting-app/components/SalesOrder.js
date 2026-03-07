@@ -416,11 +416,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
 
           <div className={styles.listHeader}>
             <div className={styles.listHeaderLeft}>
-              <h2>Sales Orders</h2>
+              <h2>{isCustomerRole ? 'Orders' : 'Sales Orders'}</h2>
             </div>
             <div className={styles.listHeaderRight}>
               <button className={styles.btnNewInvoice} onClick={handleNewOrder}>
-                <i className="fas fa-plus"></i> New Sales Order
+                <i className="fas fa-plus"></i> {isCustomerRole ? 'Create Order' : 'New Sales Order'}
               </button>
               <button className={styles.closeBtn} onClick={onClose}>
                 <i className="fas fa-times"></i>
@@ -484,7 +484,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          {o.status === 'draft' && (
+                          {o.status === 'draft' && user?.role === 'admin' && (
                             <button title="Confirm order" onClick={() => handleOrderStatus(o.id, 'confirmed')} style={{ fontSize: 11, padding: '2px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                               Confirm
                             </button>
@@ -509,7 +509,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
               <div className={styles.emptyState}>
                 <i className="fas fa-file-alt"></i>
                 <h3>No sales orders found</h3>
-                <p>{searchTerm ? 'Try adjusting your search' : 'Click "New Sales Order" to create your first order'}</p>
+                <p>{searchTerm ? 'Try adjusting your search' : `Click "${isCustomerRole ? 'Create Order' : 'New Sales Order'}" to create your first order`}</p>
               </div>
             )}
           </div>
@@ -523,7 +523,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingOrder ? `Edit Sales Order ${editingOrder.sales_order_no || ''}` : 'Create Sales Order'}</h2>
+                <h2>{editingOrder ? `Edit ${isCustomerRole ? 'Order' : 'Sales Order'} ${editingOrder.sales_order_no || ''}` : isCustomerRole ? 'Create Order' : 'Create Sales Order'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>

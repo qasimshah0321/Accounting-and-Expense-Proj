@@ -251,6 +251,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            user={user}
           />
           <Estimate
             isOpen={activePanel === 'Estimate'}

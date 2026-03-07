@@ -14,8 +14,13 @@ const signRefreshToken = (payload: object): string =>
 
 export const login = async (email: string, password: string) => {
   const { rows } = await pool.query(
-    `SELECT u.*, c.name as company_name FROM users u
+    `SELECT u.*, c.name as company_name,
+            ucm.customer_id as linked_customer_id,
+            cust.name as linked_customer_name
+     FROM users u
      JOIN companies c ON c.id = u.company_id
+     LEFT JOIN user_customer_map ucm ON ucm.user_id = u.id
+     LEFT JOIN customers cust ON cust.id = ucm.customer_id AND cust.deleted_at IS NULL
      WHERE u.email = $1 AND u.is_active = true AND u.deleted_at IS NULL`,
     [email]
   );
@@ -40,7 +45,7 @@ export const login = async (email: string, password: string) => {
   return {
     token: signToken(payload),
     refresh_token: signRefreshToken({ id: user.id }),
-    user: { ...payload, company_name: user.company_name },
+    user: { ...payload, company_name: user.company_name, linked_customer_id: user.linked_customer_id || null, linked_customer_name: user.linked_customer_name || null },
   };
 };
 
@@ -88,8 +93,13 @@ export const register = async (data: {
 
 export const getMe = async (userId: string) => {
   const { rows } = await pool.query(
-    `SELECT u.id, u.company_id, u.username, u.email, u.role, u.first_name, u.last_name, u.is_active, u.last_login, c.name as company_name
-     FROM users u JOIN companies c ON c.id = u.company_id
+    `SELECT u.id, u.company_id, u.username, u.email, u.role, u.first_name, u.last_name, u.is_active, u.last_login, c.name as company_name,
+            ucm.customer_id as linked_customer_id,
+            cust.name as linked_customer_name
+     FROM users u
+     JOIN companies c ON c.id = u.company_id
+     LEFT JOIN user_customer_map ucm ON ucm.user_id = u.id
+     LEFT JOIN customers cust ON cust.id = ucm.customer_id AND cust.deleted_at IS NULL
      WHERE u.id = $1 AND u.deleted_at IS NULL`,
     [userId]
   );

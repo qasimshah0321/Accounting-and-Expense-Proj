@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {} }) {
+export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -101,6 +101,8 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     }
   }, [showForm, taxes])
 
+  const isCustomerRole = user?.role === 'customer'
+
   if (!isOpen) return null
 
   // ─── Form helpers ─────────────────────────────────────────────────────────
@@ -162,6 +164,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   // ─── List actions ─────────────────────────────────────────────────────────
   const handleNewOrder = async () => {
     await resetForm()
+    if (isCustomerRole && user?.linked_customer_id) {
+      setSelectedCustomer(user.linked_customer_name || '')
+      setSelectedCustomerId(user.linked_customer_id)
+      setCustomerSearchText(user.linked_customer_name || '')
+    }
     setEditingOrder(null)
     onDirtyChange(false)
     setShowForm(true)
@@ -210,6 +217,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
 
   // ─── Form event handlers ──────────────────────────────────────────────────
   const handleCustomerInputChange = (e) => {
+    if (isCustomerRole) return
     const value = e.target.value
     setCustomerSearchText(value)
     setShowCustomerDropdown(true)
@@ -538,9 +546,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                             placeholder="Search or select customer"
                             value={customerSearchText}
                             onChange={handleCustomerInputChange}
-                            onFocus={() => setShowCustomerDropdown(true)}
+                            onFocus={() => !isCustomerRole && setShowCustomerDropdown(true)}
+                            readOnly={isCustomerRole}
+                            style={isCustomerRole ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
-                          {showCustomerDropdown && (
+                          {!isCustomerRole && showCustomerDropdown && (
                             <div className={styles.autocompleteDropdown}>
                               <div className={styles.autocompleteOption + ' ' + styles.addNewOption} onClick={handleAddNewCustomer}>
                                 <i className="fas fa-plus"></i> Add New

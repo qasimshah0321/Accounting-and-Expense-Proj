@@ -202,6 +202,8 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
               : null
             // If has submenus but all hidden, skip this group
             if (item.submenus && visibleSubmenus.length === 0) return null
+            // For top-level items without submenus (e.g. Dashboard), check permission directly
+            if (!item.submenus && allowed && !allowed.has(item.name)) return null
 
             return (
             <li key={item.id} className={styles.menuItemWrapper}>

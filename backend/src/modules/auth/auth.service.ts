@@ -4,6 +4,7 @@ import { pool, withTransaction } from '../../config/database';
 import { config } from '../../config/env';
 import { ensureDocumentSequences } from '../../services/documentNumberService';
 import { seedDefaultPermissions } from '../role-permissions/role-permissions.service';
+import { seedDefaultProducts } from '../products/products.service';
 import { UnauthorizedError, NotFoundError, ValidationError } from '../../utils/errors';
 
 const signToken = (payload: object): string =>
@@ -85,6 +86,9 @@ export const register = async (data: {
 
     // Seed RBAC default permissions
     await seedDefaultPermissions(companyId, client);
+
+    // Seed default product catalogue
+    await seedDefaultProducts(companyId, client);
 
     const token = signToken(user);
     return { token, user: { ...user, company_name: data.company_name } };

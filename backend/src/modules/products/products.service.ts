@@ -137,3 +137,133 @@ export const getLowStockProducts = async (companyId: string) => {
   );
   return rows;
 };
+
+// ── Default product catalogue (seeded from tableau_stock.xlsx) ──────────────
+const DEFAULT_PRODUCTS: Array<{ name: string; sku: string; selling_price: number; current_stock: number; notes: string | null }> = [
+  { name: "M&ms jaune", sku: 'M-MS-JAUNE', selling_price: 14.0, current_stock: 9.0, notes: 'Expiry: 08.03-19.04' },
+  { name: "M&ms bleu", sku: 'M-MS-BLEU', selling_price: 14.0, current_stock: 0.0, notes: null },
+  { name: "M&ms brun", sku: 'M-MS-BRUN', selling_price: 14.0, current_stock: 2.0, notes: 'Expiry: 08.03-12.07' },
+  { name: 'Maltesees', sku: 'MALTESEES', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Rafael', sku: 'RAFAEL', selling_price: 16.0, current_stock: 8.0, notes: 'Expiry: 14.05' },
+  { name: 'Rocher', sku: 'ROCHER', selling_price: 22.0, current_stock: 0.0, notes: null },
+  { name: 'Chacha', sku: 'CHACHA', selling_price: 22.0, current_stock: 0.0, notes: null },
+  { name: 'Bounty', sku: 'BOUNTY', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Mars', sku: 'MARS', selling_price: 20.0, current_stock: 32.0, notes: 'Expiry: 20.08' },
+  { name: 'Mars big', sku: 'MARS-BIG', selling_price: 22.0, current_stock: 24.0, notes: 'Expiry: 20.08' },
+  { name: 'Snicker', sku: 'SNICKER', selling_price: 20.0, current_stock: 32.0, notes: 'Expiry: 20.09' },
+  { name: 'Snicker big', sku: 'SNICKER-BIG', selling_price: 22.0, current_stock: 24.0, notes: null },
+  { name: 'Leo go', sku: 'LEO-GO', selling_price: 25.0, current_stock: 0.0, notes: null },
+  { name: 'Milka noisette', sku: 'MILKA-NOISETTE', selling_price: 28.0, current_stock: 0.0, notes: null },
+  { name: "Cote d'or", sku: 'COTE-D-OR', selling_price: 25.0, current_stock: 0.0, notes: null },
+  { name: 'Oreo Golden', sku: 'OREO-GOLDEN', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Oreo original', sku: 'OREO-ORIGINAL', selling_price: 0.0, current_stock: 7.0, notes: 'Expiry: 31.03-31.04' },
+  { name: 'Milka Oreo biscuit', sku: 'MILKA-OREO-BISCUIT', selling_price: 0.0, current_stock: 0.0, notes: null },
+  { name: 'Milka sensation', sku: 'MILKA-SENSATION', selling_price: 19.0, current_stock: 0.0, notes: null },
+  { name: 'Leo', sku: 'LEO', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Knopper', sku: 'KNOPPER', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Teasor Choco', sku: 'TEASOR-CHOCO', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Kit Kat', sku: 'KIT-KAT', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Dragibus', sku: 'DRAGIBUS', selling_price: 13.0, current_stock: 0.0, notes: null },
+  { name: 'Twix', sku: 'TWIX', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Twix extra', sku: 'TWIX-EXTRA', selling_price: 26.0, current_stock: 0.0, notes: null },
+  { name: 'Nutella go', sku: 'NUTELLA-GO', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Nutella biscuit', sku: 'NUTELLA-BISCUIT', selling_price: 19.0, current_stock: 0.0, notes: null },
+  { name: 'Kinder delice', sku: 'KINDER-DELICE', selling_price: 10.0, current_stock: 0.0, notes: null },
+  { name: 'Kinder card', sku: 'KINDER-CARD', selling_price: 18.0, current_stock: 0.0, notes: null },
+  { name: 'Aqua kiss', sku: 'AQUA-KISS', selling_price: 22.0, current_stock: 0.0, notes: null },
+  { name: 'Mentos 3 fruits free', sku: 'MENTOS-3-FRUITS-FREE', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Mentos tablet', sku: 'MENTOS-TABLET', selling_price: 6.0, current_stock: 0.0, notes: null },
+  { name: 'Bubbliche', sku: 'BUBBLICHE', selling_price: 10.0, current_stock: 0.0, notes: null },
+  { name: 'Hollywood mix', sku: 'HOLLYWOOD-MIX', selling_price: 13.0, current_stock: 0.0, notes: null },
+  { name: 'Freedent', sku: 'FREEDENT', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Stirmool', sku: 'STIRMOOL', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Mentos bottle', sku: 'MENTOS-BOTTLE', selling_price: 13.0, current_stock: 0.0, notes: null },
+  { name: 'Mentos roll', sku: 'MENTOS-ROLL', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Smarties', sku: 'SMARTIES', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Jam breaker', sku: 'JAM-BREAKER', selling_price: 14.0, current_stock: 0.0, notes: null },
+  { name: 'Kinder b/w', sku: 'KINDER-B-W', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Kinder joy', sku: 'KINDER-JOY', selling_price: 31.0, current_stock: 0.0, notes: null },
+  { name: 'Kinder surprise', sku: 'KINDER-SURPRISE', selling_price: 42.0, current_stock: 0.0, notes: null },
+  { name: 'Haribo boite', sku: 'HARIBO-BOITE', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Lays', sku: 'LAYS', selling_price: 12.0, current_stock: 0.0, notes: null },
+  { name: 'Pringles', sku: 'PRINGLES', selling_price: 10.0, current_stock: 0.0, notes: null },
+  { name: 'Pringles big', sku: 'PRINGLES-BIG', selling_price: 35.0, current_stock: 0.0, notes: null },
+  { name: 'War head', sku: 'WAR-HEAD', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Chupa chup', sku: 'CHUPA-CHUP', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Cable candy', sku: 'CABLE-CANDY', selling_price: 10.0, current_stock: 0.0, notes: null },
+  { name: 'Brick candy', sku: 'BRICK-CANDY', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Toy', sku: 'TOY', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Pipe', sku: 'PIPE', selling_price: 18.0, current_stock: 0.0, notes: null },
+  { name: 'Grinder', sku: 'GRINDER', selling_price: 18.0, current_stock: 0.0, notes: null },
+  { name: 'Bic small', sku: 'BIC-SMALL', selling_price: 26.0, current_stock: 0.0, notes: null },
+  { name: 'Bic big', sku: 'BIC-BIG', selling_price: 32.0, current_stock: 0.0, notes: null },
+  { name: 'Sasty lighter', sku: 'SASTY-LIGHTER', selling_price: 6.0, current_stock: 0.0, notes: null },
+  { name: 'Clipper', sku: 'CLIPPER', selling_price: 32.0, current_stock: 0.0, notes: null },
+  { name: 'Sac small', sku: 'SAC-SMALL', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Sac big', sku: 'SAC-BIG', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Club', sku: 'CLUB', selling_price: 53.0, current_stock: 0.0, notes: null },
+  { name: 'Top filter', sku: 'TOP-FILTER', selling_price: 18.0, current_stock: 0.0, notes: null },
+  { name: 'Mascotte filter', sku: 'MASCOTTE-FILTER', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Rizla big', sku: 'RIZLA-BIG', selling_price: 17.0, current_stock: 0.0, notes: null },
+  { name: 'Rizla carton', sku: 'RIZLA-CARTON', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Top carton', sku: 'TOP-CARTON', selling_price: 24.0, current_stock: 0.0, notes: null },
+  { name: 'Books', sku: 'BOOKS', selling_price: 24.0, current_stock: 0.0, notes: null },
+  { name: 'Rizla small', sku: 'RIZLA-SMALL', selling_price: 23.0, current_stock: 0.0, notes: null },
+  { name: 'Raw carton', sku: 'RAW-CARTON', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Top roll', sku: 'TOP-ROLL', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Rizla micro', sku: 'RIZLA-MICRO', selling_price: 24.0, current_stock: 0.0, notes: null },
+  { name: 'Smoking normal mix', sku: 'SMOKING-NORMAL-MIX', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Smoking + tips', sku: 'SMOKING-TIPS', selling_price: 22.0, current_stock: 0.0, notes: null },
+  { name: 'Smoking roll + tips', sku: 'SMOKING-ROLL-TIPS', selling_price: 26.0, current_stock: 0.0, notes: null },
+  { name: 'Top roll tips', sku: 'TOP-ROLL-TIPS', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Mascotte slim', sku: 'MASCOTTE-SLIM', selling_price: 29.0, current_stock: 0.0, notes: null },
+  { name: 'Mascotte combi big', sku: 'MASCOTTE-COMBI-BIG', selling_price: 29.0, current_stock: 0.0, notes: null },
+  { name: 'Mascotte combi small', sku: 'MASCOTTE-COMBI-SMALL', selling_price: 26.0, current_stock: 0.0, notes: null },
+  { name: 'Mascotte roll tips', sku: 'MASCOTTE-ROLL-TIPS', selling_price: 20.0, current_stock: 0.0, notes: null },
+  { name: 'Panasonic', sku: 'PANASONIC', selling_price: 15.0, current_stock: 0.0, notes: null },
+  { name: 'Duracell', sku: 'DURACELL', selling_price: 50.0, current_stock: 0.0, notes: null },
+  { name: 'Durex 12', sku: 'DUREX-12', selling_price: 18.0, current_stock: 0.0, notes: null },
+  { name: 'Durex 1p', sku: 'DUREX-1P', selling_price: 6.5, current_stock: 0.0, notes: null },
+  { name: 'Nesquick', sku: 'NESQUICK', selling_price: 15.0, current_stock: 5.0, notes: 'Expiry: 20.09' },
+  { name: 'Chocapik', sku: 'CHOCAPIK', selling_price: 15.0, current_stock: 1.0, notes: 'Expiry: 20.09' },
+  { name: 'Crunch', sku: 'CRUNCH', selling_price: 0.0, current_stock: 1.0, notes: 'Expiry: 20.03' },
+  { name: 'Pizza', sku: 'PIZZA', selling_price: 0.0, current_stock: 3.0, notes: 'Expiry: 29.04' },
+  { name: 'Atomik balls', sku: 'ATOMIK-BALLS', selling_price: 0.0, current_stock: 6.0, notes: 'Expiry: 2027' },
+  { name: 'Sour choc roky', sku: 'SOUR-CHOC-ROKY', selling_price: 0.0, current_stock: 4.0, notes: null },
+  { name: 'Tic tac', sku: 'TIC-TAC', selling_price: 0.0, current_stock: 12.0, notes: null },
+  { name: 'Frisk bleu', sku: 'FRISK-BLEU', selling_price: 0.0, current_stock: 3.0, notes: null },
+  { name: 'Frisk green', sku: 'FRISK-GREEN', selling_price: 0.0, current_stock: 8.0, notes: null },
+  { name: 'Stimorol', sku: 'STIMOROL', selling_price: 16.0, current_stock: 0.0, notes: null },
+  { name: 'Freedent (2)', sku: 'FREEDENT-2', selling_price: 21.0, current_stock: 0.0, notes: 'Expiry: 09.03' },
+  { name: 'Bubblicious jaune', sku: 'BUBBLICIOUS-JAUNE', selling_price: 0.0, current_stock: 12.0, notes: null },
+  { name: 'Bubblicious rose', sku: 'BUBBLICIOUS-ROSE', selling_price: 0.0, current_stock: 9.0, notes: null },
+  { name: 'Bubblicious cola', sku: 'BUBBLICIOUS-COLA', selling_price: 0.0, current_stock: 2.0, notes: null },
+];
+
+export const seedDefaultProducts = async (companyId: string, client: any): Promise<void> => {
+  if (!DEFAULT_PRODUCTS.length) return;
+
+  const flat: unknown[] = [];
+  const placeholders: string[] = [];
+
+  DEFAULT_PRODUCTS.forEach((p, i) => {
+    const b = i * 6;
+    placeholders.push(
+      '($' + (b + 1) + ',$' + (b + 2) + ',$' + (b + 3) + ',$' + (b + 4) + ',$' + (b + 5) + ',$' + (b + 6) + ')'
+    );
+    flat.push(companyId, p.name, p.sku, p.selling_price, p.current_stock, p.notes);
+  });
+
+  await client.query(
+    'INSERT INTO products' +
+    '  (company_id, name, sku, selling_price, cost_price, current_stock,' +
+    '   product_type, track_inventory, is_active, is_for_sale, is_for_purchase,' +
+    "   unit_of_measure, notes)" +
+    ' SELECT v.company_id, v.name, v.sku, v.selling_price::numeric, 0, v.current_stock::numeric,' +
+    "  'inventory', TRUE, TRUE, TRUE, TRUE, 'pcs', NULLIF(v.notes, '')" +
+    ' FROM (VALUES ' + placeholders.join(', ') + ')' +
+    '  AS v(company_id, name, sku, selling_price, current_stock, notes)' +
+    ' ON CONFLICT (company_id, sku) DO NOTHING',
+    flat
+  );
+};

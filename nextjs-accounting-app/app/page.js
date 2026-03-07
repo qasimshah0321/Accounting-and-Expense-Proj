@@ -225,6 +225,7 @@ export default function Home() {
         isOpen={isCreateMenuOpen}
         onClose={() => setIsCreateMenuOpen(false)}
         onMenuClick={handleMenuClick}
+        permittedMenus={permittedMenus}
       />
 
       <div className={styles.mainContainer}>

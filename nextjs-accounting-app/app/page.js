@@ -185,6 +185,7 @@ export default function Home() {
   // Called by each component's close button
   const closePanel = () => {
     setActivePanel(null)
+    setActiveMenu('Dashboard')
     setIsDirty(false)
   }
 
@@ -357,22 +358,8 @@ export default function Home() {
             onClose={closePanel}
           />
 
-          {/* ── Dashboard / placeholder content ── */}
-          {activeMenu === 'Dashboard' ? (
-            <Dashboard />
-          ) : (
-            <>
-              <div className={styles.contentHeader}>
-                <h1>{activeMenu}</h1>
-              </div>
-              <div className={styles.contentBody}>
-                <div className={styles.contentDisplay}>
-                  <h2>{activeMenu}</h2>
-                  <p>You clicked on {activeMenu}</p>
-                </div>
-              </div>
-            </>
-          )}
+          {/* ── Dashboard ── */}
+          {activeMenu === 'Dashboard' && <Dashboard />}
         </main>
       </div>
 

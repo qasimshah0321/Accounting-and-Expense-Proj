@@ -16,10 +16,10 @@ const buildHeaders = () => {
 const handle = async (res) => {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    // On 401, clear stale token and reload so the login screen appears
+    // On 401, dispatch a custom event so page.js can react via React state
+    // (avoids race condition where token is cleared but reload hasn't happened yet)
     if (res.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token')
-      window.location.reload()
+      window.dispatchEvent(new CustomEvent('auth:expired'))
     }
     // Backend wraps errors as { error: { code, message, details } }
     const baseMsg = data.error?.message || data.message || `Request failed (${res.status})`

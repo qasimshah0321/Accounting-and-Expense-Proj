@@ -100,11 +100,26 @@ export default function Home() {
         })
         .catch(() => {
           localStorage.removeItem('auth_token')
+          setUser(null)
         })
         .finally(() => setAuthChecked(true))
     } else {
       setAuthChecked(true)
     }
+  }, [])
+
+  // Listen for auth:expired events dispatched by api.js on any 401 response
+  // This replaces the old window.location.reload() approach which caused a race condition
+  // where the token was cleared but the reload hadn't happened yet
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      localStorage.removeItem('auth_token')
+      setUser(null)
+      setActivePanel(null)
+      setIsDirty(false)
+    }
+    window.addEventListener('auth:expired', handleAuthExpired)
+    return () => window.removeEventListener('auth:expired', handleAuthExpired)
   }, [])
 
   // Load taxes and ship vias once authenticated

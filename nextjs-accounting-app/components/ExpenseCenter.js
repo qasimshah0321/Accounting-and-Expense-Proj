@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import * as api from '../lib/api'
 
-export default function ExpenseCenter({ isOpen, onClose, taxes }) {
+export default function ExpenseCenter({ isOpen, onClose, taxes, onDirtyChange = () => {} }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(false)
@@ -122,6 +122,7 @@ export default function ExpenseCenter({ isOpen, onClose, taxes }) {
   const handleNewExpense = () => {
     resetForm()
     setEditingExpense(null)
+    onDirtyChange(false)
     setShowForm(true)
   }
 
@@ -132,6 +133,7 @@ export default function ExpenseCenter({ isOpen, onClose, taxes }) {
       const full = res.data || res
       setEditingExpense(full)
       populateForm(full)
+      onDirtyChange(false)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load expense: ' + err.message)
@@ -170,6 +172,7 @@ export default function ExpenseCenter({ isOpen, onClose, taxes }) {
   }
 
   const handleFormClose = () => {
+    onDirtyChange(false)
     setShowForm(false)
     setEditingExpense(null)
   }
@@ -233,6 +236,7 @@ export default function ExpenseCenter({ isOpen, onClose, taxes }) {
       } else {
         await api.createExpense(payload)
       }
+      onDirtyChange(false)
       setShowForm(false)
       setEditingExpense(null)
       loadExpenses()

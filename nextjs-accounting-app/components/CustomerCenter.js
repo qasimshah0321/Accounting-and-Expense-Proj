@@ -70,8 +70,8 @@ export default function CustomerCenter({ isOpen, onClose }) {
 
   const filteredCustomers = customers.filter(
     (c) =>
-      c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (

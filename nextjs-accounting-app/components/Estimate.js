@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
+export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {} }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [estimates, setEstimates] = useState([])
   const [loading, setLoading] = useState(false)
@@ -35,6 +35,9 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [estimateNo, setEstimateNo] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [products, setProducts] = useState([])
+  const [activeItemId, setActiveItemId] = useState(null)
+  const [activeField, setActiveField] = useState(null)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -64,6 +67,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
     if (isOpen) {
       loadEstimates()
       loadCustomers()
+      api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
     }
   }, [isOpen, loadEstimates, loadCustomers])
 
@@ -152,6 +156,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const handleNewEstimate = async () => {
     await resetForm()
     setEditingEstimate(null)
+    onDirtyChange(false)
     setShowForm(true)
   }
 
@@ -162,6 +167,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
       const full = res.data || res
       setEditingEstimate(full)
       populateForm(full)
+      onDirtyChange(false)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load estimate: ' + err.message)
@@ -180,6 +186,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const handleFormClose = () => {
+    onDirtyChange(false)
     setShowForm(false)
     setEditingEstimate(null)
   }
@@ -247,6 +254,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const handleTaxSave = (newTax) => { onTaxUpdate([...taxes, newTax]); setSelectedTax(newTax); setIsTaxPopupOpen(false) }
 
   const updateLineItem = (id, field, value) => {
+    onDirtyChange(true)
     setLineItems(lineItems.map(item => {
       if (item.id !== id) return item
       const updated = { ...item, [field]: value }
@@ -294,6 +302,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
       } else {
         await api.createEstimate(payload)
       }
+      onDirtyChange(false)
       setShowForm(false)
       setEditingEstimate(null)
       loadEstimates()
@@ -313,6 +322,35 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
   const formatDate = (dateStr) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString()
+  }
+
+  const getProductSuggestions = (itemId, field) => {
+    const item = lineItems.find(i => i.id === itemId)
+    if (!item || !products.length) return []
+    const q = (field === 'sku' ? item.sku : item.description).toLowerCase()
+    if (!q) return []
+    return products.filter(p =>
+      (p.sku || '').toLowerCase().includes(q) ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    ).slice(0, 8)
+  }
+
+  const handleProductSelect = (product) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id !== activeItemId) return item
+      const price = parseFloat(product.selling_price || 0)
+      const updated = {
+        ...item,
+        sku: product.sku || '',
+        description: product.description || product.name || '',
+        rate: price,
+      }
+      if ('amount' in updated) updated.amount = (updated.quantity || 1) * price - (updated.discount || 0)
+      return updated
+    }))
+    setActiveItemId(null)
+    setActiveField(null)
   }
 
   const formatCurrency = (amount) => '$' + (parseFloat(amount) || 0).toFixed(2)
@@ -519,8 +557,90 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate }) {
                       <tbody>
                         {lineItems.map((item) => (
                           <tr key={item.id}>
-                            <td><input type="text" className={styles.formControlTable} placeholder="SKU" value={item.sku} onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="text" className={styles.formControlTable} placeholder="Item description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td>
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="SKU"
+                                  value={item.sku}
+                                  onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
+                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                />
+                                {activeItemId === item.id && activeField === 'sku' &&
+                                  getProductSuggestions(item.id, 'sku').length > 0 && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, zIndex: 9999,
+                                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280,
+                                      maxHeight: 220, overflowY: 'auto'
+                                    }}>
+                                      {getProductSuggestions(item.id, 'sku').map(product => (
+                                        <div
+                                          key={product.id}
+                                          onMouseDown={() => handleProductSelect(product)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                        >
+                                          <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{product.name}</div>
+                                            {product.sku && <div style={{ fontSize: 11, color: '#64748b' }}>SKU: {product.sku}</div>}
+                                            {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
+                                          </div>
+                                          <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
+                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="Item description"
+                                  value={item.description}
+                                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                />
+                                {activeItemId === item.id && activeField === 'description' &&
+                                  getProductSuggestions(item.id, 'description').length > 0 && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, zIndex: 9999,
+                                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280,
+                                      maxHeight: 220, overflowY: 'auto'
+                                    }}>
+                                      {getProductSuggestions(item.id, 'description').map(product => (
+                                        <div
+                                          key={product.id}
+                                          onMouseDown={() => handleProductSelect(product)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                        >
+                                          <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{product.name}</div>
+                                            {product.sku && <div style={{ fontSize: 11, color: '#64748b' }}>SKU: {product.sku}</div>}
+                                            {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
+                                          </div>
+                                          <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
+                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            </td>
                             <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td className={styles.amountCell}>${item.amount.toFixed(2)}</td>

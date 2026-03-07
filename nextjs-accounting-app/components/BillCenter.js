@@ -6,7 +6,7 @@ import VendorPopup from './VendorPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
+export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {} }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [bills, setBills] = useState([])
   const [loading, setLoading] = useState(false)
@@ -37,6 +37,10 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const [products, setProducts] = useState([])
+  const [activeItemId, setActiveItemId] = useState(null)
+  const [activeField, setActiveField] = useState(null)
+
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
 
@@ -65,6 +69,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
     if (isOpen) {
       loadBills()
       loadVendors()
+      api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
     }
   }, [isOpen, loadBills, loadVendors])
 
@@ -158,6 +163,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
   const handleNewBill = () => {
     resetForm()
     setEditingBill(null)
+    onDirtyChange(false)
     setShowForm(true)
   }
 
@@ -168,6 +174,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
       const full = res.data || res
       setEditingBill(full)
       populateForm(full)
+      onDirtyChange(false)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load bill: ' + err.message)
@@ -186,6 +193,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const handleFormClose = () => {
+    onDirtyChange(false)
     setShowForm(false)
     setEditingBill(null)
   }
@@ -258,6 +266,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const updateLineItem = (id, field, value) => {
+    onDirtyChange(true)
     setLineItems(lineItems.map(item => {
       if (item.id !== id) return item
       const updated = { ...item, [field]: value }
@@ -306,6 +315,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
       } else {
         await api.createBill(payload)
       }
+      onDirtyChange(false)
       setShowForm(false)
       setEditingBill(null)
       loadBills()
@@ -345,6 +355,35 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
       case 'partial': case 'partially_paid': return styles.statusSent
       default: return styles.statusOverdue
     }
+  }
+
+  // ─── Product autocomplete ────────────────────────────────────────────────
+  const getProductSuggestions = (itemId, field) => {
+    const item = lineItems.find(i => i.id === itemId)
+    if (!item || !products.length) return []
+    const q = (field === 'sku' ? (item.sku || '') : item.description).toLowerCase()
+    if (!q) return []
+    return products.filter(p =>
+      (p.sku || '').toLowerCase().includes(q) ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    ).slice(0, 8)
+  }
+
+  const handleProductSelect = (product) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id !== activeItemId) return item
+      const price = parseFloat(product.cost_price || 0)
+      const updated = {
+        ...item,
+        description: product.description || product.name || '',
+        rate: price,
+      }
+      if ('amount' in updated) updated.amount = (updated.quantity || 1) * price - (updated.discount || 0)
+      return updated
+    }))
+    setActiveItemId(null)
+    setActiveField(null)
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -605,14 +644,46 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
                         {lineItems.map((item) => (
                           <tr key={item.id}>
                             <td>
-                              <input
-                                type="text"
-                                className={styles.formControlTable}
-                                placeholder="Item description"
-                                value={item.description}
-                                onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                onFocus={() => handleFieldFocus(item.id)}
-                              />
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="Item description"
+                                  value={item.description}
+                                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                />
+                                {activeItemId === item.id && activeField === 'description' &&
+                                  getProductSuggestions(item.id, 'description').length > 0 && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, zIndex: 9999,
+                                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280,
+                                      maxHeight: 220, overflowY: 'auto'
+                                    }}>
+                                      {getProductSuggestions(item.id, 'description').map(product => (
+                                        <div
+                                          key={product.id}
+                                          onMouseDown={() => handleProductSelect(product)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                        >
+                                          <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{product.name}</div>
+                                            {product.sku && <div style={{ fontSize: 11, color: '#64748b' }}>SKU: {product.sku}</div>}
+                                            {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
+                                          </div>
+                                          <div style={{ fontSize: 12, color: '#0ea5e9', fontWeight: 600, marginLeft: 8 }}>
+                                            ${parseFloat(product.cost_price || 0).toFixed(2)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
                             </td>
                             <td>
                               <input

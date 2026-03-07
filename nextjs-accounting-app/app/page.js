@@ -33,6 +33,40 @@ import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
 
+// Map every menu name to its panel identifier
+const MENU_PANEL_MAP = {
+  'Invoices': 'Invoice', 'Invoice': 'Invoice',
+  'Sales Order': 'SalesOrder', 'Sale Order': 'SalesOrder',
+  'Estimate': 'Estimate', 'Estimates/Quotations': 'Estimate',
+  'Delivery Note': 'DeliveryNote', 'Delivery Notes': 'DeliveryNote',
+  'Customer Payments': 'CustomerPayments', 'Receive Payment': 'CustomerPayments',
+  'Purchase Order': 'PurchaseOrder', 'Purchase Orders': 'PurchaseOrder',
+  'Bills': 'BillCenter',
+  'Expenses': 'ExpenseCenter',
+  'Bill Payments': 'VendorPayments', 'Make Payment': 'VendorPayments',
+  'Customer Center': 'CustomerCenter',
+  'Vendor Center': 'VendorCenter',
+  'Product Center': 'ProductCenter',
+  'Stock Valuation': 'InventoryCenter', 'Stock Locations': 'InventoryCenter',
+  'Stock Mobility': 'InventoryCenter', 'Reorder Planning': 'InventoryCenter',
+  'Inventory Analytics': 'InventoryCenter',
+  'Financial Statements': 'ReportsDashboard', 'Revenue & Sales Analysis': 'ReportsDashboard',
+  'Cost & Expense Analytics': 'ReportsDashboard', 'Receivables & Payables': 'ReportsDashboard',
+  'Planning & Performance Analysis': 'ReportsDashboard',
+  'Banking Center': 'BankingCenter', 'Bank Accounts': 'BankingCenter',
+  'Bank Transactions': 'BankingCenter', 'Bank Reconciliation': 'BankingCenter',
+  'Transfers': 'BankingCenter', 'Cheque Management': 'BankingCenter',
+  'Chart of Accounts': 'ChartOfAccounts', 'Accounting Center': 'ChartOfAccounts',
+  'Journal Entries': 'JournalEntryCenter',
+  'General Ledger': 'GeneralLedger',
+  'Trial Balance': 'TrialBalance',
+  'Recurring Documents': 'RecurringCenter', 'Recurring': 'RecurringCenter',
+  'Company Settings': 'CompanySettings', 'Company': 'CompanySettings',
+  'ERP Flow Guide': 'ERPFlowDiagram', 'ERP Flow': 'ERPFlowDiagram',
+  'Tax': 'TaxConfiguration',
+  'Ship Via': 'ShipViaConfiguration',
+}
+
 export default function Home() {
   const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -47,51 +81,14 @@ export default function Home() {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
-  // Sales
-  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false)
-  const [isSalesOrderOpen, setIsSalesOrderOpen] = useState(false)
-  const [isEstimateOpen, setIsEstimateOpen] = useState(false)
-  const [isDeliveryNoteOpen, setIsDeliveryNoteOpen] = useState(false)
+  // Single active panel — only one panel open at a time
+  const [activePanel, setActivePanel] = useState(null)
 
-  // Purchases
-  const [isPurchaseOrderOpen, setIsPurchaseOrderOpen] = useState(false)
-  const [isBillCenterOpen, setIsBillCenterOpen] = useState(false)
-  const [isExpenseCenterOpen, setIsExpenseCenterOpen] = useState(false)
+  // Pending navigation: { panel, menu } when user tries to navigate away with unsaved changes
+  const [pendingPanel, setPendingPanel] = useState(null)
 
-  // Payments
-  const [isCustomerPaymentsOpen, setIsCustomerPaymentsOpen] = useState(false)
-  const [isVendorPaymentsOpen, setIsVendorPaymentsOpen] = useState(false)
-
-  // Centers
-  const [isCustomerCenterOpen, setIsCustomerCenterOpen] = useState(false)
-  const [isVendorCenterOpen, setIsVendorCenterOpen] = useState(false)
-  const [isProductCenterOpen, setIsProductCenterOpen] = useState(false)
-  const [isInventoryCenterOpen, setIsInventoryCenterOpen] = useState(false)
-
-  // Settings
-  const [isTaxConfigOpen, setIsTaxConfigOpen] = useState(false)
-  const [isShipViaConfigOpen, setIsShipViaConfigOpen] = useState(false)
-
-  // Banking
-  const [isBankingCenterOpen, setIsBankingCenterOpen] = useState(false)
-
-  // Accounting / GL
-  const [isChartOfAccountsOpen, setIsChartOfAccountsOpen] = useState(false)
-  const [isJournalEntryCenterOpen, setIsJournalEntryCenterOpen] = useState(false)
-  const [isGeneralLedgerOpen, setIsGeneralLedgerOpen] = useState(false)
-  const [isTrialBalanceOpen, setIsTrialBalanceOpen] = useState(false)
-
-  // Recurring
-  const [isRecurringCenterOpen, setIsRecurringCenterOpen] = useState(false)
-
-  // Company Settings
-  const [isCompanySettingsOpen, setIsCompanySettingsOpen] = useState(false)
-
-  // ERP Flow
-  const [isERPFlowOpen, setIsERPFlowOpen] = useState(false)
-
-  // Reports
-  const [isReportsDashboardOpen, setIsReportsDashboardOpen] = useState(false)
+  // Dirty flag: set by form components when they have unsaved changes
+  const [isDirty, setIsDirty] = useState(false)
 
   // Check for existing auth token on mount
   useEffect(() => {
@@ -133,75 +130,47 @@ export default function Home() {
   }
 
   const handleMenuClick = (menuName) => {
+    const panelName = MENU_PANEL_MAP[menuName]
+
+    // If user has unsaved changes and is navigating to a different panel, show confirm dialog
+    if (isDirty && panelName && panelName !== activePanel) {
+      setPendingPanel({ panel: panelName, menu: menuName })
+      return
+    }
+
     setActiveMenu(menuName)
-
-    // Sales
-    if (menuName === 'Invoices' || menuName === 'Invoice') setIsInvoiceOpen(true)
-    if (menuName === 'Sales Order' || menuName === 'Sale Order') setIsSalesOrderOpen(true)
-    if (menuName === 'Estimate' || menuName === 'Estimates/Quotations') setIsEstimateOpen(true)
-    if (menuName === 'Delivery Note' || menuName === 'Delivery Notes') setIsDeliveryNoteOpen(true)
-    if (menuName === 'Customer Payments') setIsCustomerPaymentsOpen(true)
-
-    // Purchases
-    if (menuName === 'Purchase Order' || menuName === 'Purchase Orders') setIsPurchaseOrderOpen(true)
-    if (menuName === 'Bills') setIsBillCenterOpen(true)
-    if (menuName === 'Expenses') setIsExpenseCenterOpen(true)
-    if (menuName === 'Bill Payments') setIsVendorPaymentsOpen(true)
-
-    // Payments
-    if (menuName === 'Receive Payment') setIsCustomerPaymentsOpen(true)
-    if (menuName === 'Make Payment') setIsVendorPaymentsOpen(true)
-
-    // Centers
-    if (menuName === 'Customer Center') setIsCustomerCenterOpen(true)
-    if (menuName === 'Vendor Center') setIsVendorCenterOpen(true)
-    if (menuName === 'Product Center') setIsProductCenterOpen(true)
-
-    // Inventory
-    if (
-      menuName === 'Stock Valuation' ||
-      menuName === 'Stock Locations' ||
-      menuName === 'Stock Mobility' ||
-      menuName === 'Reorder Planning' ||
-      menuName === 'Inventory Analytics'
-    ) setIsInventoryCenterOpen(true)
-
-    // Reports
-    if (
-      menuName === 'Financial Statements' ||
-      menuName === 'Revenue & Sales Analysis' ||
-      menuName === 'Cost & Expense Analytics' ||
-      menuName === 'Receivables & Payables' ||
-      menuName === 'Planning & Performance Analysis'
-    ) setIsReportsDashboardOpen(true)
-
-    // Banking
-    if (
-      menuName === 'Banking Center' || menuName === 'Bank Accounts' || menuName === 'Bank Transactions' ||
-      menuName === 'Bank Reconciliation' || menuName === 'Transfers' || menuName === 'Cheque Management'
-    ) setIsBankingCenterOpen(true)
-
-    // Accounting / GL
-    if (menuName === 'Chart of Accounts' || menuName === 'Accounting Center') setIsChartOfAccountsOpen(true)
-    if (menuName === 'Journal Entries') setIsJournalEntryCenterOpen(true)
-    if (menuName === 'General Ledger') setIsGeneralLedgerOpen(true)
-    if (menuName === 'Trial Balance') setIsTrialBalanceOpen(true)
-
-    // Recurring
-    if (menuName === 'Recurring Documents' || menuName === 'Recurring') setIsRecurringCenterOpen(true)
-
-    // Company Settings
-    if (menuName === 'Company Settings' || menuName === 'Company') setIsCompanySettingsOpen(true)
-
-    // ERP Flow
-    if (menuName === 'ERP Flow Guide' || menuName === 'ERP Flow') setIsERPFlowOpen(true)
-
-    // Settings
-    if (menuName === 'Tax') setIsTaxConfigOpen(true)
-    if (menuName === 'Ship Via') setIsShipViaConfigOpen(true)
+    if (panelName) {
+      setActivePanel(panelName)
+      setIsDirty(false)
+    } else {
+      // Dashboard or unmapped menu items — close any open panel
+      setActivePanel(null)
+      setIsDirty(false)
+    }
 
     if (window.innerWidth <= 768) setIsSidebarOpen(false)
     setIsCreateMenuOpen(false)
+  }
+
+  // Called by each component's close button
+  const closePanel = () => {
+    setActivePanel(null)
+    setIsDirty(false)
+  }
+
+  // User confirmed: discard changes and navigate to the pending panel
+  const confirmDiscard = () => {
+    setActiveMenu(pendingPanel.menu)
+    setActivePanel(pendingPanel.panel)
+    setIsDirty(false)
+    setPendingPanel(null)
+    if (window.innerWidth <= 768) setIsSidebarOpen(false)
+    setIsCreateMenuOpen(false)
+  }
+
+  // User cancelled: stay on current page
+  const cancelNavigation = () => {
+    setPendingPanel(null)
   }
 
   // Show loading spinner while checking token
@@ -240,107 +209,114 @@ export default function Home() {
 
         <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
 
-          {/* ── All panels open inside the main area (overlays are constrained here via transform) ── */}
+          {/* ── All panels open inside the main area ── */}
 
           {/* Sales */}
           <Invoice
-            isOpen={isInvoiceOpen}
-            onClose={() => setIsInvoiceOpen(false)}
+            isOpen={activePanel === 'Invoice'}
+            onClose={closePanel}
             taxes={taxes}
             onTaxUpdate={setTaxes}
+            onDirtyChange={setIsDirty}
           />
           <SalesOrder
-            isOpen={isSalesOrderOpen}
-            onClose={() => setIsSalesOrderOpen(false)}
+            isOpen={activePanel === 'SalesOrder'}
+            onClose={closePanel}
             taxes={taxes}
             onTaxUpdate={setTaxes}
+            onDirtyChange={setIsDirty}
           />
           <Estimate
-            isOpen={isEstimateOpen}
-            onClose={() => setIsEstimateOpen(false)}
+            isOpen={activePanel === 'Estimate'}
+            onClose={closePanel}
             taxes={taxes}
             onTaxUpdate={setTaxes}
+            onDirtyChange={setIsDirty}
           />
           <DeliveryNote
-            isOpen={isDeliveryNoteOpen}
-            onClose={() => setIsDeliveryNoteOpen(false)}
+            isOpen={activePanel === 'DeliveryNote'}
+            onClose={closePanel}
             shipVias={shipVias}
             onShipViaUpdate={setShipVias}
+            onDirtyChange={setIsDirty}
           />
 
           {/* Purchases */}
           <PurchaseOrder
-            isOpen={isPurchaseOrderOpen}
-            onClose={() => setIsPurchaseOrderOpen(false)}
+            isOpen={activePanel === 'PurchaseOrder'}
+            onClose={closePanel}
             taxes={taxes}
             onTaxUpdate={setTaxes}
+            onDirtyChange={setIsDirty}
           />
           <BillCenter
-            isOpen={isBillCenterOpen}
-            onClose={() => setIsBillCenterOpen(false)}
+            isOpen={activePanel === 'BillCenter'}
+            onClose={closePanel}
             taxes={taxes}
             onTaxUpdate={setTaxes}
+            onDirtyChange={setIsDirty}
           />
           <ExpenseCenter
-            isOpen={isExpenseCenterOpen}
-            onClose={() => setIsExpenseCenterOpen(false)}
+            isOpen={activePanel === 'ExpenseCenter'}
+            onClose={closePanel}
             taxes={taxes}
+            onDirtyChange={setIsDirty}
           />
 
           {/* Payments */}
           <CustomerPayments
-            isOpen={isCustomerPaymentsOpen}
-            onClose={() => setIsCustomerPaymentsOpen(false)}
+            isOpen={activePanel === 'CustomerPayments'}
+            onClose={closePanel}
           />
           <VendorPayments
-            isOpen={isVendorPaymentsOpen}
-            onClose={() => setIsVendorPaymentsOpen(false)}
+            isOpen={activePanel === 'VendorPayments'}
+            onClose={closePanel}
           />
 
           {/* Centers */}
-          <CustomerCenter isOpen={isCustomerCenterOpen} onClose={() => setIsCustomerCenterOpen(false)} />
-          <VendorCenter isOpen={isVendorCenterOpen} onClose={() => setIsVendorCenterOpen(false)} />
-          <ProductCenter isOpen={isProductCenterOpen} onClose={() => setIsProductCenterOpen(false)} />
-          <InventoryCenter isOpen={isInventoryCenterOpen} onClose={() => setIsInventoryCenterOpen(false)} />
+          <CustomerCenter isOpen={activePanel === 'CustomerCenter'} onClose={closePanel} />
+          <VendorCenter isOpen={activePanel === 'VendorCenter'} onClose={closePanel} />
+          <ProductCenter isOpen={activePanel === 'ProductCenter'} onClose={closePanel} />
+          <InventoryCenter isOpen={activePanel === 'InventoryCenter'} onClose={closePanel} />
 
           {/* Settings */}
           <TaxConfiguration
-            isOpen={isTaxConfigOpen}
-            onClose={() => setIsTaxConfigOpen(false)}
+            isOpen={activePanel === 'TaxConfiguration'}
+            onClose={closePanel}
             onTaxesLoaded={setTaxes}
           />
           <ShipViaConfiguration
-            isOpen={isShipViaConfigOpen}
-            onClose={() => setIsShipViaConfigOpen(false)}
+            isOpen={activePanel === 'ShipViaConfiguration'}
+            onClose={closePanel}
             onShipViasLoaded={setShipVias}
           />
 
           {/* Banking */}
-          <BankingCenter isOpen={isBankingCenterOpen} onClose={() => setIsBankingCenterOpen(false)} />
+          <BankingCenter isOpen={activePanel === 'BankingCenter'} onClose={closePanel} />
 
           {/* Accounting / GL */}
-          <ChartOfAccounts isOpen={isChartOfAccountsOpen} onClose={() => setIsChartOfAccountsOpen(false)} />
-          <JournalEntryCenter isOpen={isJournalEntryCenterOpen} onClose={() => setIsJournalEntryCenterOpen(false)} />
-          <GeneralLedger isOpen={isGeneralLedgerOpen} onClose={() => setIsGeneralLedgerOpen(false)} />
-          <TrialBalance isOpen={isTrialBalanceOpen} onClose={() => setIsTrialBalanceOpen(false)} />
+          <ChartOfAccounts isOpen={activePanel === 'ChartOfAccounts'} onClose={closePanel} />
+          <JournalEntryCenter isOpen={activePanel === 'JournalEntryCenter'} onClose={closePanel} />
+          <GeneralLedger isOpen={activePanel === 'GeneralLedger'} onClose={closePanel} />
+          <TrialBalance isOpen={activePanel === 'TrialBalance'} onClose={closePanel} />
 
           {/* Recurring */}
-          <RecurringCenter isOpen={isRecurringCenterOpen} onClose={() => setIsRecurringCenterOpen(false)} />
+          <RecurringCenter isOpen={activePanel === 'RecurringCenter'} onClose={closePanel} />
 
           {/* Company Settings */}
-          <CompanySettings isOpen={isCompanySettingsOpen} onClose={() => setIsCompanySettingsOpen(false)} />
+          <CompanySettings isOpen={activePanel === 'CompanySettings'} onClose={closePanel} />
 
           {/* ERP Flow */}
           <ERPFlowDiagram
-            isOpen={isERPFlowOpen}
-            onClose={() => setIsERPFlowOpen(false)}
-            onNavigate={(menuName) => { setIsERPFlowOpen(false); handleMenuClick(menuName) }}
+            isOpen={activePanel === 'ERPFlowDiagram'}
+            onClose={closePanel}
+            onNavigate={(menuName) => { handleMenuClick(menuName) }}
           />
 
           {/* Reports */}
           <ReportsDashboard
-            isOpen={isReportsDashboardOpen}
-            onClose={() => setIsReportsDashboardOpen(false)}
+            isOpen={activePanel === 'ReportsDashboard'}
+            onClose={closePanel}
           />
 
           {/* ── Dashboard / placeholder content ── */}
@@ -365,6 +341,53 @@ export default function Home() {
       {/* Overlay for mobile sidebar */}
       {isSidebarOpen && (
         <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* ── Unsaved Changes Confirm Dialog ── */}
+      {pendingPanel && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '32px',
+            maxWidth: 420, width: '90%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: '50%', background: '#fef2f2',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444', fontSize: 16 }}></i>
+              </div>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#1e293b' }}>Unsaved Changes</h3>
+            </div>
+            <p style={{ margin: '0 0 24px', color: '#64748b', lineHeight: 1.6, fontSize: 14 }}>
+              You have unsaved changes on this page. Opening a new page will discard them. Do you want to continue?
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={cancelNavigation}
+                style={{
+                  padding: '9px 20px', border: '1px solid #d1d5db', borderRadius: 8,
+                  background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: '#374151'
+                }}
+              >
+                Stay on Page
+              </button>
+              <button
+                onClick={confirmDiscard}
+                style={{
+                  padding: '9px 20px', border: 'none', borderRadius: 8,
+                  background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600
+                }}
+              >
+                Discard &amp; Continue
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   )

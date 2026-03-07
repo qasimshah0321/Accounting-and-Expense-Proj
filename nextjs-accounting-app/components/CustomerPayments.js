@@ -145,7 +145,7 @@ export default function CustomerPayments({ isOpen, onClose }) {
   }
 
   const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(customerSearchText.toLowerCase())
+    (c.name || '').toLowerCase().includes(customerSearchText.toLowerCase())
   )
 
   // ─── Save ─────────────────────────────────────────────────────────────────

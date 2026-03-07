@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import ShipViaPopup from './ShipViaPopup'
 import * as api from '../lib/api'
 
-export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdate }) {
+export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdate, onDirtyChange = () => {} }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [deliveryNotes, setDeliveryNotes] = useState([])
   const [loading, setLoading] = useState(false)
@@ -39,6 +39,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const [showShipViaDropdown, setShowShipViaDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [products, setProducts] = useState([])
+  const [activeItemId, setActiveItemId] = useState(null)
+  const [activeField, setActiveField] = useState(null)
 
   const autocompleteRef = useRef(null)
   const shipViaDropdownRef = useRef(null)
@@ -68,6 +71,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     if (isOpen) {
       loadDeliveryNotes()
       loadCustomers()
+      api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
     }
   }, [isOpen, loadDeliveryNotes, loadCustomers])
 
@@ -167,6 +171,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const handleNewNote = async () => {
     await resetForm()
     setEditingNote(null)
+    onDirtyChange(false)
     setShowForm(true)
   }
 
@@ -177,6 +182,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       const full = res.data || res
       setEditingNote(full)
       populateForm(full)
+      onDirtyChange(false)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load delivery note: ' + err.message)
@@ -195,6 +201,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   }
 
   const handleFormClose = () => {
+    onDirtyChange(false)
     setShowForm(false)
     setEditingNote(null)
   }
@@ -259,6 +266,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const handleShipViaSave = (newShipVia) => { onShipViaUpdate([...shipVias, newShipVia]); setSelectedShipVia(newShipVia); setIsShipViaPopupOpen(false) }
 
   const updateLineItem = (id, field, value) => {
+    onDirtyChange(true)
     setLineItems(lineItems.map(item => {
       if (item.id !== id) return item
       const updated = { ...item, [field]: value }
@@ -304,6 +312,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       } else {
         await api.createDeliveryNote(payload)
       }
+      onDirtyChange(false)
       setShowForm(false)
       setEditingNote(null)
       loadDeliveryNotes()
@@ -335,6 +344,31 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   }
 
   const activeShipVias = shipVias ? shipVias.filter(sv => sv.is_active) : []
+
+  const getProductSuggestions = (itemId, field) => {
+    const item = lineItems.find(i => i.id === itemId)
+    if (!item || !products.length) return []
+    const q = (field === 'sku' ? item.sku : item.description).toLowerCase()
+    if (!q) return []
+    return products.filter(p =>
+      (p.sku || '').toLowerCase().includes(q) ||
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.description || '').toLowerCase().includes(q)
+    ).slice(0, 8)
+  }
+
+  const handleProductSelect = (product) => {
+    setLineItems(prev => prev.map(item => {
+      if (item.id !== activeItemId) return item
+      return {
+        ...item,
+        sku: product.sku || '',
+        description: product.description || product.name || '',
+      }
+    }))
+    setActiveItemId(null)
+    setActiveField(null)
+  }
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -581,8 +615,84 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       <tbody>
                         {lineItems.map((item) => (
                           <tr key={item.id}>
-                            <td><input type="text" className={styles.formControlTable} placeholder="SKU" value={item.sku} onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="text" className={styles.formControlTable} placeholder="Item description" value={item.description} onChange={(e) => updateLineItem(item.id, 'description', e.target.value)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td>
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="SKU"
+                                  value={item.sku}
+                                  onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
+                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                />
+                                {activeItemId === item.id && activeField === 'sku' &&
+                                  getProductSuggestions(item.id, 'sku').length > 0 && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, zIndex: 9999,
+                                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280,
+                                      maxHeight: 220, overflowY: 'auto'
+                                    }}>
+                                      {getProductSuggestions(item.id, 'sku').map(product => (
+                                        <div
+                                          key={product.id}
+                                          onMouseDown={() => handleProductSelect(product)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                        >
+                                          <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{product.name}</div>
+                                            {product.sku && <div style={{ fontSize: 11, color: '#64748b' }}>SKU: {product.sku}</div>}
+                                            {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div style={{ position: 'relative' }}>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="Item description"
+                                  value={item.description}
+                                  onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
+                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                />
+                                {activeItemId === item.id && activeField === 'description' &&
+                                  getProductSuggestions(item.id, 'description').length > 0 && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, zIndex: 9999,
+                                      background: '#fff', border: '1px solid #d1d5db', borderRadius: 6,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: 280,
+                                      maxHeight: 220, overflowY: 'auto'
+                                    }}>
+                                      {getProductSuggestions(item.id, 'description').map(product => (
+                                        <div
+                                          key={product.id}
+                                          onMouseDown={() => handleProductSelect(product)}
+                                          style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                                                   display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                        >
+                                          <div>
+                                            <div style={{ fontWeight: 600, fontSize: 13 }}>{product.name}</div>
+                                            {product.sku && <div style={{ fontSize: 11, color: '#64748b' }}>SKU: {product.sku}</div>}
+                                            {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                )}
+                              </div>
+                            </td>
                             <td><input type="number" className={styles.formControlTable} value={item.ordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'ordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.shipped} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'shipped', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.backordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'backordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>

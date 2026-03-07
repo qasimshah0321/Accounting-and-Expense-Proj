@@ -70,8 +70,8 @@ export default function VendorCenter({ isOpen, onClose }) {
 
   const filteredVendors = vendors.filter(
     (v) =>
-      v.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      (v.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (v.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (

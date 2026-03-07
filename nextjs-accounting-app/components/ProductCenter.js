@@ -70,8 +70,8 @@ export default function ProductCenter({ isOpen, onClose }) {
 
   const filteredProducts = products.filter(
     (p) =>
-      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+      (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (

@@ -34,7 +34,7 @@ export default function ShipViaConfiguration({ isOpen, onClose, onShipViasLoaded
 
   if (!isOpen) return null
 
-  const filteredShipVias = shipVias.filter((s) => s.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredShipVias = shipVias.filter((s) => (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
 
   const handleAddShipViaClick = () => { setEditingShipVia(null); setIsShipViaPopupOpen(true) }
   const handleEditShipViaClick = (s) => { setEditingShipVia(s); setIsShipViaPopupOpen(true) }

@@ -34,7 +34,7 @@ export default function TaxConfiguration({ isOpen, onClose, onTaxesLoaded }) {
 
   if (!isOpen) return null
 
-  const filteredTaxes = taxes.filter((t) => t.name?.toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredTaxes = taxes.filter((t) => (t.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
 
   const handleAddTaxClick = () => { setEditingTax(null); setIsTaxPopupOpen(true) }
 

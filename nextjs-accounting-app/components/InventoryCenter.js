@@ -127,7 +127,7 @@ export default function InventoryCenter({ isOpen, onClose }) {
   // ─── Adjust Stock ─────────────────────────────────────────────────────────
 
   const filteredAdjustProducts = products.filter(p =>
-    p.name.toLowerCase().includes(adjustProductSearch.toLowerCase())
+    (p.name || '').toLowerCase().includes(adjustProductSearch.toLowerCase())
   )
 
   const handleAdjustProductSelect = (p) => {
@@ -161,7 +161,7 @@ export default function InventoryCenter({ isOpen, onClose }) {
   // ─── Stock Transfer ───────────────────────────────────────────────────────
 
   const filteredTransferProducts = products.filter(p =>
-    p.name.toLowerCase().includes(transferProductSearch.toLowerCase())
+    (p.name || '').toLowerCase().includes(transferProductSearch.toLowerCase())
   )
 
   const handleTransferProductSelect = (p) => {

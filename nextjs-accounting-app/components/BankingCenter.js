@@ -277,7 +277,7 @@ export default function BankingCenter({ isOpen, onClose }) {
   // ── Derived values ────────────────────────────────────────────────────────────
   const selectedAccount = accounts.find(a => a.id === selectedAccountId)
   const filteredGlAccounts = glAccounts.filter(a =>
-    !glSearch || a.name.toLowerCase().includes(glSearch.toLowerCase()) || (a.account_number || '').includes(glSearch)
+    !glSearch || (a.name || '').toLowerCase().includes(glSearch.toLowerCase()) || (a.account_number || '').includes(glSearch)
   )
   const totalDeposits = transactions.filter(t => parseFloat(t.amount) > 0).reduce((s, t) => s + parseFloat(t.amount), 0)
   const totalWithdrawals = transactions.filter(t => parseFloat(t.amount) < 0).reduce((s, t) => s + parseFloat(t.amount), 0)

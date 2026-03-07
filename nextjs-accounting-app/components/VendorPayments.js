@@ -145,7 +145,7 @@ export default function VendorPayments({ isOpen, onClose }) {
   }
 
   const filteredVendors = vendors.filter(v =>
-    v.name.toLowerCase().includes(vendorSearchText.toLowerCase())
+    (v.name || '').toLowerCase().includes(vendorSearchText.toLowerCase())
   )
 
   // ─── Save ─────────────────────────────────────────────────────────────────

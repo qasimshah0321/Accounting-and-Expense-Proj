@@ -111,7 +111,7 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
   const filteredAccounts = accounts.filter(a => {
     if (searchTerm) {
       const s = searchTerm.toLowerCase()
-      return a.name.toLowerCase().includes(s) || a.account_number.toLowerCase().includes(s)
+      return (a.name || '').toLowerCase().includes(s) || (a.account_number || '').toLowerCase().includes(s)
     }
     return true
   })

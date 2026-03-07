@@ -215,7 +215,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const filteredVendors = vendors.filter(v =>
-    v.name.toLowerCase().includes(vendorSearchText.toLowerCase())
+    (v.name || '').toLowerCase().includes(vendorSearchText.toLowerCase())
   )
 
   const handleVendorSave = (newVendor) => {

@@ -189,7 +189,7 @@ export default function ExpenseCenter({ isOpen, onClose, taxes }) {
   }
 
   const filteredVendors = vendors.filter(v =>
-    v.name.toLowerCase().includes(vendorSearchText.toLowerCase())
+    (v.name || '').toLowerCase().includes(vendorSearchText.toLowerCase())
   )
 
   // ─── Tax handlers ─────────────────────────────────────────────────────────

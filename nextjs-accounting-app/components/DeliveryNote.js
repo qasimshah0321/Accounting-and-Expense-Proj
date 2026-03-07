@@ -225,7 +225,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const handleAddNewCustomer = () => { setIsCustomerPopupOpen(true); setShowCustomerDropdown(false) }
 
   const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(customerSearchText.toLowerCase())
+    (c.name || '').toLowerCase().includes(customerSearchText.toLowerCase())
   )
 
   const handleCustomerSave = (newCustomer) => {

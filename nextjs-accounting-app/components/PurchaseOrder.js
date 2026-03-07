@@ -215,7 +215,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate }) {
   const handleAddNewVendor = () => { setIsVendorPopupOpen(true); setShowVendorDropdown(false) }
 
   const filteredVendors = vendors.filter(v =>
-    v.name.toLowerCase().includes(vendorSearchText.toLowerCase())
+    (v.name || '').toLowerCase().includes(vendorSearchText.toLowerCase())
   )
 
   const handleVendorSave = (newVendor) => {

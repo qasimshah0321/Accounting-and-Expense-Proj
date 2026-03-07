@@ -246,7 +246,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate }) {
   }
 
   const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(customerSearchText.toLowerCase())
+    (c.name || '').toLowerCase().includes(customerSearchText.toLowerCase())
   )
 
   const handleCustomerSave = (newCustomer) => {

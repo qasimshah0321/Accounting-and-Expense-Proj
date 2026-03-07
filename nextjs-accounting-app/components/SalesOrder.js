@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user }) {
+export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$' }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -395,7 +395,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     return new Date(dateStr).toLocaleDateString()
   }
 
-  const formatCurrency = (amount) => '$' + (parseFloat(amount) || 0).toFixed(2)
+  const formatCurrency = (amount) => currencySymbol + (parseFloat(amount) || 0).toFixed(2)
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -654,7 +654,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                             {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
                                           </div>
                                           <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
-                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                            {currencySymbol}{parseFloat(product.selling_price || 0).toFixed(2)}
                                           </div>
                                         </div>
                                       ))}
@@ -696,7 +696,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                             {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
                                           </div>
                                           <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
-                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                            {currencySymbol}{parseFloat(product.selling_price || 0).toFixed(2)}
                                           </div>
                                         </div>
                                       ))}
@@ -706,7 +706,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                             </td>
                             <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td className={styles.amountCell}>${item.amount.toFixed(2)}</td>
+                            <td className={styles.amountCell}>{currencySymbol}{item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>
                               <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>
                                 <i className="fas fa-trash"></i>
@@ -741,7 +741,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                       <div className={styles.totalsGrid}>
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Subtotal:</span>
-                          <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateSubtotal().toFixed(2)}</span>
                         </div>
                         <div className={styles.totalRow}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -765,11 +765,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                               )}
                             </div>
                           </div>
-                          <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTax().toFixed(2)}</span>
                         </div>
                         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                           <span className={styles.totalLabel}>Total:</span>
-                          <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTotal().toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

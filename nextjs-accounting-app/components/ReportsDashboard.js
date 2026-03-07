@@ -16,7 +16,7 @@ const KpiCard = ({ label, value, color = '#2563eb', bg = '#eff6ff', border = '#b
   </div>
 )
 
-export default function ReportsDashboard({ isOpen, onClose }) {
+export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$' }) {
   const [activeTab, setActiveTab] = useState('overview')
   const [startDate, setStartDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split('T')[0]
@@ -90,6 +90,8 @@ export default function ReportsDashboard({ isOpen, onClose }) {
     setActiveTab(tab)
     loadReport(tab, startDate, endDate)
   }
+
+  const fmt = (amt) => currencySymbol + (parseFloat(amt) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   const handleRun = () => loadReport(activeTab, startDate, endDate)
 

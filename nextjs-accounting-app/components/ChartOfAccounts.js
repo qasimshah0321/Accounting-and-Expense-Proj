@@ -7,7 +7,7 @@ import * as api from '../lib/api'
 const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense']
 const TYPE_LABELS = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', revenue: 'Revenue', expense: 'Expenses' }
 
-export default function ChartOfAccounts({ isOpen, onClose }) {
+export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' }) {
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(false)
   const [listError, setListError] = useState('')
@@ -123,7 +123,7 @@ export default function ChartOfAccounts({ isOpen, onClose }) {
 
   const formatBalance = (balance) => {
     const num = parseFloat(balance) || 0
-    return '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return currencySymbol + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   if (!isOpen) return null

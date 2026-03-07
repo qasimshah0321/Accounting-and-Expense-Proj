@@ -5,7 +5,7 @@ import styles from './ProductCenter.module.css'
 import ProductPopup from './ProductPopup'
 import * as api from '@/lib/api'
 
-export default function ProductCenter({ isOpen, onClose }) {
+export default function ProductCenter({ isOpen, onClose, currencySymbol = '$' }) {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -158,8 +158,8 @@ export default function ProductCenter({ isOpen, onClose }) {
                     <td>{product.category || '-'}</td>
                     <td>{product.sku || '-'}</td>
                     <td>{api.productTypeToFrontend(product.product_type)}</td>
-                    <td className={styles.priceCell}>${parseFloat(product.selling_price || 0).toFixed(2)}</td>
-                    <td className={styles.costCell}>${parseFloat(product.cost_price || 0).toFixed(2)}</td>
+                    <td className={styles.priceCell}>{currencySymbol}{parseFloat(product.selling_price || 0).toFixed(2)}</td>
+                    <td className={styles.costCell}>{currencySymbol}{parseFloat(product.cost_price || 0).toFixed(2)}</td>
                     <td>
                       <div className={styles.actionButtons}>
                         <button className={styles.btnEdit} title="Edit" onClick={() => handleEditProduct(product)}>

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import * as api from '../lib/api'
 
-export default function GeneralLedger({ isOpen, onClose }) {
+export default function GeneralLedger({ isOpen, onClose, currencySymbol = '$' }) {
   const [accounts, setAccounts] = useState([])
   const [selectedAccountId, setSelectedAccountId] = useState('')
   const [startDate, setStartDate] = useState(() => {
@@ -50,13 +50,13 @@ export default function GeneralLedger({ isOpen, onClose }) {
   const formatAmount = (val) => {
     const num = parseFloat(val) || 0
     if (num === 0) return ''
-    return '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return currencySymbol + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   const formatBalance = (val) => {
     const num = parseFloat(val) || 0
     const prefix = num < 0 ? '-' : ''
-    return prefix + '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return prefix + currencySymbol + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   const formatDate = (d) => {

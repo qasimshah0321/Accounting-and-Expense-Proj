@@ -34,6 +34,7 @@ import RolePermissions from '@/components/RolePermissions'
 import Login from '@/components/Login'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
+import { getCurrencySymbol } from '@/lib/currency'
 
 // Map every menu name to its panel identifier
 const MENU_PANEL_MAP = {
@@ -79,6 +80,7 @@ export default function Home() {
   const [taxes, setTaxes] = useState([])
   const [shipVias, setShipVias] = useState([])
   const [permittedMenus, setPermittedMenus] = useState(null)
+  const [currencySymbol, setCurrencySymbol] = useState('$')
 
   // UI state
   const [activeMenu, setActiveMenu] = useState('Dashboard')
@@ -140,6 +142,10 @@ export default function Home() {
 
       api.getMyMenus()
         .then((res) => setPermittedMenus(res.data?.menus ?? null))
+        .catch(() => {})
+
+      api.getCompanyProfile()
+        .then((res) => setCurrencySymbol(getCurrencySymbol(res.data?.currency)))
         .catch(() => {})
 
       // Customer users land on Orders instead of Dashboard
@@ -252,6 +258,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            currencySymbol={currencySymbol}
           />
           <SalesOrder
             isOpen={activePanel === 'SalesOrder'}
@@ -260,6 +267,7 @@ export default function Home() {
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
             user={user}
+            currencySymbol={currencySymbol}
           />
           <Estimate
             isOpen={activePanel === 'Estimate'}
@@ -267,6 +275,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            currencySymbol={currencySymbol}
           />
           <DeliveryNote
             isOpen={activePanel === 'DeliveryNote'}
@@ -283,6 +292,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            currencySymbol={currencySymbol}
           />
           <BillCenter
             isOpen={activePanel === 'BillCenter'}
@@ -290,28 +300,32 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            currencySymbol={currencySymbol}
           />
           <ExpenseCenter
             isOpen={activePanel === 'ExpenseCenter'}
             onClose={closePanel}
             taxes={taxes}
             onDirtyChange={setIsDirty}
+            currencySymbol={currencySymbol}
           />
 
           {/* Payments */}
           <CustomerPayments
             isOpen={activePanel === 'CustomerPayments'}
             onClose={closePanel}
+            currencySymbol={currencySymbol}
           />
           <VendorPayments
             isOpen={activePanel === 'VendorPayments'}
             onClose={closePanel}
+            currencySymbol={currencySymbol}
           />
 
           {/* Centers */}
           <CustomerCenter isOpen={activePanel === 'CustomerCenter'} onClose={closePanel} />
           <VendorCenter isOpen={activePanel === 'VendorCenter'} onClose={closePanel} />
-          <ProductCenter isOpen={activePanel === 'ProductCenter'} onClose={closePanel} />
+          <ProductCenter isOpen={activePanel === 'ProductCenter'} onClose={closePanel} currencySymbol={currencySymbol} />
           <InventoryCenter isOpen={activePanel === 'InventoryCenter'} onClose={closePanel} />
 
           {/* Settings */}
@@ -330,16 +344,20 @@ export default function Home() {
           <BankingCenter isOpen={activePanel === 'BankingCenter'} onClose={closePanel} />
 
           {/* Accounting / GL */}
-          <ChartOfAccounts isOpen={activePanel === 'ChartOfAccounts'} onClose={closePanel} />
-          <JournalEntryCenter isOpen={activePanel === 'JournalEntryCenter'} onClose={closePanel} />
-          <GeneralLedger isOpen={activePanel === 'GeneralLedger'} onClose={closePanel} />
-          <TrialBalance isOpen={activePanel === 'TrialBalance'} onClose={closePanel} />
+          <ChartOfAccounts isOpen={activePanel === 'ChartOfAccounts'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <JournalEntryCenter isOpen={activePanel === 'JournalEntryCenter'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <GeneralLedger isOpen={activePanel === 'GeneralLedger'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <TrialBalance isOpen={activePanel === 'TrialBalance'} onClose={closePanel} currencySymbol={currencySymbol} />
 
           {/* Recurring */}
           <RecurringCenter isOpen={activePanel === 'RecurringCenter'} onClose={closePanel} />
 
           {/* Company Settings */}
-          <CompanySettings isOpen={activePanel === 'CompanySettings'} onClose={closePanel} />
+          <CompanySettings
+            isOpen={activePanel === 'CompanySettings'}
+            onClose={closePanel}
+            onCurrencyChange={(code) => setCurrencySymbol(getCurrencySymbol(code))}
+          />
 
           {/* RBAC */}
           <UserManagement isOpen={activePanel === 'UserManagement'} onClose={closePanel} />
@@ -356,6 +374,7 @@ export default function Home() {
           <ReportsDashboard
             isOpen={activePanel === 'ReportsDashboard'}
             onClose={closePanel}
+            currencySymbol={currencySymbol}
           />
 
           {/* ── Dashboard ── */}

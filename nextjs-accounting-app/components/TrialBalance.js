@@ -14,7 +14,7 @@ const SECTION_LABELS = {
 
 const SECTION_ORDER = ['asset', 'liability', 'equity', 'revenue', 'expense']
 
-export default function TrialBalance({ isOpen, onClose }) {
+export default function TrialBalance({ isOpen, onClose, currencySymbol = '$' }) {
   const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0])
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -37,7 +37,7 @@ export default function TrialBalance({ isOpen, onClose }) {
   const formatAmount = (val) => {
     const num = parseFloat(val) || 0
     if (num === 0) return ''
-    return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return currencySymbol + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   }
 
   if (!isOpen) return null

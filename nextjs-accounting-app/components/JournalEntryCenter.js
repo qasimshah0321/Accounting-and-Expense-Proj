@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import * as api from '../lib/api'
 
-export default function JournalEntryCenter({ isOpen, onClose }) {
+export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '$' }) {
   // List state
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(false)
@@ -424,7 +424,7 @@ export default function JournalEntryCenter({ isOpen, onClose }) {
                     <tr>
                       <td colSpan={5} style={{ padding: '8px 10px', color: '#dc2626', fontSize: 13, textAlign: 'center' }}>
                         <i className="fas fa-exclamation-triangle" style={{ marginRight: 6 }} />
-                        Difference: ${Math.abs(totalDebits - totalCredits).toFixed(2)} -- debits must equal credits
+                        Difference: {currencySymbol}{Math.abs(totalDebits - totalCredits).toFixed(2)} -- debits must equal credits
                       </td>
                     </tr>
                   )}

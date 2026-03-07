@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {} }) {
+export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, currencySymbol = '$' }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(false)
@@ -738,7 +738,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                             {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
                                           </div>
                                           <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
-                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                            {currencySymbol}{parseFloat(product.selling_price || 0).toFixed(2)}
                                           </div>
                                         </div>
                                       ))}
@@ -780,7 +780,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                             {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
                                           </div>
                                           <div style={{ fontSize: 12, color: '#16a34a', fontWeight: 600, marginLeft: 8 }}>
-                                            ${parseFloat(product.selling_price || 0).toFixed(2)}
+                                            {currencySymbol}{parseFloat(product.selling_price || 0).toFixed(2)}
                                           </div>
                                         </div>
                                       ))}
@@ -821,7 +821,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                               />
                             </td>
                             <td className={styles.amountCell}>
-                              ${item.amount.toFixed(2)}
+                              {currencySymbol}{item.amount.toFixed(2)}
                             </td>
                             <td className={styles.actionCell}>
                               <button
@@ -875,7 +875,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                       <div className={styles.totalsGrid}>
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Subtotal:</span>
-                          <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateSubtotal().toFixed(2)}</span>
                         </div>
 
                         {/* Tax Dropdown */}
@@ -911,16 +911,16 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                               )}
                             </div>
                           </div>
-                          <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTax().toFixed(2)}</span>
                         </div>
 
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Discount:</span>
-                          <span className={styles.totalValue}>${calculateDiscount().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateDiscount().toFixed(2)}</span>
                         </div>
                         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                           <span className={styles.totalLabel}>Total:</span>
-                          <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTotal().toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

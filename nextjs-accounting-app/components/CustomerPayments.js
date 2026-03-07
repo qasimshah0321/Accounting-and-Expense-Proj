@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import * as api from '../lib/api'
 
-export default function CustomerPayments({ isOpen, onClose }) {
+export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$' }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(false)
@@ -187,7 +187,7 @@ export default function CustomerPayments({ isOpen, onClose }) {
     return new Date(dateStr).toLocaleDateString()
   }
 
-  const formatCurrency = (amt) => '$' + (parseFloat(amt) || 0).toFixed(2)
+  const formatCurrency = (amt) => currencySymbol + (parseFloat(amt) || 0).toFixed(2)
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (

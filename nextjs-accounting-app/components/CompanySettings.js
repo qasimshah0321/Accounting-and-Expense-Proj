@@ -20,7 +20,7 @@ const emptyProfile = {
   tax_number: '',
 }
 
-export default function CompanySettings({ isOpen, onClose }) {
+export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
   const [form, setForm] = useState({ ...emptyProfile })
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -75,6 +75,7 @@ export default function CompanySettings({ isOpen, onClose }) {
     try {
       await api.updateCompanyProfile(form)
       setSuccessMsg('Company settings saved')
+      if (onCurrencyChange) onCurrencyChange(form.currency)
     } catch (err) {
       setError(err.message)
     } finally {

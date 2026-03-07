@@ -6,7 +6,7 @@ import VendorPopup from './VendorPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {} }) {
+export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, currencySymbol = '$' }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [bills, setBills] = useState([])
   const [loading, setLoading] = useState(false)
@@ -337,7 +337,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     return new Date(dateStr).toLocaleDateString()
   }
 
-  const formatCurrency = (amount) => '$' + (parseFloat(amount) || 0).toFixed(2)
+  const formatCurrency = (amount) => currencySymbol + (parseFloat(amount) || 0).toFixed(2)
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -679,7 +679,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                             {product.description && <div style={{ fontSize: 11, color: '#94a3b8' }}>{product.description.slice(0, 50)}</div>}
                                           </div>
                                           <div style={{ fontSize: 12, color: '#0ea5e9', fontWeight: 600, marginLeft: 8 }}>
-                                            ${parseFloat(product.cost_price || 0).toFixed(2)}
+                                            {currencySymbol}{parseFloat(product.cost_price || 0).toFixed(2)}
                                           </div>
                                         </div>
                                       ))}
@@ -709,7 +709,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                               />
                             </td>
                             <td className={styles.amountCell}>
-                              ${item.amount.toFixed(2)}
+                              {currencySymbol}{item.amount.toFixed(2)}
                             </td>
                             <td className={styles.actionCell}>
                               <button
@@ -747,7 +747,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                       <div className={styles.totalsGrid}>
                         <div className={styles.totalRow}>
                           <span className={styles.totalLabel}>Subtotal:</span>
-                          <span className={styles.totalValue}>${calculateSubtotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateSubtotal().toFixed(2)}</span>
                         </div>
 
                         {/* Tax Dropdown */}
@@ -783,12 +783,12 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                               )}
                             </div>
                           </div>
-                          <span className={styles.totalValue}>${calculateTax().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTax().toFixed(2)}</span>
                         </div>
 
                         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
                           <span className={styles.totalLabel}>Total:</span>
-                          <span className={styles.totalValue}>${calculateTotal().toFixed(2)}</span>
+                          <span className={styles.totalValue}>{currencySymbol}{calculateTotal().toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

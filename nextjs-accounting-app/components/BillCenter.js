@@ -370,10 +370,11 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     ).slice(0, 8)
   }
 
-  const handleProductSelect = (product) => {
+  const handleProductSelect = (product, itemId) => {
+    const targetId = itemId ?? activeItemId
+    const price = parseFloat(product.cost_price) || parseFloat(product.unit_cost) || 0
     setLineItems(prev => prev.map(item => {
-      if (item.id !== activeItemId) return item
-      const price = parseFloat(product.cost_price || 0)
+      if (item.id !== targetId) return item
       const updated = {
         ...item,
         description: product.description || product.name || '',
@@ -382,6 +383,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
       if ('amount' in updated) updated.amount = (updated.quantity || 1) * price - (updated.discount || 0)
       return updated
     }))
+    onDirtyChange(true)
     setActiveItemId(null)
     setActiveField(null)
   }
@@ -665,7 +667,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                       {getProductSuggestions(item.id, 'description').map(product => (
                                         <div
                                           key={product.id}
-                                          onMouseDown={() => handleProductSelect(product)}
+                                          onMouseDown={() => handleProductSelect(product, item.id)}
                                           style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                           onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}

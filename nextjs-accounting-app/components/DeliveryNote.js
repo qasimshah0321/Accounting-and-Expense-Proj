@@ -357,15 +357,17 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     ).slice(0, 8)
   }
 
-  const handleProductSelect = (product) => {
+  const handleProductSelect = (product, itemId) => {
+    const targetId = itemId ?? activeItemId
     setLineItems(prev => prev.map(item => {
-      if (item.id !== activeItemId) return item
+      if (item.id !== targetId) return item
       return {
         ...item,
         sku: product.sku || '',
         description: product.description || product.name || '',
       }
     }))
+    onDirtyChange(true)
     setActiveItemId(null)
     setActiveField(null)
   }
@@ -637,7 +639,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                                       {getProductSuggestions(item.id, 'sku').map(product => (
                                         <div
                                           key={product.id}
-                                          onMouseDown={() => handleProductSelect(product)}
+                                          onMouseDown={() => handleProductSelect(product, item.id)}
                                           style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                           onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
@@ -676,7 +678,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                                       {getProductSuggestions(item.id, 'description').map(product => (
                                         <div
                                           key={product.id}
-                                          onMouseDown={() => handleProductSelect(product)}
+                                          onMouseDown={() => handleProductSelect(product, item.id)}
                                           style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                           onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}

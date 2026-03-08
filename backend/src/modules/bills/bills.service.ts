@@ -2,8 +2,24 @@ import { pool, withTransaction } from '../../config/database';
 import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
-import { createAuditLog, createStatusHistory } from '../../services/auditService';
+import { createStatusHistory } from '../../services/auditService';
 import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
+
+export const peekNextBillNumber = async (companyId: string): Promise<string> => {
+  const { rows } = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='bill'`,
+    [companyId]
+  );
+  if (!rows.length) return 'BILL-001';
+  const { prefix, next_number, padding, include_date } = rows[0];
+  const parts: string[] = [prefix];
+  if (include_date) {
+    const d = new Date();
+    parts.push(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  }
+  parts.push(String(next_number).padStart(padding, '0'));
+  return parts.join('-');
+};
 
 export const listBills = async (companyId: string, filters: any) => {
   const conditions = ['company_id=$1', 'deleted_at IS NULL'];
@@ -20,7 +36,7 @@ export const listBills = async (companyId: string, filters: any) => {
   const countRes = await pool.query(`SELECT COUNT(*) FROM bills WHERE ${where}`, params);
   const total = parseInt(countRes.rows[0].count, 10);
   const { rows } = await pool.query(
-    `SELECT id,bill_no,vendor_id,vendor_name,bill_date,due_date,status,payment_status,grand_total,amount_paid,amount_due FROM bills WHERE ${where} ORDER BY bill_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+    `SELECT id,bill_no,vendor_id,vendor_name,bill_date,due_date,status,payment_status,total_amount,amount_paid,amount_due FROM bills WHERE ${where} ORDER BY bill_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
     [...params, filters.limit, filters.offset]
   );
   return { bills: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
@@ -35,19 +51,20 @@ export const getBillById = async (companyId: string, billId: string) => {
 
 export const createBill = async (companyId: string, userId: string, data: any) => {
   return withTransaction(async (client) => {
-    const vendRes = await client.query('SELECT name,address FROM vendors WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [data.vendor_id, companyId]);
+    const vendRes = await client.query('SELECT name FROM vendors WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [data.vendor_id, companyId]);
     if (!vendRes.rows.length) throw new ValidationError('Vendor not found');
     const vendor = vendRes.rows[0];
 
     const billNo = await generateDocumentNumber(companyId, 'bill', client);
     const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate, 0);
     const taxAmount = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate * (li.tax_rate || 0) / 100, 0);
-    const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);
+    const discountAmount = data.discount_amount || 0;
+    const totalAmount = subtotal + taxAmount - discountAmount;
 
     const { rows: [bill] } = await client.query(
-      `INSERT INTO bills (company_id,bill_no,vendor_id,vendor_name,vendor_address,vendor_invoice_no,reference_no,bill_date,due_date,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,notes,internal_notes,created_by,updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'draft','unpaid',$10,$11,$12,$13,$14,$15,$16,0,$17,$18,$19,$19) RETURNING *`,
-      [companyId, billNo, data.vendor_id, vendor.name, vendor.address, data.vendor_invoice_no || null, data.reference_no || null, data.bill_date, data.due_date, subtotal, data.tax_id || null, data.tax_rate || 0, taxAmount, data.discount_amount || 0, data.shipping_charges || 0, grandTotal, data.notes || null, data.internal_notes || null, userId]
+      `INSERT INTO bills (company_id,bill_no,vendor_id,vendor_name,vendor_invoice_no,bill_date,due_date,status,payment_status,subtotal,tax_amount,discount_amount,total_amount,amount_paid,amount_due,notes,created_by,updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'draft','unpaid',$8,$9,$10,$11,0,$11,$12,$13,$13) RETURNING *`,
+      [companyId, billNo, data.vendor_id, vendor.name, data.vendor_invoice_no || null, data.bill_date, data.due_date, subtotal, taxAmount, discountAmount, totalAmount, data.notes || null, userId]
     );
 
     for (let i = 0; i < data.line_items.length; i++) {
@@ -67,12 +84,32 @@ export const updateBill = async (companyId: string, billId: string, userId: stri
   const bill = await getBillById(companyId, billId);
   if (bill.status !== 'draft') throw new ConflictError('Only draft bills can be edited');
   return withTransaction(async (client) => {
+    // Resolve vendor name if vendor is changing
+    let vendorName = bill.vendor_name;
+    if (data.vendor_id && data.vendor_id !== bill.vendor_id) {
+      const vendRes = await client.query('SELECT name FROM vendors WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [data.vendor_id, companyId]);
+      if (!vendRes.rows.length) throw new ValidationError('Vendor not found');
+      vendorName = vendRes.rows[0].name;
+    }
+
+    // Update header fields
+    await client.query(
+      `UPDATE bills SET vendor_id=$1,vendor_name=$2,vendor_invoice_no=$3,bill_date=$4,due_date=$5,notes=$6,updated_by=$7,updated_at=NOW() WHERE id=$8 AND company_id=$9`,
+      [data.vendor_id || bill.vendor_id, vendorName, data.vendor_invoice_no ?? bill.vendor_invoice_no, data.bill_date || bill.bill_date, data.due_date || bill.due_date, data.notes ?? bill.notes, userId, billId, companyId]
+    );
+
     if (data.line_items) {
       await client.query('DELETE FROM bill_line_items WHERE bill_id=$1', [billId]);
       const subtotal = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate, 0);
       const taxAmount = data.line_items.reduce((s: number, li: any) => s + li.quantity * li.rate * (li.tax_rate || 0) / 100, 0);
-      const grandTotal = subtotal + taxAmount + (data.shipping_charges || bill.shipping_charges || 0) - (data.discount_amount || bill.discount_amount || 0);
-      await client.query('UPDATE bills SET subtotal=$1,tax_amount=$2,grand_total=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [subtotal, taxAmount, grandTotal, userId, billId]);
+      const discountAmount = data.discount_amount ?? bill.discount_amount ?? 0;
+      const totalAmount = subtotal + taxAmount - discountAmount;
+      const amountDue = Math.max(0, totalAmount - parseFloat(bill.amount_paid));
+
+      await client.query(
+        'UPDATE bills SET subtotal=$1,tax_amount=$2,discount_amount=$3,total_amount=$4,amount_due=$5,updated_by=$6,updated_at=NOW() WHERE id=$7',
+        [subtotal, taxAmount, discountAmount, totalAmount, amountDue, userId, billId]
+      );
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
         await client.query(
@@ -99,17 +136,17 @@ export const updateStatus = async (companyId: string, billId: string, userId: st
     await client.query('UPDATE bills SET status=$1,updated_by=$2,updated_at=NOW() WHERE id=$3', [newStatus, userId, billId]);
     await createStatusHistory({ company_id: companyId, document_type: 'bill', document_id: billId, document_no: bill.bill_no, from_status: bill.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
 
-    // GL auto-post: when transitioning from draft to received/approved
-    if (bill.status === 'draft' && (newStatus === 'received' || newStatus === 'approved' || newStatus === 'sent')) {
+    // GL auto-post: when bill is approved
+    if (bill.status === 'draft' && newStatus === 'approved') {
       try {
         const expenseAccountId = await getSystemAccount(companyId, '5900', client);
         const apAccountId = await getSystemAccount(companyId, '2000', client);
         if (expenseAccountId && apAccountId) {
-          const grandTotal = parseFloat(bill.grand_total) || 0;
+          const totalAmount = parseFloat(bill.total_amount) || 0;
           await createAutoJournalEntry(companyId, userId, userName, 'bill', billId, bill.bill_no, bill.bill_date, [
-            { account_id: expenseAccountId, debit: grandTotal, credit: 0, description: 'Bill expense' },
-            { account_id: apAccountId, debit: 0, credit: grandTotal, description: 'Accounts Payable' },
-          ], `Bill ${bill.bill_no} posted`, client);
+            { account_id: expenseAccountId, debit: totalAmount, credit: 0, description: 'Bill expense' },
+            { account_id: apAccountId, debit: 0, credit: totalAmount, description: 'Accounts Payable' },
+          ], `Bill ${bill.bill_no} approved`, client);
         }
       } catch (glErr) {
         console.error('GL auto-post failed for bill status change:', glErr);
@@ -125,8 +162,8 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
     const billRes = await client.query('SELECT * FROM bills WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [billId, companyId]);
     if (!billRes.rows.length) throw new NotFoundError('Bill');
     const bill = billRes.rows[0];
-    const amountDue = parseFloat(bill.grand_total) - parseFloat(bill.amount_paid);
-    if (data.amount > amountDue + 0.01) throw new ValidationError(`Payment exceeds amount due (${amountDue})`);
+    const amountDue = parseFloat(bill.total_amount) - parseFloat(bill.amount_paid);
+    if (data.amount > amountDue + 0.01) throw new ValidationError(`Payment exceeds amount due (${amountDue.toFixed(2)})`);
 
     const payNo = await generateDocumentNumber(companyId, 'vendor_payment', client);
     const { rows: [payment] } = await client.query(
@@ -136,9 +173,12 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
     );
 
     const newAmountPaid = parseFloat(bill.amount_paid) + data.amount;
-    const newAmountDue = parseFloat(bill.grand_total) - newAmountPaid;
+    const newAmountDue = Math.max(0, parseFloat(bill.total_amount) - newAmountPaid);
     const paymentStatus = newAmountDue <= 0.01 ? 'paid' : 'partially_paid';
-    await client.query('UPDATE bills SET amount_paid=$1,payment_status=$2,status=$3,updated_by=$4,updated_at=NOW() WHERE id=$5', [newAmountPaid, paymentStatus, paymentStatus, userId, billId]);
+    await client.query(
+      'UPDATE bills SET amount_paid=$1,amount_due=$2,payment_status=$3,updated_by=$4,updated_at=NOW() WHERE id=$5',
+      [newAmountPaid, newAmountDue, paymentStatus, userId, billId]
+    );
 
     // GL auto-post: DR Accounts Payable, CR Cash
     try {
@@ -154,7 +194,7 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
       console.error('GL auto-post failed for bill payment:', glErr);
     }
 
-    return { payment, bill_updated: { id: billId, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: Math.max(0, newAmountDue) } };
+    return { payment, bill_updated: { id: billId, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: newAmountDue } };
   });
 };
 
@@ -173,7 +213,7 @@ export const getOverdueBills = async (companyId: string, filters: any) => {
   const countRes = await pool.query(`SELECT COUNT(*) FROM bills WHERE company_id=$1 AND due_date < CURRENT_DATE AND payment_status != 'paid' AND deleted_at IS NULL`, [companyId]);
   const total = parseInt(countRes.rows[0].count, 10);
   const { rows } = await pool.query(
-    `SELECT id,bill_no,vendor_name,bill_date,due_date,grand_total,amount_paid,amount_due,status FROM bills WHERE company_id=$1 AND due_date < CURRENT_DATE AND payment_status != 'paid' AND deleted_at IS NULL ORDER BY due_date ASC LIMIT $2 OFFSET $3`,
+    `SELECT id,bill_no,vendor_name,bill_date,due_date,total_amount,amount_paid,amount_due,status FROM bills WHERE company_id=$1 AND due_date < CURRENT_DATE AND payment_status != 'paid' AND deleted_at IS NULL ORDER BY due_date ASC LIMIT $2 OFFSET $3`,
     [companyId, filters.limit, filters.offset]
   );
   return { bills: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };

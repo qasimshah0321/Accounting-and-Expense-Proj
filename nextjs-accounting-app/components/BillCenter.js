@@ -160,10 +160,14 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   }
 
   // ─── List actions ─────────────────────────────────────────────────────────
-  const handleNewBill = () => {
+  const handleNewBill = async () => {
     resetForm()
     setEditingBill(null)
     onDirtyChange(false)
+    try {
+      const res = await api.getNextBillNumber()
+      setBillNo(res.data?.bill_no || res.bill_no || '')
+    } catch {}
     setShowForm(true)
   }
 

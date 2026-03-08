@@ -30,7 +30,7 @@ export const createBillSchema = z.object({
 export const updateBillSchema = createBillSchema.partial();
 
 export const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'received', 'partially_paid', 'paid', 'overdue', 'cancelled']),
+  status: z.enum(['draft', 'approved', 'posted', 'cancelled']),
   reason: z.string().optional(),
 });
 

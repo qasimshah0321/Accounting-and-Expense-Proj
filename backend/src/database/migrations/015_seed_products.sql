@@ -15,9 +15,7 @@ BEGIN
   FOR v_company_id IN SELECT id FROM companies ORDER BY created_at LOOP
 
     INSERT INTO products
-      (company_id, name, sku, selling_price, cost_price, current_stock,
-       product_type, track_inventory, is_active, is_for_sale, is_for_purchase,
-       unit_of_measure, notes)
+      (company_id, name, sku, selling_price, cost_price, current_stock, notes)
     VALUES
   (v_company_id, 'M&ms jaune', 'M-MS-JAUNE', 14.00, 0.00, 9.0000, 'Expiry: 08.03–19.04'),
   (v_company_id, 'M&ms bleu', 'M-MS-BLEU', 14.00, 0.00, 0.0000, NULL),

@@ -37,7 +37,7 @@ export const createInvoiceSchema = z.object({
 export const updateInvoiceSchema = createInvoiceSchema.partial();
 
 export const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'sent', 'partially_paid', 'paid', 'overdue', 'cancelled']),
+  status: z.enum(['draft', 'sent', 'approved', 'partially_paid', 'paid', 'overdue', 'cancelled']),
   reason: z.string().optional(),
 });
 

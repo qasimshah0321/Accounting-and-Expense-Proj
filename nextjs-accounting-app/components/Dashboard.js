@@ -1,46 +1,142 @@
 'use client'
 
-import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { useState, useEffect } from 'react'
+import { LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
 import styles from './Dashboard.module.css'
+import * as api from '@/lib/api'
 
-// Sample data for charts
-const salesData = [
-  { month: 'Mar', amount: 50000 },
-  { month: 'Apr', amount: 75000 },
-  { month: 'May', amount: 120000 },
-  { month: 'Jun', amount: 95000 },
-  { month: 'Jul', amount: 180000 },
-  { month: 'Aug', amount: 220000 },
-  { month: 'Sep', amount: 185000 },
-  { month: 'Oct', amount: 155000 },
-  { month: 'Nov', amount: 210000 },
-  { month: 'Dec', amount: 250000 },
-]
-
-const expensesData = [
-  { name: 'Agency Fees', value: 35, color: '#1E3A8A' },
-  { name: 'General Administrative Expenses', value: 28, color: '#3B82F6' },
-  { name: 'Payroll Expenses', value: 22, color: '#8B5CF6' },
-  { name: 'Sales', value: 15, color: '#06B6D4' },
-]
-
-const receivableData = [
-  { name: 'CURRENT', value: 45, color: '#10B981' },
-  { name: '1-30', value: 20, color: '#3B82F6' },
-  { name: '31-60', value: 15, color: '#8B5CF6' },
-  { name: '61-90', value: 12, color: '#06B6D4' },
-  { name: '91 AND OVER', value: 8, color: '#F59E0B' },
-]
-
-const payableData = [
-  { name: 'CURRENT', value: 50, color: '#10B981' },
-  { name: '1-30', value: 22, color: '#3B82F6' },
-  { name: '31-60', value: 18, color: '#8B5CF6' },
-  { name: '61-90', value: 7, color: '#06B6D4' },
-  { name: '91 AND OVER', value: 3, color: '#F59E0B' },
-]
+const AGING_COLORS = ['#10B981', '#3B82F6', '#8B5CF6', '#06B6D4', '#F59E0B']
+const EXPENSE_COLORS = ['#1E3A8A', '#3B82F6', '#8B5CF6', '#06B6D4', '#F59E0B', '#10B981', '#EF4444']
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function Dashboard({ currencySymbol = '$' }) {
+  const [loading, setLoading] = useState(true)
+  const [dashData, setDashData] = useState(null)
+  const [plData, setPlData] = useState(null)
+  const [expData, setExpData] = useState(null)
+  const [arData, setArData] = useState([])
+  const [apData, setApData] = useState([])
+  const [bankData, setBankData] = useState(null)
+  const [invoices, setInvoices] = useState([])
+
+  useEffect(() => {
+    const load = async () => {
+      const now = new Date()
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+      const today = now.toISOString().split('T')[0]
+
+      const [dash, pl, exp, ar, ap, bank, invRes] = await Promise.allSettled([
+        api.getReportsDashboard(),
+        api.getProfitLossReport(monthStart, today),
+        api.getExpenseSummaryReport(monthStart, today),
+        api.getReceivablesAgingReport(),
+        api.getPayablesAgingReport(),
+        api.getBankSummary(),
+        api.getInvoices(),
+      ])
+
+      if (dash.status === 'fulfilled') setDashData(dash.value?.data || null)
+      if (pl.status === 'fulfilled') setPlData(pl.value?.data || null)
+      if (exp.status === 'fulfilled') setExpData(exp.value?.data || null)
+      if (ar.status === 'fulfilled') setArData(Array.isArray(ar.value?.data) ? ar.value.data : [])
+      if (ap.status === 'fulfilled') setApData(Array.isArray(ap.value?.data) ? ap.value.data : [])
+      if (bank.status === 'fulfilled') setBankData(bank.value?.data || null)
+      if (invRes.status === 'fulfilled') setInvoices(invRes.value?.data?.invoices || [])
+
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const fmt = (n) =>
+    currencySymbol + (parseFloat(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const fmtShort = (n) => {
+    const v = parseFloat(n) || 0
+    if (v >= 1_000_000) return currencySymbol + (v / 1_000_000).toFixed(1) + 'M'
+    if (v >= 1_000) return currencySymbol + (v / 1_000).toFixed(1) + 'K'
+    return fmt(v)
+  }
+
+  // ── Profit & Loss ──────────────────────────────────────────────────────────
+  const income = parseFloat(plData?.revenue?.total || 0)
+  const totalExpenses = parseFloat(plData?.expenses?.combined || 0)
+  const netProfit = parseFloat(plData?.net_profit || 0)
+  const maxBar = Math.max(income, totalExpenses, 1)
+  const now = new Date()
+  const monthLabel = now.toLocaleString('default', { month: 'long' })
+
+  // ── Expenses donut ─────────────────────────────────────────────────────────
+  const expTotal = parseFloat(expData?.expenses?.total_amount || 0)
+  const expByCategory = (expData?.expenses_by_category || []).slice(0, 7).map((cat, i) => ({
+    name: cat.expense_category || 'Other',
+    value: parseFloat(cat.total || 0),
+    color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+  })).filter(c => c.value > 0)
+
+  // ── Invoice stats ──────────────────────────────────────────────────────────
+  const unpaidTotal = invoices
+    .filter(i => i.payment_status !== 'paid')
+    .reduce((s, i) => s + parseFloat(i.amount_due || 0), 0)
+  const overdueTotal = invoices
+    .filter(i => i.payment_status !== 'paid' && i.due_date && new Date(i.due_date) < now)
+    .reduce((s, i) => s + parseFloat(i.amount_due || 0), 0)
+  const paidLast30 = invoices
+    .filter(i => {
+      if (i.payment_status !== 'paid') return false
+      const d = new Date(i.invoice_date)
+      return (now - d) / (1000 * 60 * 60 * 24) <= 30
+    })
+    .reduce((s, i) => s + parseFloat(i.grand_total || 0), 0)
+  const overduePercent = unpaidTotal > 0 ? Math.min(100, Math.round((overdueTotal / unpaidTotal) * 100)) : 0
+
+  // ── Sales line chart (current year, by month) ──────────────────────────────
+  const salesByMonth = Array.from({ length: 12 }, (_, i) => ({ month: MONTH_NAMES[i], amount: 0 }))
+  invoices.forEach(inv => {
+    if (!inv.invoice_date) return
+    const d = new Date(inv.invoice_date)
+    if (d.getFullYear() !== now.getFullYear()) return
+    salesByMonth[d.getMonth()].amount += parseFloat(inv.grand_total || 0)
+  })
+  const salesChartData = salesByMonth.slice(0, now.getMonth() + 1)
+  const totalYearSales = salesChartData.reduce((s, m) => s + m.amount, 0)
+
+  // ── AR aging pie ───────────────────────────────────────────────────────────
+  const sumAging = (data, key) => data.reduce((s, r) => s + parseFloat(r[key] || 0), 0)
+  const arTotal = parseFloat(dashData?.total_receivables || 0)
+  const arPieData = [
+    { name: 'Current', value: sumAging(arData, 'current_due'), color: AGING_COLORS[0] },
+    { name: '1-30 days', value: sumAging(arData, 'overdue_1_30'), color: AGING_COLORS[1] },
+    { name: '31-60 days', value: sumAging(arData, 'overdue_31_60'), color: AGING_COLORS[2] },
+    { name: '61-90 days', value: sumAging(arData, 'overdue_61_90'), color: AGING_COLORS[3] },
+    { name: '91+ days', value: sumAging(arData, 'overdue_90_plus'), color: AGING_COLORS[4] },
+  ].filter(d => d.value > 0)
+
+  // ── AP aging pie ───────────────────────────────────────────────────────────
+  const apTotal = parseFloat(dashData?.total_payables || 0)
+  const apPieData = [
+    { name: 'Current', value: sumAging(apData, 'current_due'), color: AGING_COLORS[0] },
+    { name: '1-30 days', value: sumAging(apData, 'overdue_1_30'), color: AGING_COLORS[1] },
+    { name: '31-60 days', value: sumAging(apData, 'overdue_31_60'), color: AGING_COLORS[2] },
+    { name: '61-90 days', value: sumAging(apData, 'overdue_61_90'), color: AGING_COLORS[3] },
+    { name: '91+ days', value: sumAging(apData, 'overdue_90_plus'), color: AGING_COLORS[4] },
+  ].filter(d => d.value > 0)
+
+  // ── Bank accounts ──────────────────────────────────────────────────────────
+  const totalBankBalance = parseFloat(bankData?.total_balance || 0)
+  const bankAccounts = bankData?.accounts || []
+
+  if (loading) {
+    return (
+      <div className={styles.dashboard}>
+        <div className={styles.dashboardHeader}><h2>Business at a glance</h2></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px', color: '#64748b' }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: 28 }}></i>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.dashboard}>
       <div className={styles.dashboardHeader}>
@@ -48,99 +144,82 @@ export default function Dashboard({ currencySymbol = '$' }) {
       </div>
 
       <div className={styles.dashboardGrid}>
-        {/* Profit & Loss Card */}
+
+        {/* ── Profit & Loss ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>PROFIT & LOSS</h3>
-              <p className={styles.cardSubtitle}>Net profit for November</p>
+              <p className={styles.cardSubtitle}>Net profit for {monthLabel}</p>
             </div>
-            <select className={styles.dropdown}>
-              <option>Last month</option>
-            </select>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>{currencySymbol}55,958</span>
-              <span className={styles.percentage}>
-                <i className="fas fa-circle"></i> 100%
+              <span className={styles.amount} style={{ color: netProfit >= 0 ? '#10B981' : '#EF4444' }}>
+                {netProfit < 0 ? '-' : ''}{fmt(Math.abs(netProfit))}
               </span>
             </div>
-            <div className={styles.trend}>
-              <i className="fas fa-arrow-up"></i> Up 124% from prior month
-            </div>
-            <div className={styles.barChart}>
-              <div className={styles.barItem}>
-                <span className={styles.barLabel}>{currencySymbol}224,609</span>
-                <div className={styles.barWrapper}>
-                  <div className={styles.barIncome} style={{width: '80%'}}></div>
+            {income > 0 || totalExpenses > 0 ? (
+              <div className={styles.barChart}>
+                <div className={styles.barItem}>
+                  <span className={styles.barLabel}>{fmtShort(income)}</span>
+                  <div className={styles.barWrapper}>
+                    <div className={styles.barIncome} style={{ width: `${(income / maxBar) * 100}%` }}></div>
+                  </div>
+                  <span className={styles.barCategory}>Income</span>
                 </div>
-                <span className={styles.barCategory}>Income</span>
-              </div>
-              <div className={styles.barItem}>
-                <span className={styles.barLabel}>{currencySymbol}168,652</span>
-                <div className={styles.barWrapper}>
-                  <div className={styles.barExpense} style={{width: '60%'}}></div>
+                <div className={styles.barItem}>
+                  <span className={styles.barLabel}>{fmtShort(totalExpenses)}</span>
+                  <div className={styles.barWrapper}>
+                    <div className={styles.barExpense} style={{ width: `${(totalExpenses / maxBar) * 100}%` }}></div>
+                  </div>
+                  <span className={styles.barCategory}>Expenses</span>
                 </div>
-                <span className={styles.barCategory}>Expenses</span>
               </div>
-            </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 12 }}>No data for this month</p>
+            )}
           </div>
         </div>
 
-        {/* Expenses Card */}
+        {/* ── Expenses ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>EXPENSES</h3>
-              <p className={styles.cardSubtitle}>Spending for last 30 days</p>
+              <p className={styles.cardSubtitle}>Spending this month</p>
             </div>
-            <select className={styles.dropdown}>
-              <option>Last 30 days</option>
-            </select>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>-{currencySymbol}1,272</span>
-              <span className={styles.percentage}>
-                <i className="fas fa-circle"></i> 99%
-              </span>
+              <span className={styles.amount}>{fmt(expTotal)}</span>
             </div>
-            <div className={styles.trendDown}>
-              <i className="fas fa-arrow-down"></i> Down 100% from prior 30 days
-            </div>
-            <div className={styles.donutChart}>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={expensesData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {expensesData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className={styles.legend}>
-                {expensesData.map((item, index) => (
-                  <div key={index} className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{backgroundColor: item.color}}></span>
-                    <span className={styles.legendText}>{item.name}</span>
-                  </div>
-                ))}
+            {expByCategory.length > 0 ? (
+              <div className={styles.donutChart}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={expByCategory} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                      {expByCategory.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className={styles.legend}>
+                  {expByCategory.map((item, i) => (
+                    <div key={i} className={styles.legendItem}>
+                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
+                      <span className={styles.legendText}>{item.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 12 }}>No expenses this month</p>
+            )}
           </div>
         </div>
 
-        {/* Invoices Card */}
+        {/* ── Invoices ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <h3>INVOICES</h3>
@@ -148,220 +227,209 @@ export default function Dashboard({ currencySymbol = '$' }) {
           <div className={styles.cardBody}>
             <div className={styles.invoiceSection}>
               <div className={styles.invoiceHeader}>
-                <span>{currencySymbol}768,919 Unpaid</span>
-                <span>Last 365 days</span>
+                <span>{fmt(unpaidTotal)} Unpaid</span>
+                <span>{invoices.filter(i => i.payment_status !== 'paid').length} invoices</span>
               </div>
-              <div className={styles.invoiceAmount}>{currencySymbol}563,901</div>
+              <div className={styles.invoiceAmount}>{fmt(overdueTotal)}</div>
               <div className={styles.invoiceLabel}>Overdue</div>
               <div className={styles.progressBar}>
-                <div className={styles.progressOverdue} style={{width: '73%'}}></div>
+                <div className={styles.progressOverdue} style={{ width: `${overduePercent}%` }}></div>
               </div>
             </div>
             <div className={styles.invoiceSection}>
               <div className={styles.invoiceHeader}>
-                <span>{currencySymbol}65,745 Paid</span>
+                <span>{fmt(paidLast30)} Paid</span>
                 <span>Last 30 days</span>
               </div>
-              <div className={styles.invoiceAmount}>{currencySymbol}0</div>
-              <div className={styles.invoiceLabel}>Not deposited</div>
+              <div className={styles.invoiceAmount}>{dashData?.overdue_invoices ?? 0}</div>
+              <div className={styles.invoiceLabel}>Overdue invoices (count)</div>
               <div className={styles.progressBar}>
-                <div className={styles.progressPaid} style={{width: '100%'}}></div>
+                <div className={styles.progressPaid} style={{ width: paidLast30 > 0 ? '100%' : '0%' }}></div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bank Accounts Card */}
+        {/* ── Bank Accounts ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>BANK ACCOUNTS</h3>
-              <p className={styles.cardSubtitle}>Today's bank balance</p>
+              <p className={styles.cardSubtitle}>Current balance</p>
             </div>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>{currencySymbol}160,914</span>
-              <i className="fas fa-info-circle" style={{color: '#3B82F6', fontSize: '16px'}}></i>
+              <span className={styles.amount}>{fmt(totalBankBalance)}</span>
             </div>
-            <div className={styles.accountsList}>
-              <div className={styles.accountItem}>
-                <div className={styles.accountInfo}>
-                  <i className="fas fa-university" style={{color: '#3B82F6'}}></i>
-                  <div>
-                    <div className={styles.accountName}>101100 Checking</div>
-                    <div className={styles.accountBank}>In QuickBooks</div>
+            {bankAccounts.length > 0 ? (
+              <div className={styles.accountsList}>
+                {bankAccounts.slice(0, 4).map(account => (
+                  <div key={account.id} className={styles.accountItem}>
+                    <div className={styles.accountInfo}>
+                      <i className="fas fa-university" style={{ color: '#3B82F6' }}></i>
+                      <div>
+                        <div className={styles.accountName}>{account.account_name}</div>
+                        <div className={styles.accountBank}>{account.bank_name || account.account_type}</div>
+                      </div>
+                    </div>
+                    <div className={styles.accountBalance}>{fmt(account.current_balance)}</div>
                   </div>
-                </div>
-                <div className={styles.accountBalance}>{currencySymbol}0</div>
+                ))}
               </div>
-              <div className={styles.accountItem}>
-                <div className={styles.accountInfo}>
-                  <i className="fas fa-university" style={{color: '#3B82F6'}}></i>
-                  <div>
-                    <div className={styles.accountName}>101000 Business Adv Relat...</div>
-                    <div className={styles.accountBank}>Bank balance in QuickBooks</div>
-                    <div className={styles.accountUpdate}>Updated 12 hours ago</div>
-                  </div>
-                </div>
-                <div className={styles.accountBalance}>
-                  <div>{currencySymbol}160,914.25</div>
-                  <div className={styles.accountSecondary}>{currencySymbol}117,744.70</div>
-                  <div className={styles.accountReview}>17 to review</div>
-                </div>
-              </div>
-            </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 12 }}>No bank accounts connected</p>
+            )}
           </div>
         </div>
 
-        {/* Sales Card */}
+        {/* ── Sales ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>SALES</h3>
-              <p className={styles.cardSubtitle}>Total Amount</p>
+              <p className={styles.cardSubtitle}>Year to date ({now.getFullYear()})</p>
             </div>
-            <select className={styles.dropdown}>
-              <option>This year to date</option>
-            </select>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>{currencySymbol}1,059,402</span>
+              <span className={styles.amount}>{fmt(totalYearSales)}</span>
             </div>
             <div className={styles.lineChart}>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={salesData}>
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    dot={{ fill: '#10B981', r: 4 }}
-                  />
+                <LineChart data={salesChartData}>
+                  <XAxis dataKey="month" stroke="#9CA3AF" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#9CA3AF" tick={{ fontSize: 11 }} tickFormatter={v => fmtShort(v)} />
+                  <Tooltip formatter={(v) => [fmt(v), 'Sales']} />
+                  <Line type="monotone" dataKey="amount" stroke="#10B981" strokeWidth={2} dot={{ fill: '#10B981', r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Accounts Receivable Card */}
+        {/* ── Accounts Receivable ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>ACCOUNTS RECEIVABLE</h3>
-              <p className={styles.cardSubtitle}>Total</p>
+              <p className={styles.cardSubtitle}>Outstanding balance</p>
             </div>
-            <select className={styles.dropdown}>
-              <option>As of today</option>
-            </select>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>{currencySymbol}768,511</span>
+              <span className={styles.amount}>{fmt(arTotal)}</span>
             </div>
-            <div className={styles.donutChart}>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={receivableData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {receivableData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className={styles.legend}>
-                {receivableData.map((item, index) => (
-                  <div key={index} className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{backgroundColor: item.color}}></span>
-                    <span className={styles.legendText}>{item.name}</span>
-                  </div>
-                ))}
+            {arPieData.length > 0 ? (
+              <div className={styles.donutChart}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={arPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                      {arPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className={styles.legend}>
+                  {arPieData.map((item, i) => (
+                    <div key={i} className={styles.legendItem}>
+                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
+                      <span className={styles.legendText}>{item.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 12 }}>No outstanding receivables</p>
+            )}
           </div>
         </div>
 
-        {/* Accounts Payable Card */}
+        {/* ── Accounts Payable ── */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div>
               <h3>ACCOUNTS PAYABLE</h3>
-              <p className={styles.cardSubtitle}>Total</p>
+              <p className={styles.cardSubtitle}>Outstanding balance</p>
             </div>
-            <select className={styles.dropdown}>
-              <option>As of today</option>
-            </select>
           </div>
           <div className={styles.cardBody}>
             <div className={styles.mainStat}>
-              <span className={styles.amount}>{currencySymbol}648,733</span>
+              <span className={styles.amount}>{fmt(apTotal)}</span>
             </div>
-            <div className={styles.donutChart}>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={payableData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {payableData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className={styles.legend}>
-                {payableData.map((item, index) => (
-                  <div key={index} className={styles.legendItem}>
-                    <span className={styles.legendDot} style={{backgroundColor: item.color}}></span>
-                    <span className={styles.legendText}>{item.name}</span>
-                  </div>
-                ))}
+            {apPieData.length > 0 ? (
+              <div className={styles.donutChart}>
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={apPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={2} dataKey="value">
+                      {apPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className={styles.legend}>
+                  {apPieData.map((item, i) => (
+                    <div key={i} className={styles.legendItem}>
+                      <span className={styles.legendDot} style={{ backgroundColor: item.color }}></span>
+                      <span className={styles.legendText}>{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 12 }}>No outstanding payables</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Quick Stats ── */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h3>THIS MONTH</h3>
+              <p className={styles.cardSubtitle}>Activity summary</p>
+            </div>
+          </div>
+          <div className={styles.cardBody}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <i className="fas fa-file-invoice" style={{ marginRight: 8, color: '#3B82F6' }}></i>Invoices issued
+                </span>
+                <strong style={{ fontSize: 14 }}>{dashData?.invoice_count ?? 0}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <i className="fas fa-dollar-sign" style={{ marginRight: 8, color: '#10B981' }}></i>Month sales
+                </span>
+                <strong style={{ fontSize: 14 }}>{fmt(dashData?.month_sales)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <i className="fas fa-receipt" style={{ marginRight: 8, color: '#8B5CF6' }}></i>Month expenses
+                </span>
+                <strong style={{ fontSize: 14 }}>{fmt(dashData?.month_expenses)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <i className="fas fa-exclamation-circle" style={{ marginRight: 8, color: '#EF4444' }}></i>Overdue invoices
+                </span>
+                <strong style={{ fontSize: 14, color: (dashData?.overdue_invoices ?? 0) > 0 ? '#EF4444' : 'inherit' }}>
+                  {dashData?.overdue_invoices ?? 0}
+                </strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>
+                  <i className="fas fa-exclamation-triangle" style={{ marginRight: 8, color: '#F59E0B' }}></i>Overdue bills
+                </span>
+                <strong style={{ fontSize: 14, color: (dashData?.overdue_bills ?? 0) > 0 ? '#F59E0B' : 'inherit' }}>
+                  {dashData?.overdue_bills ?? 0}
+                </strong>
               </div>
             </div>
           </div>
         </div>
 
-        {/* My Integrations Card */}
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div>
-              <h3>MY INTEGRATIONS</h3>
-              <p className={styles.cardSubtitle}>Total</p>
-            </div>
-            <select className={styles.dropdown}>
-              <option>As of today</option>
-            </select>
-          </div>
-          <div className={styles.cardBody}>
-            <div className={styles.mainStat}>
-              <span className={styles.amount}>2</span>
-            </div>
-            <div className={styles.integrationStatus}>
-              <i className="fas fa-check-circle" style={{color: '#10B981'}}></i>
-              <span>Connected</span>
-              <span className={styles.integrationCount}>2</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )

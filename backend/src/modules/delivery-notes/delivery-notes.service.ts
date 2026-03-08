@@ -30,20 +30,20 @@ export const peekNextDeliveryNoteNumber = async (companyId: string): Promise<str
 };
 
 export const listDeliveryNotes = async (companyId: string, filters: any) => {
-  const conditions = ['company_id=$1', 'deleted_at IS NULL'];
+  const conditions = ['dn.company_id=$1', 'dn.deleted_at IS NULL'];
   const params: unknown[] = [companyId];
   let idx = 2;
 
-  if (filters.status) { conditions.push(`status=$${idx++}`); params.push(filters.status); }
-  if (filters.customer_id) { conditions.push(`customer_id=$${idx++}`); params.push(filters.customer_id); }
-  if (filters.sales_order_id) { conditions.push(`sales_order_id=$${idx++}`); params.push(filters.sales_order_id); }
-  if (filters.search) { conditions.push(`(delivery_note_no ILIKE $${idx} OR customer_name ILIKE $${idx})`); params.push(`%${filters.search}%`); idx++; }
+  if (filters.status) { conditions.push(`dn.status=$${idx++}`); params.push(filters.status); }
+  if (filters.customer_id) { conditions.push(`dn.customer_id=$${idx++}`); params.push(filters.customer_id); }
+  if (filters.sales_order_id) { conditions.push(`dn.sales_order_id=$${idx++}`); params.push(filters.sales_order_id); }
+  if (filters.search) { conditions.push(`(dn.delivery_note_no ILIKE $${idx} OR dn.customer_name ILIKE $${idx})`); params.push(`%${filters.search}%`); idx++; }
 
   const where = conditions.join(' AND ');
-  const countRes = await pool.query(`SELECT COUNT(*) FROM delivery_notes WHERE ${where}`, params);
+  const countRes = await pool.query(`SELECT COUNT(*) FROM delivery_notes dn LEFT JOIN sales_orders so ON so.id = dn.sales_order_id WHERE ${where}`, params);
   const total = parseInt(countRes.rows[0].count, 10);
   const { rows } = await pool.query(
-    `SELECT id,delivery_note_no,customer_id,customer_name,delivery_date,shipment_date,ship_via_name,status,total_ordered_qty,total_shipped_qty,total_backordered_qty,invoiced,created_at FROM delivery_notes WHERE ${where} ORDER BY delivery_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+    `SELECT dn.id,dn.delivery_note_no,dn.customer_id,dn.customer_name,dn.delivery_date,dn.shipment_date,dn.ship_via_name,dn.status,dn.total_ordered_qty,dn.total_shipped_qty,dn.total_backordered_qty,dn.invoiced,dn.created_at,so.sales_order_no AS source_so_no FROM delivery_notes dn LEFT JOIN sales_orders so ON so.id = dn.sales_order_id WHERE ${where} ORDER BY dn.delivery_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
     [...params, filters.limit, filters.offset]
   );
   return { delivery_notes: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };

@@ -6,7 +6,7 @@ import CustomerPopup from './CustomerPopup'
 import ShipViaPopup from './ShipViaPopup'
 import * as api from '../lib/api'
 
-export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdate, onDirtyChange = () => {} }) {
+export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdate, onDirtyChange = () => {}, user }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [deliveryNotes, setDeliveryNotes] = useState([])
   const [loading, setLoading] = useState(false)
@@ -225,6 +225,22 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       setDeliveryNotes(prev => prev.map(dn => dn.id === n.id ? { ...dn, status: 'shipped' } : dn))
     } catch (err) {
       setListError('Ship failed: ' + err.message)
+    }
+  }
+
+  const handleConvertToInvoice = async (n) => {
+    if (!confirm(`Convert ${n.delivery_note_no} to a draft Invoice?`)) return
+    setListError('')
+    try {
+      const due = new Date()
+      due.setDate(due.getDate() + 30)
+      await api.convertDeliveryNoteToInvoice(n.id, {
+        invoice_date: new Date().toISOString().split('T')[0],
+        due_date: due.toISOString().split('T')[0],
+      })
+      setDeliveryNotes(prev => prev.map(dn => dn.id === n.id ? { ...dn, invoiced: true } : dn))
+    } catch (err) {
+      setListError('Convert to Invoice failed: ' + err.message)
     }
   }
 
@@ -450,6 +466,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 <thead>
                   <tr>
                     <th>DN #</th>
+                    <th>Source SO</th>
                     <th>Customer</th>
                     <th>Date</th>
                     <th>Shipment Date</th>
@@ -465,6 +482,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                   {filteredNotes.map((n) => (
                     <tr key={n.id}>
                       <td><strong>{n.delivery_note_no || '-'}</strong></td>
+                      <td>{n.source_so_no || '-'}</td>
                       <td>{n.customer_name || '-'}</td>
                       <td>{formatDate(n.delivery_date)}</td>
                       <td>{formatDate(n.shipment_date)}</td>
@@ -488,6 +506,17 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                             <button className={styles.btnNew} title="Ship (deducts stock)" onClick={() => handleShipNote(n)} style={{ fontSize: 11, padding: '2px 8px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                               <i className="fas fa-truck"></i> Ship
                             </button>
+                          )}
+                          {(n.status === 'shipped' || n.status === 'delivered') && !n.invoiced && user?.role !== 'customer' && (
+                            <button title="Convert to Invoice" onClick={() => handleConvertToInvoice(n)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#0891b2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-file-invoice"></i> Invoice
+                            </button>
+                          )}
+                          {n.invoiced && (
+                            <span style={{ fontSize: 11, color: '#16a34a', padding: '2px 4px' }}>
+                              <i className="fas fa-check-circle"></i> Invoiced
+                            </span>
                           )}
                           {n.status === 'draft' && (
                             <button className={styles.btnEdit} title="Edit" onClick={() => handleEditNote(n)}>

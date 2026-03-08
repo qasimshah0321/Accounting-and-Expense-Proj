@@ -305,6 +305,11 @@ export const updateSalesOrderStatus = (id, status, reason) =>
     body: JSON.stringify({ status, reason }),
   }).then(handle)
 
+export const convertSalesOrderToDeliveryNote = (id, data) =>
+  fetch(`${API_BASE}/sales-orders/${id}/convert-to-delivery-note`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify(data)
+  }).then(handle)
+
 // ─── Estimates ───────────────────────────────────────────────────────────────
 export const getNextEstimateNumber = () =>
   fetch(`${API_BASE}/estimates/next-number`, { headers: buildHeaders() }).then(handle)
@@ -377,6 +382,11 @@ export const shipDeliveryNote = (id, data = {}) =>
     method: 'POST',
     headers: buildHeaders(),
     body: JSON.stringify(data),
+  }).then(handle)
+
+export const convertDeliveryNoteToInvoice = (id, data) =>
+  fetch(`${API_BASE}/delivery-notes/${id}/convert-to-invoice`, {
+    method: 'POST', headers: buildHeaders(), body: JSON.stringify(data)
   }).then(handle)
 
 // ─── Bills ──────────────────────────────────────────────────────────────────

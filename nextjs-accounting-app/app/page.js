@@ -283,6 +283,7 @@ export default function Home() {
             shipVias={shipVias}
             onShipViaUpdate={setShipVias}
             onDirtyChange={setIsDirty}
+            user={user}
           />
 
           {/* Purchases */}

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(git checkout:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)",
+      "Bash(timeout 3 cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(\"/c/Program Files/PostgreSQL/18/bin/psql.exe\":*)"
+    ]
+  }
+}

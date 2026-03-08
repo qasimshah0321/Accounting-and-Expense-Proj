@@ -279,6 +279,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            user={user}
             currencySymbol={currencySymbol}
           />
           <SalesOrder
@@ -296,6 +297,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            user={user}
             currencySymbol={currencySymbol}
           />
           <DeliveryNote
@@ -314,6 +316,7 @@ export default function Home() {
             taxes={taxes}
             onTaxUpdate={setTaxes}
             onDirtyChange={setIsDirty}
+            user={user}
             currencySymbol={currencySymbol}
           />
           <BillCenter

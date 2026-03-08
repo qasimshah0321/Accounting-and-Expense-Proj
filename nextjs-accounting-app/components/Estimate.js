@@ -6,7 +6,9 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, currencySymbol = '$' }) {
+export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$' }) {
+  const isCustomerRole = user?.role === 'customer'
+
   // ─── List state ───────────────────────────────────────────────────────────
   const [estimates, setEstimates] = useState([])
   const [loading, setLoading] = useState(false)
@@ -654,7 +656,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                               </div>
                             </td>
                             <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" readOnly={isCustomerRole || viewMode} onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => !(isCustomerRole || viewMode) && handleFieldFocus(item.id)} style={isCustomerRole || viewMode ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} /></td>
                             <td className={styles.amountCell}>{currencySymbol}{item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>
                               <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>

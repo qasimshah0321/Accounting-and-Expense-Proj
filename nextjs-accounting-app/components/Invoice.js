@@ -6,7 +6,9 @@ import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, currencySymbol = '$' }) {
+export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$' }) {
+  const isCustomerRole = user?.role === 'customer'
+
   // ─── List state ───────────────────────────────────────────────────────────
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(false)
@@ -879,8 +881,10 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                 value={item.rate}
                                 min="0"
                                 step="0.01"
+                                readOnly={isCustomerRole || viewMode}
                                 onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
                                 onFocus={() => handleFieldFocus(item.id)}
+                                style={isCustomerRole || viewMode ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
                               />
                             </td>
                             <td>

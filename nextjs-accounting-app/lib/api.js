@@ -231,6 +231,13 @@ export const deleteInvoice = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+export const updateInvoiceStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/invoices/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, ...(reason && { reason }) }),
+  }).then(handle)
+
 // ─── Purchase Orders ─────────────────────────────────────────────────────────
 export const getNextPurchaseOrderNumber = () =>
   fetch(`${API_BASE}/purchase-orders/next-number`, { headers: buildHeaders() }).then(handle)

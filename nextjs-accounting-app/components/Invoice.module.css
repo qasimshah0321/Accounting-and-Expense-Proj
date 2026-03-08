@@ -210,6 +210,11 @@
   text-decoration: line-through;
 }
 
+.statusApproved {
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
 .actionButtons {
   display: flex;
   gap: 8px;
@@ -256,6 +261,27 @@
   background-color: #fef2f2;
   color: #dc2626;
   border-color: #fca5a5;
+}
+
+.btnApprove {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.btnApprove:hover {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-color: #86efac;
 }
 
 .loadingState,

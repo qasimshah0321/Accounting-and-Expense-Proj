@@ -9,8 +9,9 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   confirmed: ['in_progress', 'cancelled'],
   in_progress: ['partially_fulfilled', 'fulfilled', 'cancelled'],
   partially_fulfilled: ['fulfilled', 'cancelled'],
-  fulfilled: [],
+  fulfilled: ['completed'],
   cancelled: [],
+  completed: [],
 };
 
 const calcTotals = (items: any[], discountAmount = 0) => {

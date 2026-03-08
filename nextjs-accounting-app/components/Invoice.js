@@ -450,9 +450,19 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     switch (status) {
       case 'paid': return styles.statusPaid
       case 'sent': return styles.statusSent
+      case 'approved': return styles.statusApproved
       case 'overdue': return styles.statusOverdue
       case 'cancelled': return styles.statusCancelled
       default: return styles.statusDraft
+    }
+  }
+
+  const handleApprove = async (id) => {
+    try {
+      await api.updateInvoiceStatus(id, 'approved')
+      await loadInvoices()
+    } catch (err) {
+      setListError(err.message)
     }
   }
 
@@ -567,6 +577,15 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
+                          {(inv.status === 'draft' || inv.status === 'sent') && (
+                            <button
+                              className={styles.btnApprove}
+                              title="Approve Invoice"
+                              onClick={() => handleApprove(inv.id)}
+                            >
+                              <i className="fas fa-check"></i>
+                            </button>
+                          )}
                           <button
                             className={styles.btnEdit}
                             title="Edit"

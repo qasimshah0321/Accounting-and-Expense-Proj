@@ -147,6 +147,24 @@ export const updateStatus = async (companyId: string, invoiceId: string, userId:
       }
     }
 
+    // When invoice is approved, mark the linked sales order as completed
+    if (newStatus === 'approved') {
+      let soId: string | null = inv.sales_order_id || null;
+      if (!soId && inv.delivery_note_id) {
+        const dnRes = await client.query(
+          'SELECT order_id FROM delivery_notes WHERE id=$1',
+          [inv.delivery_note_id]
+        );
+        if (dnRes.rows.length) soId = dnRes.rows[0].order_id;
+      }
+      if (soId) {
+        await client.query(
+          `UPDATE sales_orders SET status='completed', updated_at=NOW() WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL`,
+          [soId, companyId]
+        );
+      }
+    }
+
     return { ...inv, status: newStatus };
   });
 };

@@ -86,27 +86,132 @@
   box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.1);
 }
 
-.headerRight {
+.rightActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .iconBtn {
-  width: 40px;
-  height: 40px;
-  background: transparent;
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  font-size: 18px;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  color: #4a5568;
+  font-size: 16px;
+  transition: background 0.15s;
 }
 
 .iconBtn:hover {
-  background-color: var(--sidebar-hover);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.notifWrapper {
+  position: relative;
+}
+
+.notifBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: #e53e3e;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.userAvatarWrap {
+  position: relative;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2CA01C;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s;
+}
+
+.userAvatar:hover {
+  opacity: 0.85;
+}
+
+.userDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+  z-index: 200;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.dropdownUserInfo {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  pointer-events: none;
+}
+
+.dropdownUserName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.dropdownUserEmail {
+  font-size: 12px;
+  color: #718096;
+  margin-top: 2px;
+}
+
+.dropdownItem {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 11px 16px;
+  font-size: 14px;
+  color: #2d3748;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.dropdownItem:hover {
+  background: #f7fafc;
+}
+
+.dropdownItem i {
+  width: 16px;
+  color: #718096;
+}
+
+.dropdownSignOut {
+  color: #e53e3e !important;
+}
+
+.dropdownSignOut i {
+  color: #e53e3e !important;
 }
 
 .mobileMenuToggle {
@@ -133,7 +238,7 @@
     padding: 0 15px;
   }
 
-  .headerRight {
+  .rightActions {
     display: none;
   }
 

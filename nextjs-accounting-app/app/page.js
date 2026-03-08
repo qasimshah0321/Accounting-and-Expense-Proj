@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
 import Sidebar from '@/components/Sidebar'
 import Dashboard from '@/components/Dashboard'
@@ -32,6 +32,7 @@ import ERPFlowDiagram from '@/components/ERPFlowDiagram'
 import UserManagement from '@/components/UserManagement'
 import RolePermissions from '@/components/RolePermissions'
 import Login from '@/components/Login'
+import ToastContainer from '../components/Toast'
 import styles from './page.module.css'
 import * as api from '@/lib/api'
 import { getCurrencySymbol } from '@/lib/currency'
@@ -81,6 +82,7 @@ export default function Home() {
   const [shipVias, setShipVias] = useState([])
   const [permittedMenus, setPermittedMenus] = useState(null)
   const [currencySymbol, setCurrencySymbol] = useState('$')
+  const [companyProfile, setCompanyProfile] = useState(null)
 
   // UI state
   const [activeMenu, setActiveMenu] = useState('Dashboard')
@@ -90,6 +92,16 @@ export default function Home() {
 
   // Single active panel — only one panel open at a time
   const [activePanel, setActivePanel] = useState(null)
+
+  // Toast notifications
+  const [toasts, setToasts] = useState([])
+  const showToast = useCallback((message, type = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+  }, []);
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   // Pending navigation: { panel, menu } when user tries to navigate away with unsaved changes
   const [pendingPanel, setPendingPanel] = useState(null)
@@ -145,7 +157,10 @@ export default function Home() {
         .catch(() => {})
 
       api.getCompanyProfile()
-        .then((res) => setCurrencySymbol(getCurrencySymbol(res.data?.currency)))
+        .then((res) => {
+          setCompanyProfile(res.data || null)
+          setCurrencySymbol(getCurrencySymbol(res.data?.currency))
+        })
         .catch(() => {})
 
       // Customer users land on Orders instead of Dashboard
@@ -226,7 +241,13 @@ export default function Home() {
 
   return (
     <>
-      <Header onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)} onLogout={handleLogout} user={user} />
+      <Header
+        onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        onLogout={handleLogout}
+        user={user}
+        companyName={companyProfile?.name || ''}
+        onOpenSettings={() => { setActiveMenu('Company Settings'); setActivePanel('CompanySettings'); }}
+      />
 
       <CreateMenu
         isOpen={isCreateMenuOpen}
@@ -358,6 +379,7 @@ export default function Home() {
             isOpen={activePanel === 'CompanySettings'}
             onClose={closePanel}
             onCurrencyChange={(code) => setCurrencySymbol(getCurrencySymbol(code))}
+            showToast={showToast}
           />
 
           {/* RBAC */}
@@ -434,6 +456,8 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>
   )
 }

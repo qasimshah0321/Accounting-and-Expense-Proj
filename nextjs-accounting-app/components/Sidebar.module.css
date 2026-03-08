@@ -218,6 +218,52 @@
   background-color: var(--primary-green);
 }
 
+.activeParent {
+  background: rgba(44, 160, 28, 0.06) !important;
+  border-left: 3px solid #2CA01C !important;
+}
+
+.activeParent .menuItemContent i,
+.activeParent .menuItemContent span {
+  color: #2CA01C !important;
+}
+
+.flyout {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  min-width: 180px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 300;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.flyoutTitle {
+  padding: 10px 14px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2CA01C;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.flyoutItem {
+  padding: 9px 14px;
+  font-size: 13px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.flyoutItem:hover {
+  background: #f0fdf4;
+  color: #2CA01C;
+}
+
 .sidebarFooter {
   padding: 20px 0;
   border-top: 1px solid var(--border-color);

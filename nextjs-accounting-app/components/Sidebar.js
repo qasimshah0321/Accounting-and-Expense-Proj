@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import styles from './Sidebar.module.css'
 
 const menuItems = [
@@ -162,9 +162,21 @@ const menuItems = [
 
 export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, onCreateClick, onToggleCollapse, permittedMenus, userRole }) {
   const [expandedMenus, setExpandedMenus] = useState({})
+  const [hoveredFlyout, setHoveredFlyout] = useState(null)
 
   const allowed = permittedMenus ? new Set(permittedMenus.map(m => m.name)) : null
   const labels = Object.fromEntries((permittedMenus || []).map(m => [m.name, m.display_name]))
+
+  const activeParent = useMemo(() => {
+    if (!activeMenu) return null
+    for (const item of menuItems) {
+      if (item.submenus) {
+        const found = item.submenus.some(sub => sub.name === activeMenu)
+        if (found) return item.id
+      }
+    }
+    return null
+  }, [activeMenu])
 
   const toggleSubmenu = (menuId) => {
     setExpandedMenus(prev => ({
@@ -207,6 +219,8 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
             // For top-level items without submenus (e.g. Dashboard), check permission directly
             if (!item.submenus && allowed && !allowed.has(item.name)) return null
 
+            const isActiveParent = activeParent === item.id
+
             return (
             <li key={item.id} className={styles.menuItemWrapper}>
               {item.submenus ? (
@@ -215,9 +229,11 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
                   <div
                     className={`${styles.menuItem} ${styles.hasSubmenu} ${
                       expandedMenus[item.id] ? styles.expanded : ''
-                    }`}
+                    } ${isActiveParent ? styles.activeParent : ''}`}
                     onClick={() => !isCollapsed && toggleSubmenu(item.id)}
                     title={isCollapsed ? item.name : ''}
+                    onMouseEnter={() => isCollapsed && item.submenus && setHoveredFlyout(item.id)}
+                    onMouseLeave={() => setHoveredFlyout(null)}
                   >
                     <div className={styles.menuItemContent}>
                       <i className={`fas ${item.icon}`}></i>
@@ -228,6 +244,25 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
                         </>
                       )}
                     </div>
+
+                    {isCollapsed && hoveredFlyout === item.id && (
+                      <div
+                        className={styles.flyout}
+                        onMouseEnter={() => setHoveredFlyout(item.id)}
+                        onMouseLeave={() => setHoveredFlyout(null)}
+                      >
+                        <div className={styles.flyoutTitle}>{item.name}</div>
+                        {visibleSubmenus.map(sub => (
+                          <div
+                            key={sub.id}
+                            className={styles.flyoutItem}
+                            onClick={(e) => { e.stopPropagation(); onMenuClick(sub.name); }}
+                          >
+                            {labels[sub.name] || sub.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {!isCollapsed && (
                     <ul className={`${styles.submenu} ${

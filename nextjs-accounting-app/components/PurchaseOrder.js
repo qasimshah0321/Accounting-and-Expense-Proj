@@ -487,10 +487,20 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                 </tbody>
               </table>
             ) : (
-              <div className={styles.emptyState}>
-                <i className="fas fa-shopping-cart"></i>
-                <h3>No purchase orders found</h3>
-                <p>{searchTerm ? 'Try adjusting your search' : 'Click "New Purchase Order" to create your first purchase order'}</p>
+              <div className={styles.emptyState} style={{textAlign:'center',padding:'48px 20px'}}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:'8px'}}>
+                  <i className="fas fa-shopping-bag" style={{fontSize:'48px',color:'#e2e8f0'}} />
+                  <h3 style={{margin:'8px 0 4px',fontSize:'18px',fontWeight:600,color:'#4a5568'}}>No Purchase Orders Yet</h3>
+                  <p style={{margin:0,color:'#a0aec0',fontSize:'14px'}}>{searchTerm ? 'Try adjusting your search' : 'Create your first purchase order to get started'}</p>
+                  {!searchTerm && (
+                    <button
+                      style={{marginTop:'12px',background:'#2CA01C',color:'white',border:'none',padding:'9px 20px',borderRadius:'6px',cursor:'pointer',fontSize:'14px',fontWeight:500}}
+                      onClick={handleNewOrder}
+                    >
+                      + New Purchase Order
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

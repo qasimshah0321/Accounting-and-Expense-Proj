@@ -167,7 +167,10 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     try {
       const res = await api.getNextBillNumber()
       setBillNo(res.data?.bill_no || res.bill_no || '')
-    } catch {}
+    } catch {
+      // If auth expired, token is gone — don't open form (Login will take over)
+      if (!localStorage.getItem('auth_token')) return
+    }
     setShowForm(true)
   }
 
@@ -288,6 +291,10 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   // ─── Save ─────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     setError('')
+    if (!localStorage.getItem('auth_token')) {
+      window.dispatchEvent(new CustomEvent('auth:expired'))
+      return
+    }
     if (!selectedVendorId) { setError('Please select a vendor'); return }
     const validItems = lineItems.filter(item => item.description.trim())
     if (validItems.length === 0) { setError('Add at least one line item with a description'); return }

@@ -289,18 +289,26 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
     }
 
     const grandTotal = subtotal + taxAmount;
+    const taxId = soData?.tax_id || null;
+    const taxRate = soData ? parseFloat(soData.tax_rate || 0) : 0;
 
     const { rows: [inv] } = await client.query(
-      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,invoice_date,due_date,status,payment_status,subtotal,tax_amount,grand_total,amount_paid,notes,created_by,updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'draft','unpaid',$11,$12,$13,0,$14,$15,$15) RETURNING *`,
-      [companyId, invNo, dn.customer_id, dn.customer_name, soData?.bill_to || null, dn.ship_to, dn.sales_order_id || null, dnId, data.invoice_date, data.due_date, subtotal, taxAmount, grandTotal, data.notes || null, userId]
+      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,po_number,reference_no,invoice_date,due_date,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,terms_and_conditions,notes,internal_notes,created_by,updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'draft','unpaid',$13,$14,$15,$16,0,0,$17,0,NULL,$18,NULL,$19,$19) RETURNING *`,
+      [companyId, invNo, dn.customer_id, dn.customer_name,
+       soData?.bill_to || dn.bill_to || null, dn.ship_to || null,
+       dn.sales_order_id || null, dnId,
+       soData?.po_number || null, dn.delivery_note_no || null,
+       data.invoice_date, data.due_date,
+       subtotal, taxId, taxRate, taxAmount, grandTotal,
+       data.notes || null, userId]
     );
 
     for (let i = 0; i < invItems.length; i++) {
       const li = invItems[i];
       await client.query(
-        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [inv.id, i + 1, li.product_id, li.sku, li.description, li.shipped_qty, li.unit_of_measure, li.rate, li.tax_rate, li.tax_amount]
+        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description || '', parseFloat(li.shipped_qty) || 1, li.unit_of_measure || 'pcs', li.rate, 0, taxId, li.tax_rate, li.tax_amount]
       );
     }
 

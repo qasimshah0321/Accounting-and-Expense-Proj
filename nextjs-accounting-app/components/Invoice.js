@@ -326,7 +326,6 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
-      ...(invoiceNo && !editingInvoice ? { invoice_no: invoiceNo } : {}),
       customer_id: selectedCustomerId,
       invoice_date: invoiceDate,
       due_date: dueDate,
@@ -628,11 +627,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                         <input
                           type="text"
                           className={styles.formControlStandard}
-                          value={invoiceNo}
-                          placeholder="e.g. INV-001"
-                          onChange={(e) => setInvoiceNo(e.target.value)}
-                          readOnly={!!editingInvoice}
-                          style={editingInvoice ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}}
+                          value={invoiceNo || 'Auto-generated'}
+                          readOnly
+                          style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                         />
                       </div>
                       <div className={styles.formGroup}>

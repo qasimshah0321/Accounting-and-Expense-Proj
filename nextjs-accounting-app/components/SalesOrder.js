@@ -387,7 +387,6 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
-      ...(orderNo && !editingOrder ? { sales_order_no: orderNo } : {}),
       customer_id: selectedCustomerId,
       order_date: salesOrderDate,
       due_date: dueDate || undefined,
@@ -641,7 +640,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>Sales Order No.</label>
-                        <input type="text" className={styles.formControlStandard} value={orderNo} placeholder="e.g. SO-001" onChange={(e) => setOrderNo(e.target.value)} readOnly={!!editingOrder} style={editingOrder ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
+                        <input type="text" className={styles.formControlStandard} value={orderNo || 'Auto-generated'} readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

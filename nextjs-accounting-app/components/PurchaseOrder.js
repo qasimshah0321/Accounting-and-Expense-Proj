@@ -325,7 +325,6 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
     setSaving(true)
     const taxRate = selectedTax ? Number(selectedTax.rate) || 0 : 0
     const payload = {
-      ...(purchaseOrderNo && !editingOrder ? { purchase_order_no: purchaseOrderNo } : {}),
       vendor_id: selectedVendorId,
       order_date: orderDate,
       expected_delivery_date: expectedDeliveryDate || undefined,
@@ -563,7 +562,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>PO No.</label>
-                        <input type="text" className={styles.formControlStandard} value={purchaseOrderNo} placeholder="e.g. PO-001" onChange={(e) => setPurchaseOrderNo(e.target.value)} readOnly={!!editingOrder} style={editingOrder ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
+                        <input type="text" className={styles.formControlStandard} value={purchaseOrderNo || 'Auto-generated'} readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>

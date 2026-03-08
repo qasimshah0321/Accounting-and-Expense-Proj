@@ -42,6 +42,12 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
+  // ─── DN Picker state ──────────────────────────────────────────────────────
+  const [linkedDeliveryNoteId, setLinkedDeliveryNoteId] = useState(null)
+  const [showDnPicker, setShowDnPicker] = useState(false)
+  const [dnPickerNotes, setDnPickerNotes] = useState([])
+  const [dnPickerLoading, setDnPickerLoading] = useState(false)
+
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
 
@@ -145,6 +151,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
+    setLinkedDeliveryNoteId(null)
+    setShowDnPicker(false)
     try {
       const res = await api.getNextInvoiceNumber()
       setInvoiceNo(res.data?.invoice_no || res.invoice_no || '')
@@ -222,6 +230,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     onDirtyChange(false)
     setShowForm(false)
     setEditingInvoice(null)
+    setLinkedDeliveryNoteId(null)
+    setShowDnPicker(false)
   }
 
   // ─── Form event handlers ──────────────────────────────────────────────────
@@ -241,10 +251,66 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setSelectedCustomerId(customer?.id || null)
     setCustomerSearchText(customerName)
     setShowCustomerDropdown(false)
+    setLinkedDeliveryNoteId(null)
     if (customer) {
       setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
       setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
+      if (!editingInvoice) fetchCustomerDeliveryNotes(customer.id)
     }
+  }
+
+  const fetchCustomerDeliveryNotes = async (customerId) => {
+    setDnPickerLoading(true)
+    try {
+      const res = await api.getDeliveryNotesForCustomer(customerId)
+      const notes = res.data?.delivery_notes || res.data || []
+      const available = notes.filter(n =>
+        (n.status === 'shipped' || n.status === 'delivered') && !n.invoiced
+      )
+      if (available.length > 0) {
+        setDnPickerNotes(available)
+        setShowDnPicker(true)
+      }
+    } catch {}
+    finally { setDnPickerLoading(false) }
+  }
+
+  const handleDnSelect = async (dn) => {
+    setShowDnPicker(false)
+    setLinkedDeliveryNoteId(dn.id)
+    try {
+      const res = await api.getDeliveryNote(dn.id)
+      const full = res.data || res
+      setReferenceNo(full.delivery_note_no || '')
+      if (full.ship_to) setShipTo(full.ship_to)
+      if (full.bill_to) setBillTo(full.bill_to)
+      if (full.line_items && full.line_items.length > 0) {
+        // Fetch linked SO rates if available
+        let soRateMap = {}
+        if (full.sales_order_id) {
+          try {
+            const soRes = await api.getSalesOrder(full.sales_order_id)
+            const soFull = soRes.data || soRes
+            ;(soFull.line_items || []).forEach(li => {
+              soRateMap[li.id] = parseFloat(li.rate) || 0
+            })
+          } catch {}
+        }
+        setLineItems(full.line_items.map((li, idx) => {
+          const rate = soRateMap[li.sales_order_line_item_id] || parseFloat(li.rate) || 0
+          const qty = parseFloat(li.shipped_qty) || parseFloat(li.quantity) || 1
+          return {
+            id: idx + 1,
+            sku: li.sku || '',
+            description: li.description || '',
+            quantity: qty,
+            rate,
+            discount: 0,
+            amount: qty * rate,
+          }
+        }))
+      }
+    } catch (err) { console.error('DN select error:', err) }
   }
 
   const handleAddNewCustomer = () => {
@@ -336,6 +402,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       tax_rate: taxRate,
       discount_amount: calculateDiscount(),
       notes: notes || undefined,
+      ...(linkedDeliveryNoteId && !editingInvoice ? { delivery_note_id: linkedDeliveryNoteId } : {}),
       line_items: validItems.map(item => ({
         sku: item.sku || undefined,
         description: item.description,
@@ -957,6 +1024,39 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
             onClose={handleTaxPopupClose}
             onSave={handleTaxSave}
           />
+        </div>
+      )}
+
+      {/* ── Delivery Note Picker Modal ─────────────────────────────────────── */}
+      {showDnPicker && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 420, maxWidth: 560, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, color: '#111' }}>Link a Delivery Note</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>Select a shipped delivery note to auto-fill this invoice, or skip to enter manually.</p>
+            {dnPickerLoading ? (
+              <p style={{ color: '#6b7280', fontSize: 13 }}>Loading…</p>
+            ) : dnPickerNotes.map(n => (
+              <div
+                key={n.id}
+                onClick={() => handleDnSelect(n)}
+                style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: 8, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
+                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+              >
+                <div>
+                  <span style={{ fontWeight: 600, color: '#0891b2' }}>{n.delivery_note_no}</span>
+                  {n.source_so_no && <span style={{ marginLeft: 8, fontSize: 12, color: '#6b7280' }}>SO: {n.source_so_no}</span>}
+                </div>
+                <span style={{ fontSize: 12, color: '#6b7280', textTransform: 'capitalize' }}>{n.status}</span>
+              </div>
+            ))}
+            <button
+              onClick={() => setShowDnPicker(false)}
+              style={{ marginTop: 8, width: '100%', padding: '8px 0', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+            >
+              Skip — Manual Entry
+            </button>
+          </div>
         </div>
       )}
     </>

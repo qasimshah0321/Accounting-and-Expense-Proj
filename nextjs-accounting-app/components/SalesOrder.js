@@ -42,6 +42,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
+  // ─── Estimate Picker state ────────────────────────────────────────────────
+  const [showEstimatePicker, setShowEstimatePicker] = useState(false)
+  const [estimatePickerItems, setEstimatePickerItems] = useState([])
+  const [estimatePickerLoading, setEstimatePickerLoading] = useState(false)
+
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
 
@@ -125,6 +130,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
+    setShowEstimatePicker(false)
     try {
       const res = await api.getNextSalesOrderNumber()
       setOrderNo(res.data?.sales_order_no || res.sales_order_no || '')
@@ -220,6 +226,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     setShowForm(false)
     setEditingOrder(null)
     setViewMode(false)
+    setShowEstimatePicker(false)
   }
 
   const handleOrderStatus = async (id, newStatus) => {
@@ -276,7 +283,49 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     if (customer) {
       setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
       setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
+      if (!editingOrder && !viewMode && !isCustomerRole) fetchCustomerEstimates(customer.id)
     }
+  }
+
+  const fetchCustomerEstimates = async (customerId) => {
+    setEstimatePickerLoading(true)
+    try {
+      const res = await api.getEstimatesForCustomer(customerId)
+      const estimates = res.data?.estimates || res.data || []
+      const available = estimates.filter(e =>
+        ['draft', 'sent', 'accepted'].includes(e.status) && !e.converted_to_sales_order
+      )
+      if (available.length > 0) {
+        setEstimatePickerItems(available)
+        setShowEstimatePicker(true)
+      }
+    } catch {}
+    finally { setEstimatePickerLoading(false) }
+  }
+
+  const handleEstimateSelect = async (est) => {
+    setShowEstimatePicker(false)
+    try {
+      const res = await api.getEstimate(est.id)
+      const full = res.data || res
+      if (full.bill_to) setBillTo(full.bill_to)
+      if (full.ship_to) setShipTo(full.ship_to)
+      if (full.notes) setNotes(full.notes)
+      if (full.tax_id) {
+        const tax = taxes.find(t => t.id === full.tax_id)
+        if (tax) setSelectedTax(tax)
+      }
+      if (full.line_items && full.line_items.length > 0) {
+        setLineItems(full.line_items.map((li, idx) => ({
+          id: idx + 1,
+          sku: li.sku || '',
+          description: li.description || '',
+          quantity: parseFloat(li.quantity) || 1,
+          rate: parseFloat(li.rate) || 0,
+          amount: (parseFloat(li.quantity) || 1) * (parseFloat(li.rate) || 0),
+        })))
+      }
+    } catch (err) { console.error('Estimate select error:', err) }
   }
 
   const handleAddNewCustomer = () => {
@@ -857,6 +906,39 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
 
           <CustomerPopup isOpen={isCustomerPopupOpen} onClose={handleCustomerPopupClose} onSave={handleCustomerSave} />
           <TaxPopup isOpen={isTaxPopupOpen} onClose={handleTaxPopupClose} onSave={handleTaxSave} />
+        </div>
+      )}
+
+      {/* ── Estimate Picker Modal ──────────────────────────────────────────── */}
+      {showEstimatePicker && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 420, maxWidth: 560, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, color: '#111' }}>Link an Estimate</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>Select an estimate to auto-fill this sales order, or skip to enter manually.</p>
+            {estimatePickerLoading ? (
+              <p style={{ color: '#6b7280', fontSize: 13 }}>Loading…</p>
+            ) : estimatePickerItems.map(e => (
+              <div
+                key={e.id}
+                onClick={() => handleEstimateSelect(e)}
+                style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: 8, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onMouseEnter={ev => ev.currentTarget.style.background = '#f0fdf4'}
+                onMouseLeave={ev => ev.currentTarget.style.background = '#fff'}
+              >
+                <div>
+                  <span style={{ fontWeight: 600, color: '#16a34a' }}>{e.estimate_no}</span>
+                  {e.customer_name && <span style={{ marginLeft: 8, fontSize: 12, color: '#6b7280' }}>{e.customer_name}</span>}
+                </div>
+                <span style={{ fontSize: 12, color: '#6b7280', textTransform: 'capitalize' }}>{e.status}</span>
+              </div>
+            ))}
+            <button
+              onClick={() => setShowEstimatePicker(false)}
+              style={{ marginTop: 8, width: '100%', padding: '8px 0', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+            >
+              Skip — Manual Entry
+            </button>
+          </div>
         </div>
       )}
     </>

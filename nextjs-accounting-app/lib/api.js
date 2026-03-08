@@ -320,6 +320,9 @@ export const getNextEstimateNumber = () =>
 export const getEstimates = () =>
   fetch(`${API_BASE}/estimates?limit=200`, { headers: buildHeaders() }).then(handle)
 
+export const getEstimatesForCustomer = (customerId) =>
+  fetch(`${API_BASE}/estimates?customer_id=${encodeURIComponent(customerId)}&limit=200`, { headers: buildHeaders() }).then(handle)
+
 export const getEstimate = (id) =>
   fetch(`${API_BASE}/estimates/${id}`, { headers: buildHeaders() }).then(handle)
 
@@ -391,6 +394,9 @@ export const convertDeliveryNoteToInvoice = (id, data) =>
   fetch(`${API_BASE}/delivery-notes/${id}/convert-to-invoice`, {
     method: 'POST', headers: buildHeaders(), body: JSON.stringify(data)
   }).then(handle)
+
+export const getDeliveryNotesForCustomer = (customerId) =>
+  fetch(`${API_BASE}/delivery-notes?customer_id=${encodeURIComponent(customerId)}&limit=200`, { headers: buildHeaders() }).then(handle)
 
 // ─── Bills ──────────────────────────────────────────────────────────────────
 export const getBills = () =>

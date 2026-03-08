@@ -42,6 +42,10 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const [products, setProducts] = useState([])
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
+  const [linkedSalesOrderId, setLinkedSalesOrderId] = useState(null)
+  const [showSoPicker, setShowSoPicker] = useState(false)
+  const [soPickerOrders, setSoPickerOrders] = useState([])
+  const [soPickerLoading, setSoPickerLoading] = useState(false)
 
   const autocompleteRef = useRef(null)
   const shipViaDropdownRef = useRef(null)
@@ -125,6 +129,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     setNotes('')
     const activeShipVias = shipVias ? shipVias.filter(sv => sv.is_active) : []
     setSelectedShipVia(activeShipVias[0] || null)
+    setLinkedSalesOrderId(null)
+    setSoPickerOrders([])
+    setShowSoPicker(false)
     setError('')
     try {
       const res = await api.getNextDeliveryNoteNumber()
@@ -261,9 +268,62 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     setSelectedCustomerId(customer?.id || null)
     setCustomerSearchText(customerName)
     setShowCustomerDropdown(false)
+    setLinkedSalesOrderId(null)
     if (customer) {
       setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
       setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
+      fetchCustomerSalesOrders(customer.id)
+    }
+  }
+
+  const fetchCustomerSalesOrders = async (customerId) => {
+    setSoPickerLoading(true)
+    try {
+      const res = await api.getSalesOrdersForCustomer(customerId)
+      const orders = res.data?.sales_orders || []
+      const actionable = orders.filter(o =>
+        ['confirmed', 'in_progress'].includes(o.status) &&
+        parseFloat(o.total_ordered_qty || 0) > parseFloat(o.total_delivered_qty || 0)
+      )
+      setSoPickerOrders(actionable)
+      if (actionable.length > 0) setShowSoPicker(true)
+    } catch {
+      // silently ignore — user can still enter manually
+    } finally {
+      setSoPickerLoading(false)
+    }
+  }
+
+  const handleSoSelect = async (so) => {
+    setShowSoPicker(false)
+    try {
+      const res = await api.getSalesOrder(so.id)
+      const full = res.data || res
+      if (full.ship_to) setShipTo(full.ship_to)
+      if (full.bill_to) setBillTo(full.bill_to)
+      if (full.po_number) setPoNumber(full.po_number)
+      setRefNumber(full.sales_order_no || '')
+      setLinkedSalesOrderId(full.id)
+      const items = (full.line_items || [])
+        .map((li, idx) => {
+          const remaining = Math.max(0, parseFloat(li.ordered_qty || 0) - parseFloat(li.delivered_qty || 0))
+          return {
+            id: idx + 1,
+            sku: li.sku || '',
+            description: li.description || '',
+            ordered: remaining,
+            shipped: 0,
+            backordered: remaining,
+            product_id: li.product_id || null,
+          }
+        })
+        .filter(li => li.ordered > 0)
+      setLineItems(items.length > 0
+        ? items
+        : [{ id: 1, sku: '', description: '', ordered: 0, shipped: 0, backordered: 0, product_id: null }]
+      )
+    } catch (err) {
+      setError('Failed to load sales order: ' + err.message)
     }
   }
 
@@ -329,6 +389,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     const payload = {
       ...(deliveryNoteNo && !editingNote ? { delivery_note_no: deliveryNoteNo } : {}),
       customer_id: selectedCustomerId,
+      sales_order_id: linkedSalesOrderId || undefined,
       delivery_date: deliveryDate,
       due_date: dueDate || undefined,
       shipment_date: shipmentDate || undefined,
@@ -832,6 +893,77 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
           <CustomerPopup isOpen={isCustomerPopupOpen} onClose={handleCustomerPopupClose} onSave={handleCustomerSave} />
           <ShipViaPopup isOpen={isShipViaPopupOpen} onClose={handleShipViaPopupClose} onSave={handleShipViaSave} />
+        </div>
+      )}
+
+      {/* ── Sales Order Picker ────────────────────────────────────────────── */}
+      {showSoPicker && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.55)', zIndex: 10000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: 28,
+            width: 580, maxHeight: '72vh', overflow: 'auto',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1e293b' }}>
+                <i className="fas fa-file-alt" style={{ marginRight: 8, color: '#7c3aed' }}></i>
+                Open Sales Orders — {selectedCustomer}
+              </h3>
+              <button onClick={() => setShowSoPicker(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#64748b', lineHeight: 1 }}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, marginTop: 0 }}>
+              Select a sales order to import its items automatically, or skip for manual entry.
+            </p>
+
+            {soPickerOrders.map(so => {
+              const remaining = parseFloat(so.total_ordered_qty || 0) - parseFloat(so.total_delivered_qty || 0)
+              return (
+                <div
+                  key={so.id}
+                  onClick={() => handleSoSelect(so)}
+                  style={{
+                    border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px 16px',
+                    marginBottom: 10, cursor: 'pointer',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#faf5ff' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff' }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>{so.sales_order_no}</div>
+                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+                      {new Date(so.order_date).toLocaleDateString()}
+                      {' · '}{parseInt(so.total_ordered_qty || 0)} ordered
+                      {parseFloat(so.total_delivered_qty || 0) > 0 && ` · ${parseInt(so.total_delivered_qty)} delivered`}
+                      {' · '}<strong style={{ color: '#7c3aed' }}>{Math.round(remaining)} remaining</strong>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 11, padding: '3px 10px', background: '#ede9fe', color: '#7c3aed', borderRadius: 20, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      {so.status}
+                    </span>
+                    <i className="fas fa-chevron-right" style={{ color: '#94a3b8', fontSize: 12 }}></i>
+                  </div>
+                </div>
+              )
+            })}
+
+            <div style={{ marginTop: 18, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowSoPicker(false)}
+                style={{ padding: '8px 22px', borderRadius: 6, border: '1px solid #d1d5db', background: '#fff', color: '#374151', cursor: 'pointer', fontSize: 13 }}
+              >
+                Skip — Manual Entry
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

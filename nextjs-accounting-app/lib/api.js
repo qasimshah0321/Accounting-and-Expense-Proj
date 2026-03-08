@@ -275,6 +275,9 @@ export const getNextSalesOrderNumber = () =>
 export const getSalesOrders = () =>
   fetch(`${API_BASE}/sales-orders?limit=200`, { headers: buildHeaders() }).then(handle)
 
+export const getSalesOrdersForCustomer = (customerId) =>
+  fetch(`${API_BASE}/sales-orders?customer_id=${encodeURIComponent(customerId)}&limit=200`, { headers: buildHeaders() }).then(handle)
+
 export const getSalesOrder = (id) =>
   fetch(`${API_BASE}/sales-orders/${id}`, { headers: buildHeaders() }).then(handle)
 

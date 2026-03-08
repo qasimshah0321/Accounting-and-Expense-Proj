@@ -312,9 +312,9 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
       );
     }
 
-    await client.query('UPDATE delivery_notes SET invoiced=true,invoice_id=$1,updated_at=NOW() WHERE id=$2', [inv.id, dnId]);
+    await client.query('UPDATE delivery_notes SET invoiced=true,invoice_id=$1,status=\'accepted\',updated_at=NOW() WHERE id=$2', [inv.id, dnId]);
     const { rows: invLineItems } = await client.query('SELECT * FROM invoice_line_items WHERE invoice_id=$1 ORDER BY line_number', [inv.id]);
-    return { invoice: { ...inv, line_items: invLineItems }, delivery_note_updated: { id: dnId, invoiced: true, invoice_id: inv.id } };
+    return { invoice: { ...inv, line_items: invLineItems }, delivery_note_updated: { id: dnId, invoiced: true, invoice_id: inv.id, status: 'accepted' } };
   });
 };
 

@@ -14,6 +14,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingNote, setEditingNote] = useState(null)
+  const [viewMode, setViewMode] = useState(false)
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [deliveryNoteNo, setDeliveryNoteNo] = useState('')
@@ -191,6 +192,21 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       setEditingNote(full)
       populateForm(full)
       onDirtyChange(false)
+      setViewMode(false)
+      setShowForm(true)
+    } catch (err) {
+      setListError('Failed to load delivery note: ' + err.message)
+    }
+  }
+
+  const handleViewNote = async (note) => {
+    setListError('')
+    try {
+      const res = await api.getDeliveryNote(note.id)
+      const full = res.data || res
+      setEditingNote(full)
+      populateForm(full)
+      setViewMode(true)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load delivery note: ' + err.message)
@@ -212,6 +228,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     onDirtyChange(false)
     setShowForm(false)
     setEditingNote(null)
+    setViewMode(false)
   }
 
   const handleDnStatus = async (id, newStatus) => {
@@ -236,7 +253,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
   }
 
   const handleConvertToInvoice = async (n) => {
-    if (!confirm(`Convert ${n.delivery_note_no} to a draft Invoice?`)) return
+    if (!confirm(`Accept ${n.delivery_note_no} and create a draft Invoice?`)) return
     setListError('')
     try {
       const due = new Date()
@@ -245,9 +262,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
         invoice_date: new Date().toISOString().split('T')[0],
         due_date: due.toISOString().split('T')[0],
       })
-      setDeliveryNotes(prev => prev.map(dn => dn.id === n.id ? { ...dn, invoiced: true } : dn))
+      setDeliveryNotes(prev => prev.map(dn => dn.id === n.id ? { ...dn, invoiced: true, status: 'accepted' } : dn))
     } catch (err) {
-      setListError('Convert to Invoice failed: ' + err.message)
+      setListError('Accept failed: ' + err.message)
     }
   }
 
@@ -437,6 +454,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
     switch (status) {
       case 'shipped': return styles.statusSent
       case 'delivered': return styles.statusPaid
+      case 'accepted': return styles.statusPaid
       case 'cancelled': return styles.statusCancelled
       default: return styles.statusDraft
     }
@@ -557,6 +575,12 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
+                          {n.status !== 'draft' && (
+                            <button title="View delivery note" onClick={() => handleViewNote(n)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          )}
                           {n.status === 'draft' && (
                             <button className={styles.btnSecondary} title="Mark Ready to Ship" onClick={() => handleDnStatus(n.id, 'ready_to_ship')} style={{ fontSize: 11, padding: '2px 8px' }}>
                               Ready
@@ -568,9 +592,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                             </button>
                           )}
                           {(n.status === 'shipped' || n.status === 'delivered') && !n.invoiced && user?.role !== 'customer' && (
-                            <button title="Convert to Invoice" onClick={() => handleConvertToInvoice(n)}
+                            <button title="Accept and create Invoice" onClick={() => handleConvertToInvoice(n)}
                               style={{ fontSize: 11, padding: '2px 8px', background: '#0891b2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-                              <i className="fas fa-file-invoice"></i> Invoice
+                              <i className="fas fa-check"></i> Accept
                             </button>
                           )}
                           {n.invoiced && (
@@ -612,7 +636,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingNote ? `Edit Delivery Note ${editingNote.delivery_note_no || ''}` : 'Create Delivery Note'}</h2>
+                <h2>{viewMode ? `Delivery Note ${editingNote?.delivery_note_no || ''}` : editingNote ? `Edit Delivery Note ${editingNote.delivery_note_no || ''}` : 'Create Delivery Note'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -635,7 +659,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                             placeholder="Search or select customer"
                             value={customerSearchText}
                             onChange={handleCustomerInputChange}
-                            onFocus={() => setShowCustomerDropdown(true)}
+                            onFocus={() => !viewMode && setShowCustomerDropdown(true)}
+                            readOnly={viewMode}
+                            style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
                           {showCustomerDropdown && (
                             <div className={styles.autocompleteDropdown}>
@@ -659,23 +685,23 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       </div>
                       <div className={styles.formGroup}>
                         <label>Bill To</label>
-                        <textarea className={styles.formControlStandard} placeholder="Billing address will populate automatically" value={billTo} onChange={(e) => setBillTo(e.target.value)} rows="3" />
+                        <textarea className={styles.formControlStandard} placeholder="Billing address will populate automatically" value={billTo} onChange={(e) => setBillTo(e.target.value)} rows="3" readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Ship To</label>
-                        <textarea className={styles.formControlStandard} placeholder="Shipping address will populate automatically" value={shipTo} onChange={(e) => setShipTo(e.target.value)} rows="3" />
+                        <textarea className={styles.formControlStandard} placeholder="Shipping address will populate automatically" value={shipTo} onChange={(e) => setShipTo(e.target.value)} rows="3" readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Ref. No.</label>
-                        <input type="text" className={styles.formControlStandard} placeholder="REF-12345" value={refNumber} onChange={(e) => setRefNumber(e.target.value)} />
+                        <input type="text" className={styles.formControlStandard} placeholder="REF-12345" value={refNumber} onChange={(e) => setRefNumber(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Ship Via</label>
                         <div className={styles.autocompleteWrapper} ref={shipViaDropdownRef}>
                           <div
                             className={styles.formControlStandard}
-                            onClick={() => setShowShipViaDropdown(true)}
-                            style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            onClick={() => !viewMode && setShowShipViaDropdown(true)}
+                            style={{ cursor: viewMode ? 'default' : 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: viewMode ? '#f5f5f5' : '' }}
                           >
                             <span>{selectedShipVia ? selectedShipVia.name : 'Select shipping method'}</span>
                             <i className="fas fa-chevron-down"></i>
@@ -707,19 +733,19 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>
-                        <input type="date" className={styles.formControlStandard} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>PO No.</label>
-                        <input type="text" className={styles.formControlStandard} placeholder="PO-12345" value={poNumber} onChange={(e) => setPoNumber(e.target.value)} />
+                        <input type="text" className={styles.formControlStandard} placeholder="PO-12345" value={poNumber} onChange={(e) => setPoNumber(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Due Date</label>
-                        <input type="date" className={styles.formControlStandard} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={dueDate} onChange={(e) => setDueDate(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Shipment Date</label>
-                        <input type="date" className={styles.formControlStandard} value={shipmentDate} onChange={(e) => setShipmentDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={shipmentDate} onChange={(e) => setShipmentDate(e.target.value)} readOnly={viewMode} />
                       </div>
                     </div>
                   </div>
@@ -752,8 +778,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                                   placeholder="SKU"
                                   value={item.sku}
                                   onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'sku' &&
                                   getProductSuggestions(item.id, 'sku').length > 0 && (
@@ -791,8 +818,9 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                                   placeholder="Item description"
                                   value={item.description}
                                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'description' &&
                                   getProductSuggestions(item.id, 'description').length > 0 && (
@@ -822,14 +850,16 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                                 )}
                               </div>
                             </td>
-                            <td><input type="number" className={styles.formControlTable} value={item.ordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'ordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.shipped} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'shipped', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
-                            <td><input type="number" className={styles.formControlTable} value={item.backordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'backordered', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.ordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'ordered', parseInt(e.target.value) || 0)} onFocus={() => !viewMode && handleFieldFocus(item.id)} readOnly={viewMode} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.shipped} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'shipped', parseInt(e.target.value) || 0)} onFocus={() => !viewMode && handleFieldFocus(item.id)} readOnly={viewMode} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.backordered} min="0" step="1" onChange={(e) => updateLineItem(item.id, 'backordered', parseInt(e.target.value) || 0)} onFocus={() => !viewMode && handleFieldFocus(item.id)} readOnly={viewMode} /></td>
+                            {!viewMode && (
                             <td className={styles.actionCell}>
                               <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>
                                 <i className="fas fa-trash"></i>
                               </button>
                             </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -840,7 +870,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                     <div className={styles.notesAttachmentsSection}>
                       <div className={styles.formGroup}>
                         <label>Notes</label>
-                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)}></textarea>
+                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} readOnly={viewMode}></textarea>
                       </div>
                       <div className={styles.formGroup}>
                         <label>Attachments</label>
@@ -878,15 +908,17 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
 
             <div className={styles.popupFooter}>
               <div className={styles.footerLeft}>
-                {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
-                <button className={styles.btnCancel} onClick={handleFormClose}>Cancel</button>
+                {!viewMode && error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
+                <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
+              {!viewMode && (
               <div className={styles.footerRight}>
                 <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
                   <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
                   {saving ? 'Saving...' : editingNote ? 'Update' : 'Save'}
                 </button>
               </div>
+              )}
             </div>
           </div>
 

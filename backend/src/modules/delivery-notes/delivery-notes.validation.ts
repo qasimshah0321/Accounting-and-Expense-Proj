@@ -31,7 +31,7 @@ export const createDeliveryNoteSchema = z.object({
 export const updateDeliveryNoteSchema = createDeliveryNoteSchema.partial();
 
 export const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'ready_to_ship', 'shipped', 'in_transit', 'delivered', 'cancelled']),
+  status: z.enum(['draft', 'ready_to_ship', 'shipped', 'in_transit', 'delivered', 'accepted', 'cancelled']),
   reason: z.string().optional(),
 });
 

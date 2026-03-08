@@ -15,6 +15,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [listError, setListError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [viewMode, setViewMode] = useState(false)
   const [editingInvoice, setEditingInvoice] = useState(null)
 
   // ─── Form state ───────────────────────────────────────────────────────────
@@ -217,6 +218,21 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     }
   }
 
+  const handleViewInvoice = async (invoice) => {
+    setListError('')
+    try {
+      const res = await api.getInvoice(invoice.id)
+      const full = res.data || res
+      setEditingInvoice(full)
+      populateForm(full)
+      setViewMode(true)
+      onDirtyChange(false)
+      setShowForm(true)
+    } catch (err) {
+      setListError('Failed to load invoice: ' + err.message)
+    }
+  }
+
   const handleDeleteInvoice = async (id) => {
     if (!confirm('Are you sure you want to delete this invoice?')) return
     setListError('')
@@ -231,6 +247,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const handleFormClose = () => {
     onDirtyChange(false)
     setShowForm(false)
+    setViewMode(false)
     setEditingInvoice(null)
     setLinkedDeliveryNoteId(null)
     setShowDnPicker(false)
@@ -586,20 +603,32 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                               <i className="fas fa-check"></i>
                             </button>
                           )}
-                          <button
-                            className={styles.btnEdit}
-                            title="Edit"
-                            onClick={() => handleEditInvoice(inv)}
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button
-                            className={styles.btnDelete}
-                            title="Delete"
-                            onClick={() => handleDeleteInvoice(inv.id)}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {(inv.status === 'draft' || inv.status === 'sent') ? (
+                            <>
+                              <button
+                                className={styles.btnEdit}
+                                title="Edit"
+                                onClick={() => handleEditInvoice(inv)}
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <button
+                                className={styles.btnDelete}
+                                title="Delete"
+                                onClick={() => handleDeleteInvoice(inv.id)}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              className={styles.btnEdit}
+                              title="View"
+                              onClick={() => handleViewInvoice(inv)}
+                            >
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -636,7 +665,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
             {/* Header */}
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingInvoice ? `Edit Invoice ${editingInvoice.invoice_no || ''}` : 'Create Invoice'}</h2>
+                <h2>{viewMode ? `View Invoice ${editingInvoice?.invoice_no || ''}` : editingInvoice ? `Edit Invoice ${editingInvoice.invoice_no || ''}` : 'Create Invoice'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -662,8 +691,10 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                             className={styles.formControlStandard}
                             placeholder="Search or select customer"
                             value={customerSearchText}
-                            onChange={handleCustomerInputChange}
-                            onFocus={() => setShowCustomerDropdown(true)}
+                            onChange={viewMode ? undefined : handleCustomerInputChange}
+                            onFocus={() => !viewMode && setShowCustomerDropdown(true)}
+                            readOnly={viewMode}
+                            style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
                           {showCustomerDropdown && (
                             <div className={styles.autocompleteDropdown}>
@@ -703,6 +734,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           value={billTo}
                           onChange={(e) => setBillTo(e.target.value)}
                           rows="3"
+                          readOnly={viewMode}
                         />
                       </div>
 
@@ -714,6 +746,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           value={shipTo}
                           onChange={(e) => setShipTo(e.target.value)}
                           rows="3"
+                          readOnly={viewMode}
                         />
                       </div>
                     </div>
@@ -736,6 +769,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           className={styles.formControlStandard}
                           value={terms}
                           onChange={(e) => setTerms(e.target.value)}
+                          disabled={viewMode}
                         >
                           <option>Net 30</option>
                           <option>Net 15</option>
@@ -750,6 +784,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           className={styles.formControlStandard}
                           value={invoiceDate}
                           onChange={(e) => setInvoiceDate(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                       <div className={styles.formGroup}>
@@ -760,6 +795,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           placeholder="PO-12345"
                           value={referenceNo}
                           onChange={(e) => setReferenceNo(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                       <div className={styles.formGroup}>
@@ -769,6 +805,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           className={styles.formControlStandard}
                           value={dueDate}
                           onChange={(e) => setDueDate(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                     </div>
@@ -807,8 +844,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                   placeholder="SKU"
                                   value={item.sku}
                                   onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'sku' &&
                                   getProductSuggestions(item.id, 'sku').length > 0 && (
@@ -849,8 +887,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                   placeholder="Item description"
                                   value={item.description}
                                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'description' &&
                                   getProductSuggestions(item.id, 'description').length > 0 && (
@@ -890,7 +929,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                 value={item.quantity}
                                 min="1"
                                 onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                onFocus={() => handleFieldFocus(item.id)}
+                                onFocus={() => !viewMode && handleFieldFocus(item.id)}
+                                readOnly={viewMode}
                               />
                             </td>
                             <td>
@@ -914,7 +954,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                 min="0"
                                 step="0.01"
                                 onChange={(e) => updateLineItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                onFocus={() => handleFieldFocus(item.id)}
+                                onFocus={() => !viewMode && handleFieldFocus(item.id)}
+                                readOnly={viewMode}
                               />
                             </td>
                             <td className={styles.amountCell}>
@@ -924,7 +965,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                               <button
                                 className={styles.btnRemove}
                                 onClick={() => removeLineItem(item.id)}
-                                disabled={lineItems.length === 1}
+                                disabled={lineItems.length === 1 || viewMode}
                               >
                                 <i className="fas fa-trash"></i>
                               </button>
@@ -947,6 +988,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           placeholder="Add any additional notes or instructions..."
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
+                          readOnly={viewMode}
                         ></textarea>
                       </div>
                       <div className={styles.formGroup}>
@@ -982,7 +1024,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                             <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '200px' }} ref={taxDropdownRef}>
                               <div
                                 className={styles.taxSelectButton}
-                                onClick={() => setShowTaxDropdown(true)}
+                                onClick={() => !viewMode && setShowTaxDropdown(true)}
+                                style={viewMode ? { cursor: 'default' } : {}}
                               >
                                 <span>{selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Select tax'}</span>
                                 <i className="fas fa-chevron-down"></i>
@@ -1031,15 +1074,17 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
             {/* Fixed Footer */}
             <div className={styles.popupFooter}>
               <div className={styles.footerLeft}>
-                {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
-                <button className={styles.btnCancel} onClick={handleFormClose}>Cancel</button>
+                {!viewMode && error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
+                <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
-              <div className={styles.footerRight}>
-                <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
-                  <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
-                  {saving ? 'Saving...' : editingInvoice ? 'Update' : 'Save'}
-                </button>
-              </div>
+              {!viewMode && (
+                <div className={styles.footerRight}>
+                  <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
+                    <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
+                    {saving ? 'Saving...' : editingInvoice ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

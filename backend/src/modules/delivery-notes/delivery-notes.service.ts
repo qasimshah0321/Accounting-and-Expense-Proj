@@ -267,28 +267,61 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
 
     // Get pricing from linked SO if available
     let soData: any = null;
+    const soLineItemByProductId = new Map<string, any>(); // product_id → soli
+    const soLineItemBySku = new Map<string, any>();       // sku.lower  → soli
+    const soLineItemsByPosition: any[] = [];              // positional fallback
+
     if (dn.sales_order_id) {
       const soRes = await client.query('SELECT * FROM sales_orders WHERE id=$1', [dn.sales_order_id]);
-      if (soRes.rows.length) soData = soRes.rows[0];
+      if (soRes.rows.length) {
+        soData = soRes.rows[0];
+        // Load all SO line items once and build lookup maps
+        const soliRes = await client.query(
+          'SELECT * FROM sales_order_line_items WHERE sales_order_id=$1 ORDER BY line_number',
+          [dn.sales_order_id]
+        );
+        for (const soli of soliRes.rows) {
+          if (soli.product_id) soLineItemByProductId.set(soli.product_id, soli);
+          if (soli.sku) soLineItemBySku.set((soli.sku as string).toLowerCase(), soli);
+          soLineItemsByPosition.push(soli);
+        }
+      }
     }
 
     let subtotal = 0, taxAmount = 0;
     const invItems = [];
 
-    for (const item of items) {
-      let rate = 0, taxRate = 0, itemTaxAmount = 0;
-      if (soData && item.product_id) {
-        const soliRes = await client.query('SELECT rate,tax_rate,tax_amount,ordered_qty FROM sales_order_line_items WHERE sales_order_id=$1 AND product_id=$2 LIMIT 1', [dn.sales_order_id, item.product_id]);
-        if (soliRes.rows.length) { rate = parseFloat(soliRes.rows[0].rate); taxRate = parseFloat(soliRes.rows[0].tax_rate || 0); }
+    for (let idx = 0; idx < items.length; idx++) {
+      const item = items[idx];
+      let rate = 0, taxRate = 0, itemTaxAmount = 0, itemTaxId: string | null = null;
+
+      if (soData) {
+        // Match by product_id → sku → position (in that priority order)
+        let soli: any = null;
+        if (item.product_id && soLineItemByProductId.has(item.product_id)) {
+          soli = soLineItemByProductId.get(item.product_id);
+        } else if (item.sku && soLineItemBySku.has((item.sku as string).toLowerCase())) {
+          soli = soLineItemBySku.get((item.sku as string).toLowerCase());
+        } else if (soLineItemsByPosition[idx]) {
+          soli = soLineItemsByPosition[idx];
+        }
+
+        if (soli) {
+          rate     = parseFloat(soli.rate     || 0);
+          taxRate  = parseFloat(soli.tax_rate || 0);
+          itemTaxId = soli.tax_id || null;
+        }
       }
+
       const lineTotal = parseFloat(item.shipped_qty) * rate;
       itemTaxAmount = lineTotal * (taxRate / 100);
       subtotal += lineTotal;
       taxAmount += itemTaxAmount;
-      invItems.push({ ...item, rate, tax_rate: taxRate, tax_amount: itemTaxAmount });
+      invItems.push({ ...item, rate, tax_rate: taxRate, tax_amount: itemTaxAmount, tax_id: itemTaxId });
     }
 
     const grandTotal = subtotal + taxAmount;
+    // Use SO header tax as invoice-level tax (for display); line-level tax_id comes from soli
     const taxId = soData?.tax_id || null;
     const taxRate = soData ? parseFloat(soData.tax_rate || 0) : 0;
 
@@ -308,7 +341,7 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
       const li = invItems[i];
       await client.query(
         `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description || '', parseFloat(li.shipped_qty) || 1, li.unit_of_measure || 'pcs', li.rate, 0, taxId, li.tax_rate, li.tax_amount]
+        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description || '', parseFloat(li.shipped_qty) || 1, li.unit_of_measure || 'pcs', li.rate, 0, li.tax_id || taxId, li.tax_rate, li.tax_amount]
       );
     }
 

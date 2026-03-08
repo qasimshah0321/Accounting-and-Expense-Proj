@@ -244,6 +244,18 @@ export const markDelivered = async (companyId: string, dnId: string, userId: str
 };
 
 export const convertToInvoice = async (companyId: string, dnId: string, userId: string, _userName: string, data: any) => {
+  // Validate before allocating a sequence number
+  const dnCheck = await pool.query('SELECT status, invoiced FROM delivery_notes WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [dnId, companyId]);
+  if (!dnCheck.rows.length) throw new NotFoundError('Delivery Note');
+  if (!['shipped', 'delivered'].includes(dnCheck.rows[0].status)) throw new ConflictError('Delivery Note must be shipped or delivered to convert to invoice');
+  if (dnCheck.rows[0].invoiced) throw new ConflictError('Delivery Note already invoiced');
+
+  // Generate the invoice number OUTSIDE the transaction so the sequence
+  // increment is committed on its own connection. This prevents the sequence
+  // from rolling back when the INSERT fails, which would cause the same number
+  // to be returned on every retry and permanently block invoice creation.
+  const invNo = await generateDocumentNumber(companyId, 'invoice');
+
   return withTransaction(async (client) => {
     const dnRes = await client.query('SELECT * FROM delivery_notes WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [dnId, companyId]);
     if (!dnRes.rows.length) throw new NotFoundError('Delivery Note');
@@ -277,7 +289,6 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
     }
 
     const grandTotal = subtotal + taxAmount;
-    const invNo = await generateDocumentNumber(companyId, 'invoice', client);
 
     const { rows: [inv] } = await client.query(
       `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,invoice_date,due_date,status,payment_status,subtotal,tax_amount,grand_total,amount_paid,notes,created_by,updated_by)

@@ -161,6 +161,10 @@ export const updateStatus = async (companyId: string, estimateId: string, userId
 };
 
 export const convertToSalesOrder = async (companyId: string, estimateId: string, userId: string, userName: string, data: any) => {
+  // Generate document number outside the transaction so the sequence increment
+  // commits independently — prevents stuck sequence on transaction rollback.
+  const soNo = await generateDocumentNumber(companyId, 'sales_order');
+
   return withTransaction(async (client) => {
     const estRes = await client.query('SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
     if (!estRes.rows.length) throw new NotFoundError('Estimate');
@@ -169,8 +173,6 @@ export const convertToSalesOrder = async (companyId: string, estimateId: string,
       throw new ConflictError('Estimate must be in draft or accepted status to convert');
     }
     const { rows: items } = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=$1 ORDER BY line_number ASC', [estimateId]);
-
-    const soNo = await generateDocumentNumber(companyId, 'sales_order', client);
     const totalOrderedQty = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty), 0);
 
     const { rows: [so] } = await client.query(

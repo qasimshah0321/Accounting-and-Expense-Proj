@@ -156,6 +156,10 @@ export const updateStatus = async (companyId: string, orderId: string, userId: s
 };
 
 export const convertToDeliveryNote = async (companyId: string, orderId: string, userId: string, userName: string, data: any) => {
+  // Generate document number outside the transaction so the sequence increment
+  // commits independently — prevents stuck sequence on transaction rollback.
+  const dnNo = await generateDocumentNumber(companyId, 'delivery_note');
+
   return withTransaction(async (client) => {
     const soRes = await client.query('SELECT * FROM sales_orders WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [orderId, companyId]);
     if (!soRes.rows.length) throw new NotFoundError('Sales Order');
@@ -167,8 +171,6 @@ export const convertToDeliveryNote = async (companyId: string, orderId: string, 
       const svRes = await client.query('SELECT name FROM ship_via WHERE id=$1 AND company_id=$2', [data.ship_via_id, companyId]);
       if (svRes.rows.length) shipViaName = svRes.rows[0].name;
     }
-
-    const dnNo = await generateDocumentNumber(companyId, 'delivery_note', client);
     let totalOrderedQty = 0, totalShippedQty = 0;
 
     const dnLineItems = [];
@@ -214,13 +216,16 @@ export const convertToDeliveryNote = async (companyId: string, orderId: string, 
 };
 
 export const convertToInvoice = async (companyId: string, orderId: string, userId: string, userName: string, data: any) => {
+  // Generate document number outside the transaction so the sequence increment
+  // commits independently — prevents stuck sequence on transaction rollback.
+  const invNo = await generateDocumentNumber(companyId, 'invoice');
+
   return withTransaction(async (client) => {
     const soRes = await client.query('SELECT * FROM sales_orders WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [orderId, companyId]);
     if (!soRes.rows.length) throw new NotFoundError('Sales Order');
     const so = soRes.rows[0];
 
     const { rows: items } = await client.query('SELECT * FROM sales_order_line_items WHERE sales_order_id=$1 ORDER BY line_number', [orderId]);
-    const invNo = await generateDocumentNumber(companyId, 'invoice', client);
 
     const subtotal = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty) * parseFloat(li.rate), 0);
     const taxAmount = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty) * parseFloat(li.rate) * parseFloat(li.tax_rate || 0) / 100, 0);

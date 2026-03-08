@@ -45,7 +45,7 @@ export const listBills = async (companyId: string, filters: any) => {
 export const getBillById = async (companyId: string, billId: string) => {
   const { rows } = await pool.query('SELECT * FROM bills WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [billId, companyId]);
   if (!rows.length) throw new NotFoundError('Bill');
-  const { rows: items } = await pool.query('SELECT * FROM bill_line_items WHERE bill_id=$1 ORDER BY line_number', [billId]);
+  const { rows: items } = await pool.query('SELECT * FROM bill_line_items WHERE bill_id=$1 ORDER BY sort_order', [billId]);
   return { ...rows[0], line_items: items };
 };
 
@@ -69,13 +69,14 @@ export const createBill = async (companyId: string, userId: string, data: any) =
 
     for (let i = 0; i < data.line_items.length; i++) {
       const li = data.line_items[i];
+      const lineTotal = li.quantity * li.rate + (li.tax_amount || 0);
       await client.query(
-        `INSERT INTO bill_line_items (bill_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-        [bill.id, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
+        `INSERT INTO bill_line_items (bill_id,company_id,product_id,description,quantity,rate,tax_id,tax_rate,tax_amount,line_total,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [bill.id, companyId, li.product_id || null, li.description, li.quantity, li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, lineTotal, i + 1]
       );
     }
 
-    const { rows: billItems } = await client.query('SELECT * FROM bill_line_items WHERE bill_id=$1 ORDER BY line_number', [bill.id]);
+    const { rows: billItems } = await client.query('SELECT * FROM bill_line_items WHERE bill_id=$1 ORDER BY sort_order', [bill.id]);
     return { ...bill, line_items: billItems };
   });
 };
@@ -112,9 +113,10 @@ export const updateBill = async (companyId: string, billId: string, userId: stri
       );
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
+        const lineTotal = li.quantity * li.rate + (li.tax_amount || 0);
         await client.query(
-          `INSERT INTO bill_line_items (bill_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-          [billId, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
+          `INSERT INTO bill_line_items (bill_id,company_id,product_id,description,quantity,rate,tax_id,tax_rate,tax_amount,line_total,sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+          [billId, companyId, li.product_id || null, li.description, li.quantity, li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, lineTotal, i + 1]
         );
       }
     }

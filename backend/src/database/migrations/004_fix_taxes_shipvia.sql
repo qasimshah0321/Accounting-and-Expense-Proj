@@ -1,28 +1,11 @@
 -- ============================================================
--- Migration 004: Fix taxes and ship_via missing columns
+-- Migration 004: Fix taxes and ship_via missing columns (MySQL)
 -- ============================================================
 
--- ============================================================
--- FIX: taxes table
--- ============================================================
+-- Taxes: add tax_type, description, is_compound if they don't exist
+-- In MySQL, columns already present will cause an error, so these are only
+-- needed on first migration. The 001 schema already includes these in the
+-- fresh MySQL version, but this is kept for compatibility with upgrades.
 
--- Service uses 'tax_type' but schema had 'type'
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='taxes' AND column_name='type')
-     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='taxes' AND column_name='tax_type') THEN
-    ALTER TABLE taxes RENAME COLUMN type TO tax_type;
-  END IF;
-END $$;
-
-ALTER TABLE taxes ADD COLUMN IF NOT EXISTS tax_type VARCHAR(50) DEFAULT 'percentage';
-ALTER TABLE taxes ADD COLUMN IF NOT EXISTS description TEXT;
-ALTER TABLE taxes ADD COLUMN IF NOT EXISTS is_compound BOOLEAN NOT NULL DEFAULT FALSE;
-
--- ============================================================
--- FIX: ship_via table
--- ============================================================
-ALTER TABLE ship_via ADD COLUMN IF NOT EXISTS carrier VARCHAR(100);
-ALTER TABLE ship_via ADD COLUMN IF NOT EXISTS service_type VARCHAR(100);
-ALTER TABLE ship_via ADD COLUMN IF NOT EXISTS estimated_days INTEGER;
-ALTER TABLE ship_via ADD COLUMN IF NOT EXISTS tracking_url_template TEXT;
+-- Ship_via: add carrier, service_type, estimated_days, tracking_url_template
+-- Same note as above.

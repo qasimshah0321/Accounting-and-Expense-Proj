@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './Invoice.module.css'
 import CustomerPopup from './CustomerPopup'
 import TaxPopup from './TaxPopup'
+import ProductSelectorPopup from './ProductSelectorPopup'
 import * as api from '../lib/api'
 
-export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$' }) {
+export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$', sidebarCollapsed = false }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -42,6 +43,9 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
+  // ─── Product Selector Popup ───────────────────────────────────────────────
+  const [showProductSelector, setShowProductSelector] = useState(false)
+
   // ─── Estimate Picker state ────────────────────────────────────────────────
   const [showEstimatePicker, setShowEstimatePicker] = useState(false)
   const [estimatePickerItems, setEstimatePickerItems] = useState([])
@@ -75,7 +79,21 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     if (isOpen) {
       loadOrders()
       loadCustomers()
-      api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
+      api.getProducts().then(res => {
+        const prods = res.data?.products || res.products || []
+        setProducts(prods)
+        // Customer role: auto-open new order form + product selector
+        if (user?.role === 'customer') {
+          setShowForm(true)
+          setEditingOrder(null)
+          if (user?.linked_customer_id) {
+            setSelectedCustomer(user.linked_customer_name || '')
+            setSelectedCustomerId(user.linked_customer_id)
+            setCustomerSearchText(user.linked_customer_name || '')
+          }
+          setShowProductSelector(true)
+        }
+      }).catch(() => {})
     }
   }, [isOpen, loadOrders, loadCustomers])
 
@@ -392,6 +410,41 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     }))
   }
 
+  // ─── Add products from ProductSelectorPopup ──────────────────────────────
+  const handleAddFromSelector = (product, qty) => {
+    const rate = parseFloat(product.selling_price || product.unit_price || 0)
+    const tgtPrice = parseFloat(product.target_price) || 0
+    setLineItems(prev => {
+      const existing = prev.find(i => i.product_id === product.id || (i.sku && i.sku === product.sku))
+      if (existing) {
+        return prev.map(i =>
+          (i.product_id === product.id || (i.sku && i.sku === product.sku))
+            ? { ...i, quantity: i.quantity + qty, amount: (i.quantity + qty) * i.rate }
+            : i
+        )
+      }
+      // Replace the first empty placeholder row if present
+      const emptyIdx = prev.findIndex(i => !i.sku && !i.description && i.quantity === 1 && i.rate === 0)
+      const newItem = {
+        id: Date.now() + Math.random(),
+        product_id: product.id,
+        sku: product.sku || '',
+        description: product.name || '',
+        quantity: qty,
+        rate,
+        target_price: tgtPrice,
+        amount: qty * rate,
+      }
+      if (emptyIdx !== -1) {
+        const updated = [...prev]
+        updated[emptyIdx] = newItem
+        return updated
+      }
+      return [...prev, newItem]
+    })
+    onDirtyChange(true)
+  }
+
   const getProductSuggestions = (itemId, field) => {
     const item = lineItems.find(i => i.id === itemId)
     if (!item || !products.length) return []
@@ -407,6 +460,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   const handleProductSelect = (product, itemId) => {
     const targetId = itemId ?? activeItemId
     const price = parseFloat(product.selling_price) || parseFloat(product.unit_price) || 0
+    const tgtPrice = parseFloat(product.target_price) || 0
     setLineItems(prev => prev.map(item => {
       if (item.id !== targetId) return item
       const updated = {
@@ -414,6 +468,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
         sku: product.sku || '',
         description: product.description || product.name || '',
         rate: price,
+        target_price: tgtPrice,
       }
       if ('amount' in updated) updated.amount = (updated.quantity || 1) * price - (updated.discount || 0)
       return updated
@@ -499,7 +554,13 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   return (
     <>
       {/* ── Sales Order List View ─────────────────────────────────────────── */}
-      <div className={styles.invoiceListOverlay}>
+      <div
+        className={styles.invoiceListOverlay}
+        style={isCustomerRole ? {
+          left: sidebarCollapsed ? '70px' : 'var(--sidebar-width)',
+          top: 'var(--header-height)'
+        } : {}}
+      >
         <div className={styles.invoiceListContainer}>
 
           <div className={styles.listHeader}>
@@ -642,6 +703,15 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                 </h2>
               </div>
               <div className={styles.headerRight}>
+                {!viewMode && (
+                  <button
+                    onClick={() => setShowProductSelector(true)}
+                    style={{ marginRight: 10, padding: '6px 14px', background: '#0066cc', color: '#fff',
+                             border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+                  >
+                    <i className="fas fa-th-list" style={{ marginRight: 6 }}></i>Browse Products
+                  </button>
+                )}
                 <button className={styles.closeBtn} onClick={handleFormClose}>
                   <i className="fas fa-times"></i>
                 </button>
@@ -729,6 +799,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           <th className={styles.colDescription}>Description</th>
                           <th className={styles.colQuantity}>Ordered</th>
                           <th className={styles.colRate}>Rate</th>
+                          <th className={styles.colRate}>Target Price</th>
                           <th className={styles.colAmount}>Amount</th>
                           <th className={styles.colAction}></th>
                         </tr>
@@ -824,6 +895,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                             </td>
                             <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => !viewMode && handleFieldFocus(item.id)} readOnly={viewMode} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" readOnly={isCustomerRole || viewMode} onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => !(isCustomerRole || viewMode) && handleFieldFocus(item.id)} style={isCustomerRole || viewMode ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={parseFloat(item.target_price || 0).toFixed(2)} readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }} /></td>
                             <td className={styles.amountCell}>{currencySymbol}{item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>
                               <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1 || viewMode}>
@@ -916,6 +988,13 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
 
           <CustomerPopup isOpen={isCustomerPopupOpen} onClose={handleCustomerPopupClose} onSave={handleCustomerSave} />
           <TaxPopup isOpen={isTaxPopupOpen} onClose={handleTaxPopupClose} onSave={handleTaxSave} />
+          <ProductSelectorPopup
+            isOpen={showProductSelector}
+            onClose={() => setShowProductSelector(false)}
+            products={products}
+            onAdd={handleAddFromSelector}
+            currencySymbol={currencySymbol}
+          />
         </div>
       )}
 

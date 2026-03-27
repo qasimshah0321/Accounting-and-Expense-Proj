@@ -1,0 +1,16 @@
+PassengerEnabled on
+PassengerAppRoot /home/candydada/public_html/zeropoint
+PassengerStartupFile dist/server.js
+PassengerAppType node
+PassengerNodejs /home/candydada/nodevenv/public_html/zeropoint/18/bin/node
+
+RewriteEngine On
+
+# Do NOT rewrite API requests — let Passenger route them to Node.js
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ - [L]
+
+# SPA fallback for all other non-file/dir requests
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ /index.html [L]

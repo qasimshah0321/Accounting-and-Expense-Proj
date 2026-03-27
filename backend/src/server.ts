@@ -1,10 +1,12 @@
 import { config } from './config/env';
 import { connectDB } from './config/database';
+import { runMigrations } from './database/migrate';
 import app from './app';
 
 const start = async () => {
   try {
     await connectDB();
+    await runMigrations();
     app.listen(config.port, () => {
       console.log(`Server running on port ${config.port} [${config.nodeEnv}]`);
     });

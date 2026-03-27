@@ -1,5 +1,5 @@
 import { pool } from '../config/database';
-import { PoolClient } from 'pg';
+import { Connection } from 'mysql2/promise';
 
 interface AuditLogEntry {
   company_id: string;
@@ -18,14 +18,14 @@ interface AuditLogEntry {
 
 export const createAuditLog = async (
   entry: AuditLogEntry,
-  client?: PoolClient
+  client?: Connection
 ): Promise<void> => {
   const sql = `
     INSERT INTO audit_logs (
       company_id, entity_type, entity_id, action,
       user_id, user_name, user_ip,
       field_name, old_value, new_value, changes, description
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `;
   const values = [
     entry.company_id, entry.entity_type, entry.entity_id, entry.action,
@@ -54,13 +54,13 @@ export const createStatusHistory = async (
     reason?: string;
     notes?: string;
   },
-  client?: PoolClient
+  client?: Connection
 ): Promise<void> => {
   const sql = `
     INSERT INTO document_status_history (
       company_id, document_type, document_id, document_no,
       from_status, to_status, changed_by, changed_by_name, reason, notes
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    ) VALUES (?,?,?,?,?,?,?,?,?,?)
   `;
   const values = [
     entry.company_id, entry.document_type, entry.document_id, entry.document_no,
@@ -78,22 +78,21 @@ export const getAuditLogs = async (
   companyId: string,
   filters: { entity_type?: string; entity_id?: string; page?: number; limit?: number }
 ) => {
-  const conditions = ['company_id = $1'];
+  const conditions = ['company_id = ?'];
   const params: unknown[] = [companyId];
-  let idx = 2;
-  if (filters.entity_type) { conditions.push(`entity_type = $${idx++}`); params.push(filters.entity_type); }
-  if (filters.entity_id) { conditions.push(`entity_id = $${idx++}`); params.push(filters.entity_id); }
+  if (filters.entity_type) { conditions.push(`entity_type = ?`); params.push(filters.entity_type); }
+  if (filters.entity_id) { conditions.push(`entity_id = ?`); params.push(filters.entity_id); }
 
   const page = filters.page || 1;
   const limit = filters.limit || 50;
   const offset = (page - 1) * limit;
 
-  const { rows } = await pool.query(
-    `SELECT * FROM audit_logs WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+  const [rows] = await pool.query(
+    `SELECT * FROM audit_logs WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
-  const countResult = await pool.query(
-    `SELECT COUNT(*) FROM audit_logs WHERE ${conditions.join(' AND ')}`, params
+  const [countResult] = await pool.query(
+    `SELECT COUNT(*) as count FROM audit_logs WHERE ${conditions.join(' AND ')}`, params
   );
-  return { logs: rows, total: parseInt(countResult.rows[0].count, 10) };
+  return { logs: rows as any[], total: parseInt((countResult as any[])[0].count, 10) };
 };

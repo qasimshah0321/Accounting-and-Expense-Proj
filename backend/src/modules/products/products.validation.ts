@@ -12,6 +12,7 @@ export const createProductSchema = z.object({
   manufacturer: z.string().optional(),
   cost_price: z.number().min(0).default(0),
   selling_price: z.number().min(0).default(0),
+  target_price: z.number().min(0).default(0),
   wholesale_price: z.number().min(0).optional(),
   currency: z.string().default('USD'),
   unit_of_measure: z.string().default('pcs'),
@@ -28,7 +29,7 @@ export const createProductSchema = z.object({
   is_active: z.boolean().default(true),
   is_for_sale: z.boolean().default(true),
   is_for_purchase: z.boolean().default(true),
-  image_url: z.string().optional(),
+  image_url: z.string().optional().nullable(),
   notes: z.string().optional(),
 });
 

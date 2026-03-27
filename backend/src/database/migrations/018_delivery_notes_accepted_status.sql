@@ -1,6 +1,5 @@
--- Migration 018: Add 'accepted' status to delivery_notes.
+-- Migration 018: Add 'accepted' status to delivery_notes (MySQL)
 -- When a delivery note is accepted (invoiced), its status changes to 'accepted'.
-
-ALTER TABLE delivery_notes DROP CONSTRAINT IF EXISTS delivery_notes_status_check;
-ALTER TABLE delivery_notes ADD CONSTRAINT delivery_notes_status_check
-  CHECK (status IN ('draft','ready_to_ship','shipped','in_transit','delivered','accepted','cancelled'));
+-- MySQL CHECK constraints can't be dropped/re-added as easily as PG.
+-- In our MySQL schema we don't use CHECK constraints for status fields
+-- (validation is handled at the application layer), so this is a no-op.

@@ -14,6 +14,7 @@ const emptyForm = {
   sellToCustomer: true,
   salesDescription: '',
   price: '',
+  targetPrice: '',
   incomeAccount: '',
   purchaseFromVendor: false,
   purchaseDescription: '',
@@ -51,6 +52,7 @@ export default function ProductPopup({ isOpen, onClose, onSave, editProduct }) {
         sellToCustomer: editProduct.is_for_sale !== false,
         salesDescription: editProduct.description || '',
         price: editProduct.selling_price ?? '',
+        targetPrice: editProduct.target_price ?? '',
         incomeAccount: '',
         purchaseFromVendor: editProduct.is_for_purchase !== false,
         purchaseDescription: '',
@@ -124,11 +126,13 @@ export default function ProductPopup({ isOpen, onClose, onSave, editProduct }) {
       category: formData.category,
       subcategory: formData.class,
       selling_price: parseFloat(formData.price) || 0,
+      target_price: parseFloat(formData.targetPrice) || 0,
       cost_price: parseFloat(formData.purchaseCost) || 0,
       is_for_sale: formData.sellToCustomer,
       is_for_purchase: formData.purchaseFromVendor,
       is_active: true,
       track_inventory: formData.itemType === 'Inventory item',
+      image_url: formData.image || null,
     }
 
     try {
@@ -255,6 +259,10 @@ export default function ProductPopup({ isOpen, onClose, onSave, editProduct }) {
                     <div className={styles.formGroup}>
                       <label>Price/Rate</label>
                       <input type="number" name="price" className={styles.formControl} value={formData.price} onChange={handleChange} step="0.01" />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Target Price</label>
+                      <input type="number" name="targetPrice" className={styles.formControl} value={formData.targetPrice} onChange={handleChange} step="0.01" placeholder="0.00" />
                     </div>
                     <div className={styles.formGroup}>
                       <label>Income Account</label>

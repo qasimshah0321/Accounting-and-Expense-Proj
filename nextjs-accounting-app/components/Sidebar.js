@@ -5,6 +5,7 @@ import styles from './Sidebar.module.css'
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: 'fa-th-large' },
+  { id: 'quick-order', name: 'Quick Order', icon: 'fa-bolt' },
   {
     id: 'sales',
     name: 'Sales',

@@ -31,6 +31,7 @@ import CompanySettings from '@/components/CompanySettings'
 import ERPFlowDiagram from '@/components/ERPFlowDiagram'
 import UserManagement from '@/components/UserManagement'
 import RolePermissions from '@/components/RolePermissions'
+import QuickOrder from '@/components/QuickOrder'
 import Login from '@/components/Login'
 import ToastContainer from '../components/Toast'
 import styles from './page.module.css'
@@ -71,6 +72,7 @@ const MENU_PANEL_MAP = {
   'Ship Via': 'ShipViaConfiguration',
   'Users & Roles': 'UserManagement',
   'Role Permissions': 'RolePermissions',
+  'Quick Order': 'QuickOrder', 'POS': 'QuickOrder', 'Point of Sale': 'QuickOrder',
 }
 
 export default function Home() {
@@ -127,6 +129,13 @@ export default function Home() {
     }
   }, [])
 
+  // Register service worker for push notifications on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+  }, [])
+
   // Listen for auth:expired events dispatched by api.js on any 401 response
   // This replaces the old window.location.reload() approach which caused a race condition
   // where the token was cleared but the reload hadn't happened yet
@@ -163,10 +172,11 @@ export default function Home() {
         })
         .catch(() => {})
 
-      // Customer users land on Orders instead of Dashboard
+      // Customer users land on Sales Order (new order form opens automatically)
       if (user.role === 'customer') {
         setActiveMenu('Sales Order')
         setActivePanel('SalesOrder')
+        setIsSidebarOpen(true)
       }
     }
   }, [user])
@@ -290,6 +300,7 @@ export default function Home() {
             onDirtyChange={setIsDirty}
             user={user}
             currencySymbol={currencySymbol}
+            sidebarCollapsed={isSidebarCollapsed}
           />
           <Estimate
             isOpen={activePanel === 'Estimate'}
@@ -394,6 +405,15 @@ export default function Home() {
             isOpen={activePanel === 'ERPFlowDiagram'}
             onClose={closePanel}
             onNavigate={(menuName) => { handleMenuClick(menuName) }}
+          />
+
+          {/* Quick Order / POS */}
+          <QuickOrder
+            isOpen={activePanel === 'QuickOrder'}
+            onClose={closePanel}
+            user={user}
+            currencySymbol={currencySymbol}
+            taxes={taxes}
           />
 
           {/* Reports */}

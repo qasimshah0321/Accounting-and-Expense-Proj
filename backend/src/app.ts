@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config/env';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
@@ -30,8 +32,15 @@ import recurringRoutes from './modules/recurring/recurring.routes';
 import usersRoutes from './modules/users/users.routes';
 import rolePermissionsRoutes from './modules/role-permissions/role-permissions.routes';
 import utilsRoutes from './modules/utils/utils.routes';
+import pushRoutes from './modules/push/push.routes';
 
 const app = express();
+
+// Serve bundled Next.js static frontend (production only)
+const publicDir = path.join(__dirname, 'public');
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+}
 
 // Security & parsing middleware
 app.use(helmet());
@@ -78,7 +87,18 @@ app.use(`${API_PREFIX}/banking`, bankingRoutes);
 app.use(`${API_PREFIX}/recurring`, recurringRoutes);
 app.use(`${API_PREFIX}/users`, usersRoutes);
 app.use(`${API_PREFIX}/role-permissions`, rolePermissionsRoutes);
+app.use(`${API_PREFIX}/push`, pushRoutes);
 app.use(`${API_PREFIX}`, utilsRoutes);
+
+// SPA fallback: serve index.html for any non-API route (client-side routing)
+const indexHtml = path.join(__dirname, 'public', 'index.html');
+if (fs.existsSync(indexHtml)) {
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(indexHtml);
+    }
+  });
+}
 
 // Error handling
 app.use(notFoundHandler);

@@ -285,6 +285,20 @@
   color: var(--text-primary);
 }
 
+/* Balance column */
+.balanceCol {
+  text-align: right;
+}
+
+.balanceOwed {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.balanceZero {
+  color: #6b7280;
+}
+
 /* Name Cell with Avatar */
 .nameCell {
   display: flex;

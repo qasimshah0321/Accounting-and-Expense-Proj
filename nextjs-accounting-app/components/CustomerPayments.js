@@ -39,7 +39,7 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
     setListError('')
     try {
       const res = await api.getCustomerPayments()
-      setPayments(res.data?.payments || res.payments || res.data || [])
+      setPayments(res.data?.customer_payments || res.data?.payments || res.payments || [])
     } catch (err) {
       setListError(err.message)
     } finally {
@@ -246,6 +246,8 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                     <th>Customer</th>
                     <th>Date</th>
                     <th>Amount</th>
+                    <th>Unapplied</th>
+                    <th>Status</th>
                     <th>Method</th>
                     <th>Reference</th>
                     <th>Actions</th>
@@ -258,7 +260,21 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                       <td>{p.customer_name || '-'}</td>
                       <td>{formatDate(p.payment_date)}</td>
                       <td>{formatCurrency(p.amount)}</td>
-                      <td>{(p.payment_method || '-').replace('_', ' ')}</td>
+                      <td style={{ color: parseFloat(p.unallocated_amount) > 0 ? '#d97706' : '#6b7280' }}>
+                        {formatCurrency(p.unallocated_amount)}
+                      </td>
+                      <td>
+                        {p.allocation_status === 'applied' && (
+                          <span style={{ background: '#dcfce7', color: '#16a34a', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>Applied</span>
+                        )}
+                        {p.allocation_status === 'partial' && (
+                          <span style={{ background: '#fef9c3', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>Partial</span>
+                        )}
+                        {p.allocation_status === 'unapplied' && (
+                          <span style={{ background: '#fee2e2', color: '#dc2626', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>Unapplied</span>
+                        )}
+                      </td>
+                      <td style={{ textTransform: 'capitalize' }}>{(p.payment_method || '-').replace(/_/g, ' ')}</td>
                       <td>{p.reference_no || '-'}</td>
                       <td>
                         <div className={styles.actionButtons}>
@@ -458,7 +474,7 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                                 <td><strong>{inv.invoice_no}</strong></td>
                                 <td>{formatDate(inv.invoice_date)}</td>
                                 <td>{formatDate(inv.due_date)}</td>
-                                <td>{formatCurrency(inv.grand_total)}</td>
+                                <td>{formatCurrency(inv.grand_total || inv.total_amount)}</td>
                                 <td>{formatCurrency(inv.amount_paid)}</td>
                                 <td style={{ fontWeight: 600, color: '#ef4444' }}>{formatCurrency(inv.amount_due)}</td>
                               </tr>
@@ -471,16 +487,38 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                         </div>
                       )}
                     </div>
-                    {selectedInvoiceId && (
-                      <div style={{ padding: '10px 16px', fontSize: '13px', color: '#6b7280' }}>
-                        <button
-                          style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px' }}
-                          onClick={() => setSelectedInvoiceId(null)}
-                        >
-                          Clear selection (record as unallocated)
-                        </button>
-                      </div>
-                    )}
+                    {selectedInvoiceId && (() => {
+                      const selInv = outstandingInvoices.find(i => i.id === selectedInvoiceId)
+                      const payAmt = parseFloat(amount) || 0
+                      const amtDue = parseFloat(selInv?.amount_due || 0)
+                      const willApply = Math.min(payAmt, amtDue)
+                      const leftOver = payAmt - willApply
+                      return (
+                        <div style={{ padding: '10px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                          {payAmt > 0 && (
+                            <>
+                              <span style={{ color: '#16a34a', fontWeight: 600 }}>
+                                Will apply: {formatCurrency(willApply)}
+                              </span>
+                              {leftOver > 0 && (
+                                <span style={{ color: '#d97706', fontWeight: 600 }}>
+                                  Unapplied remainder: {formatCurrency(leftOver)}
+                                </span>
+                              )}
+                              {leftOver === 0 && payAmt >= amtDue && (
+                                <span style={{ color: '#16a34a' }}>Invoice will be fully paid</span>
+                              )}
+                            </>
+                          )}
+                          <button
+                            style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', marginLeft: 'auto' }}
+                            onClick={() => setSelectedInvoiceId(null)}
+                          >
+                            Clear selection (record as unapplied)
+                          </button>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               )}

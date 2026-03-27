@@ -1,98 +1,95 @@
--- Migration 014: RBAC with menu-level permissions
+-- Migration 014: RBAC with menu-level permissions (MySQL)
 
--- 1. Update users.role constraint
--- Drop old constraint and add new one with 3 roles
-ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
-ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin','customer','salesperson'));
-
--- Migrate existing roles: manager→salesperson, user/viewer→customer
-UPDATE users SET role = 'salesperson' WHERE role = 'manager';
-UPDATE users SET role = 'customer' WHERE role IN ('user', 'viewer');
-
--- 2. Create role_menu_permissions table
+-- 1. Create role_menu_permissions table
 CREATE TABLE IF NOT EXISTS role_menu_permissions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  company_id CHAR(36) NOT NULL,
   role VARCHAR(50) NOT NULL,
   menu_name VARCHAR(100) NOT NULL,
-  can_access BOOLEAN NOT NULL DEFAULT true,
+  can_access TINYINT(1) NOT NULL DEFAULT 1,
   display_name VARCHAR(100),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(company_id, role, menu_name)
+  updated_at DATETIME NOT NULL DEFAULT NOW(),
+  UNIQUE KEY uq_rmp_company_role_menu (company_id, role, menu_name),
+  CONSTRAINT fk_rmp_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 
--- 3. Create user_customer_map table
+-- 2. Create user_customer_map table
 CREATE TABLE IF NOT EXISTS user_customer_map (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  company_id CHAR(36) NOT NULL,
+  user_id CHAR(36) NOT NULL,
+  customer_id CHAR(36) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT NOW(),
+  UNIQUE KEY uq_ucm_user (user_id),
+  CONSTRAINT fk_ucm_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ucm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ucm_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 
--- 4. Seed default permissions for all existing companies
-DO $$
-DECLARE
-  cid UUID;
-BEGIN
-  FOR cid IN SELECT id FROM companies LOOP
-    -- Admin gets all menus (full access, always)
-    INSERT INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name) VALUES
-      (cid, 'admin', 'Dashboard', true, 'Dashboard'),
-      (cid, 'admin', 'Invoices', true, 'Invoices'),
-      (cid, 'admin', 'Sales Order', true, 'Sales Orders'),
-      (cid, 'admin', 'Delivery Notes', true, 'Delivery Notes'),
-      (cid, 'admin', 'Estimates/Quotations', true, 'Estimates/Quotations'),
-      (cid, 'admin', 'Customer Payments', true, 'Customer Payments'),
-      (cid, 'admin', 'Bills', true, 'Bills'),
-      (cid, 'admin', 'Expenses', true, 'Expenses'),
-      (cid, 'admin', 'Purchase Order', true, 'Purchase Order'),
-      (cid, 'admin', 'Bill Payments', true, 'Bill Payments'),
-      (cid, 'admin', 'Customer Center', true, 'Customer Center'),
-      (cid, 'admin', 'Vendor Center', true, 'Vendor Center'),
-      (cid, 'admin', 'Product Center', true, 'Product Center'),
-      (cid, 'admin', 'Stock Valuation', true, 'Stock Valuation'),
-      (cid, 'admin', 'Stock Mobility', true, 'Stock Mobility'),
-      (cid, 'admin', 'Financial Statements', true, 'Financial Statements'),
-      (cid, 'admin', 'Revenue & Sales Analysis', true, 'Revenue & Sales Analysis'),
-      (cid, 'admin', 'Cost & Expense Analytics', true, 'Cost & Expense Analytics'),
-      (cid, 'admin', 'Receivables & Payables', true, 'Receivables & Payables'),
-      (cid, 'admin', 'Planning & Performance Analysis', true, 'Planning & Performance Analysis'),
-      (cid, 'admin', 'Banking Center', true, 'Banking Center'),
-      (cid, 'admin', 'Chart of Accounts', true, 'Chart of Accounts'),
-      (cid, 'admin', 'Journal Entries', true, 'Journal Entries'),
-      (cid, 'admin', 'General Ledger', true, 'General Ledger'),
-      (cid, 'admin', 'Trial Balance', true, 'Trial Balance'),
-      (cid, 'admin', 'Recurring Documents', true, 'Recurring Documents'),
-      (cid, 'admin', 'Company Settings', true, 'Company Settings'),
-      (cid, 'admin', 'ERP Flow Guide', true, 'ERP Flow Guide'),
-      (cid, 'admin', 'Tax', true, 'Tax'),
-      (cid, 'admin', 'Ship Via', true, 'Ship Via'),
-      (cid, 'admin', 'Users & Roles', true, 'Users & Roles'),
-      (cid, 'admin', 'Role Permissions', true, 'Role Permissions')
-    ON CONFLICT (company_id, role, menu_name) DO NOTHING;
+-- 3. Seed default permissions for all existing companies
+-- Admin permissions
+INSERT IGNORE INTO role_menu_permissions (id, company_id, role, menu_name, can_access, display_name)
+SELECT UUID(), c.id, 'admin', m.menu_name, 1, m.display_name
+FROM companies c
+CROSS JOIN (
+  SELECT 'Dashboard' AS menu_name, 'Dashboard' AS display_name
+  UNION ALL SELECT 'Invoices', 'Invoices'
+  UNION ALL SELECT 'Sales Order', 'Sales Orders'
+  UNION ALL SELECT 'Delivery Notes', 'Delivery Notes'
+  UNION ALL SELECT 'Estimates/Quotations', 'Estimates/Quotations'
+  UNION ALL SELECT 'Customer Payments', 'Customer Payments'
+  UNION ALL SELECT 'Bills', 'Bills'
+  UNION ALL SELECT 'Expenses', 'Expenses'
+  UNION ALL SELECT 'Purchase Order', 'Purchase Order'
+  UNION ALL SELECT 'Bill Payments', 'Bill Payments'
+  UNION ALL SELECT 'Customer Center', 'Customer Center'
+  UNION ALL SELECT 'Vendor Center', 'Vendor Center'
+  UNION ALL SELECT 'Product Center', 'Product Center'
+  UNION ALL SELECT 'Stock Valuation', 'Stock Valuation'
+  UNION ALL SELECT 'Stock Mobility', 'Stock Mobility'
+  UNION ALL SELECT 'Financial Statements', 'Financial Statements'
+  UNION ALL SELECT 'Revenue & Sales Analysis', 'Revenue & Sales Analysis'
+  UNION ALL SELECT 'Cost & Expense Analytics', 'Cost & Expense Analytics'
+  UNION ALL SELECT 'Receivables & Payables', 'Receivables & Payables'
+  UNION ALL SELECT 'Planning & Performance Analysis', 'Planning & Performance Analysis'
+  UNION ALL SELECT 'Banking Center', 'Banking Center'
+  UNION ALL SELECT 'Chart of Accounts', 'Chart of Accounts'
+  UNION ALL SELECT 'Journal Entries', 'Journal Entries'
+  UNION ALL SELECT 'General Ledger', 'General Ledger'
+  UNION ALL SELECT 'Trial Balance', 'Trial Balance'
+  UNION ALL SELECT 'Recurring Documents', 'Recurring Documents'
+  UNION ALL SELECT 'Company Settings', 'Company Settings'
+  UNION ALL SELECT 'ERP Flow Guide', 'ERP Flow Guide'
+  UNION ALL SELECT 'Tax', 'Tax'
+  UNION ALL SELECT 'Ship Via', 'Ship Via'
+  UNION ALL SELECT 'Users & Roles', 'Users & Roles'
+  UNION ALL SELECT 'Role Permissions', 'Role Permissions'
+) m;
 
-    -- Salesperson permissions
-    INSERT INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name) VALUES
-      (cid, 'salesperson', 'Dashboard', true, 'Dashboard'),
-      (cid, 'salesperson', 'Invoices', true, 'Invoices'),
-      (cid, 'salesperson', 'Sales Order', true, 'Orders'),
-      (cid, 'salesperson', 'Delivery Notes', true, 'Delivery Notes'),
-      (cid, 'salesperson', 'Customer Payments', true, 'Customer Payments'),
-      (cid, 'salesperson', 'Customer Center', true, 'Customer Center'),
-      (cid, 'salesperson', 'Product Center', true, 'Product Center'),
-      (cid, 'salesperson', 'Stock Valuation', true, 'Stock Valuation'),
-      (cid, 'salesperson', 'Stock Mobility', true, 'Stock Mobility'),
-      (cid, 'salesperson', 'Financial Statements', true, 'Financial Statements'),
-      (cid, 'salesperson', 'Revenue & Sales Analysis', true, 'Revenue & Sales Analysis')
-    ON CONFLICT (company_id, role, menu_name) DO NOTHING;
+-- Salesperson permissions
+INSERT IGNORE INTO role_menu_permissions (id, company_id, role, menu_name, can_access, display_name)
+SELECT UUID(), c.id, 'salesperson', m.menu_name, 1, m.display_name
+FROM companies c
+CROSS JOIN (
+  SELECT 'Dashboard' AS menu_name, 'Dashboard' AS display_name
+  UNION ALL SELECT 'Invoices', 'Invoices'
+  UNION ALL SELECT 'Sales Order', 'Orders'
+  UNION ALL SELECT 'Delivery Notes', 'Delivery Notes'
+  UNION ALL SELECT 'Customer Payments', 'Customer Payments'
+  UNION ALL SELECT 'Customer Center', 'Customer Center'
+  UNION ALL SELECT 'Product Center', 'Product Center'
+  UNION ALL SELECT 'Stock Valuation', 'Stock Valuation'
+  UNION ALL SELECT 'Stock Mobility', 'Stock Mobility'
+  UNION ALL SELECT 'Financial Statements', 'Financial Statements'
+  UNION ALL SELECT 'Revenue & Sales Analysis', 'Revenue & Sales Analysis'
+) m;
 
-    -- Customer permissions
-    INSERT INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name) VALUES
-      (cid, 'customer', 'Dashboard', true, 'Dashboard'),
-      (cid, 'customer', 'Sales Order', true, 'Orders'),
-      (cid, 'customer', 'Product Center', true, 'Product Center')
-    ON CONFLICT (company_id, role, menu_name) DO NOTHING;
-  END LOOP;
-END;
-$$;
+-- Customer permissions
+INSERT IGNORE INTO role_menu_permissions (id, company_id, role, menu_name, can_access, display_name)
+SELECT UUID(), c.id, 'customer', m.menu_name, 1, m.display_name
+FROM companies c
+CROSS JOIN (
+  SELECT 'Dashboard' AS menu_name, 'Dashboard' AS display_name
+  UNION ALL SELECT 'Sales Order', 'Orders'
+  UNION ALL SELECT 'Product Center', 'Product Center'
+) m;

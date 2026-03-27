@@ -1,4 +1,4 @@
-import { PoolClient } from 'pg';
+import { Connection } from 'mysql2/promise';
 import { pool, withTransaction } from '../config/database';
 import { formatDate } from '../utils/dateUtils';
 
@@ -36,16 +36,21 @@ const DEFAULT_PREFIXES: Record<DocumentType, string> = {
 export const generateDocumentNumber = async (
   companyId: string,
   documentType: DocumentType,
-  client?: PoolClient
+  client?: Connection
 ): Promise<string> => {
-  const query = async (text: string, params: unknown[]) =>
-    client ? client.query(text, params) : pool.query(text, params);
+  const queryFn = client || pool;
 
-  const { rows } = await query(
+  // Atomically increment and get the current number
+  await queryFn.query(
     `UPDATE document_sequences
      SET next_number = next_number + 1, updated_at = NOW()
-     WHERE company_id = $1 AND document_type = $2
-     RETURNING prefix, next_number - 1 AS current_number, padding, include_date`,
+     WHERE company_id = ? AND document_type = ?`,
+    [companyId, documentType]
+  );
+
+  const [rows] = await queryFn.query(
+    `SELECT prefix, next_number - 1 AS current_number, padding, include_date
+     FROM document_sequences WHERE company_id = ? AND document_type = ?`,
     [companyId, documentType]
   );
 
@@ -54,13 +59,12 @@ export const generateDocumentNumber = async (
   let padding: number;
   let includeDate: boolean;
 
-  if (rows.length === 0) {
+  if (!(rows as any[]).length) {
     const defaultPrefix = DEFAULT_PREFIXES[documentType] || documentType.toUpperCase();
-    await query(
+    await queryFn.query(
       `INSERT INTO document_sequences (company_id, document_type, prefix, next_number, padding, include_date)
-       VALUES ($1, $2, $3, 2, 3, false)
-       ON CONFLICT (company_id, document_type) DO UPDATE SET next_number = document_sequences.next_number + 1
-       RETURNING prefix, next_number - 1 AS current_number, padding, include_date`,
+       VALUES (?, ?, ?, 2, 3, false)
+       ON DUPLICATE KEY UPDATE next_number = next_number + 1`,
       [companyId, documentType, defaultPrefix]
     );
     prefix = defaultPrefix;
@@ -68,10 +72,11 @@ export const generateDocumentNumber = async (
     padding = 4;
     includeDate = true;
   } else {
-    prefix = rows[0].prefix;
-    seqNumber = rows[0].current_number;
-    padding = rows[0].padding;
-    includeDate = rows[0].include_date;
+    const row = (rows as any[])[0];
+    prefix = row.prefix;
+    seqNumber = row.current_number;
+    padding = row.padding;
+    includeDate = !!row.include_date;
   }
 
   const parts: string[] = [prefix];
@@ -80,13 +85,12 @@ export const generateDocumentNumber = async (
   return parts.join('-');
 };
 
-export const ensureDocumentSequences = async (companyId: string, existingClient?: PoolClient): Promise<void> => {
-  const execute = async (client: PoolClient) => {
+export const ensureDocumentSequences = async (companyId: string, existingClient?: Connection): Promise<void> => {
+  const execute = async (client: Connection) => {
     for (const [type, prefix] of Object.entries(DEFAULT_PREFIXES)) {
       await client.query(
-        `INSERT INTO document_sequences (company_id, document_type, prefix, next_number, padding, include_date)
-         VALUES ($1, $2, $3, 1, 3, false)
-         ON CONFLICT (company_id, document_type) DO NOTHING`,
+        `INSERT IGNORE INTO document_sequences (company_id, document_type, prefix, next_number, padding, include_date)
+         VALUES (?, ?, ?, 1, 3, false)`,
         [companyId, type, prefix]
       );
     }

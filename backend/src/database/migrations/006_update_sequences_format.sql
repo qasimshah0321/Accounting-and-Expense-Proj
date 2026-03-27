@@ -4,5 +4,5 @@
 -- ============================================================
 
 UPDATE document_sequences
-SET include_date = false, padding = 3
+SET include_date = 0, padding = 3
 WHERE document_type IN ('invoice', 'sales_order', 'estimate', 'delivery_note');

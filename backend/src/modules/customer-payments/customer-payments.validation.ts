@@ -5,7 +5,7 @@ export const createCustomerPaymentSchema = z.object({
   invoice_id: z.string().uuid().optional().nullable(),
   payment_date: z.string().min(1, 'Payment date required'),
   amount: z.number().positive('Amount must be > 0'),
-  payment_method: z.enum(['cash', 'check', 'card', 'bank_transfer']),
+  payment_method: z.enum(['cash', 'check', 'card', 'bank_transfer', 'other']),
   reference_no: z.string().optional(),
   notes: z.string().optional(),
 });

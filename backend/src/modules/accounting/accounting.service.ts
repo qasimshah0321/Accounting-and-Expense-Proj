@@ -1,4 +1,4 @@
-import { PoolClient } from 'pg';
+import { Connection } from 'mysql2/promise';
 import { pool, withTransaction } from '../../config/database';
 import { NotFoundError, ValidationError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
@@ -8,40 +8,39 @@ import { createAuditLog } from '../../services/auditService';
 // ─── Chart of Accounts ─────────────────────────────────────────────────────
 
 export const listAccounts = async (companyId: string, filters: any) => {
-  const conditions = ['company_id=$1'];
+  const conditions = ['company_id=?'];
   const params: unknown[] = [companyId];
-  let idx = 2;
 
   if (filters.account_type) {
-    conditions.push(`account_type=$${idx++}`);
+    conditions.push(`account_type=?`);
     params.push(filters.account_type);
   }
   if (filters.is_active !== undefined && filters.is_active !== '') {
-    conditions.push(`is_active=$${idx++}`);
+    conditions.push(`is_active=?`);
     params.push(filters.is_active === 'true' || filters.is_active === true);
   }
   if (filters.search) {
-    conditions.push(`(name ILIKE $${idx} OR account_number ILIKE $${idx})`);
-    params.push(`%${filters.search}%`);
-    idx++;
+    conditions.push(`(name LIKE ? OR account_number LIKE ?)`);
+    const s = `%${filters.search}%`;
+    params.push(s, s);
   }
 
   const where = conditions.join(' AND ');
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT id, account_number, name, account_type, sub_type, parent_id, description, is_active, is_system, normal_balance, balance, created_at, updated_at
      FROM chart_of_accounts WHERE ${where} ORDER BY account_number ASC`,
     params
   );
-  return { accounts: rows };
+  return { accounts: rows as any[] };
 };
 
 export const getAccountById = async (companyId: string, accountId: string) => {
-  const { rows } = await pool.query(
-    'SELECT * FROM chart_of_accounts WHERE id=$1 AND company_id=$2',
+  const [rows] = await pool.query(
+    'SELECT * FROM chart_of_accounts WHERE id=? AND company_id=?',
     [accountId, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Account');
-  return rows[0];
+  if (!(rows as any[]).length) throw new NotFoundError('Account');
+  return (rows as any[])[0];
 };
 
 const inferNormalBalance = (accountType: string): string => {
@@ -52,27 +51,30 @@ const inferNormalBalance = (accountType: string): string => {
 export const createAccount = async (companyId: string, userId: string, data: any) => {
   const normalBalance = data.normal_balance || inferNormalBalance(data.account_type);
 
-  // Check duplicate account_number
-  const { rows: existing } = await pool.query(
-    'SELECT id FROM chart_of_accounts WHERE company_id=$1 AND account_number=$2',
+  const [existing] = await pool.query(
+    'SELECT id FROM chart_of_accounts WHERE company_id=? AND account_number=?',
     [companyId, data.account_number]
   );
-  if (existing.length) throw new ConflictError(`Account number ${data.account_number} already exists`);
+  if ((existing as any[]).length) throw new ConflictError(`Account number ${data.account_number} already exists`);
 
   if (data.parent_id) {
-    const { rows: parentRows } = await pool.query(
-      'SELECT id FROM chart_of_accounts WHERE id=$1 AND company_id=$2',
+    const [parentRows] = await pool.query(
+      'SELECT id FROM chart_of_accounts WHERE id=? AND company_id=?',
       [data.parent_id, companyId]
     );
-    if (!parentRows.length) throw new ValidationError('Parent account not found');
+    if (!(parentRows as any[]).length) throw new ValidationError('Parent account not found');
   }
 
-  const { rows } = await pool.query(
+  await pool.query(
     `INSERT INTO chart_of_accounts (company_id, account_number, name, account_type, sub_type, parent_id, description, is_active, normal_balance)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+     VALUES (?,?,?,?,?,?,?,?,?)`,
     [companyId, data.account_number, data.name, data.account_type, data.sub_type || null, data.parent_id || null, data.description || null, data.is_active !== false, normalBalance]
   );
-  return rows[0];
+  const [newRows] = await pool.query(
+    'SELECT * FROM chart_of_accounts WHERE company_id=? AND account_number=? ORDER BY created_at DESC LIMIT 1',
+    [companyId, data.account_number]
+  );
+  return (newRows as any[])[0];
 };
 
 export const updateAccount = async (companyId: string, accountId: string, data: any) => {
@@ -88,21 +90,20 @@ export const updateAccount = async (companyId: string, accountId: string, data: 
   }
 
   if (data.account_number && data.account_number !== account.account_number) {
-    const { rows: existing } = await pool.query(
-      'SELECT id FROM chart_of_accounts WHERE company_id=$1 AND account_number=$2 AND id!=$3',
+    const [existing] = await pool.query(
+      'SELECT id FROM chart_of_accounts WHERE company_id=? AND account_number=? AND id!=?',
       [companyId, data.account_number, accountId]
     );
-    if (existing.length) throw new ConflictError(`Account number ${data.account_number} already exists`);
+    if ((existing as any[]).length) throw new ConflictError(`Account number ${data.account_number} already exists`);
   }
 
   const fields: string[] = [];
   const values: unknown[] = [];
-  let idx = 3;
 
   const allowedFields = ['account_number', 'name', 'account_type', 'sub_type', 'parent_id', 'description', 'normal_balance', 'is_active'];
   for (const f of allowedFields) {
     if (data[f] !== undefined) {
-      fields.push(`${f}=$${idx++}`);
+      fields.push(`${f}=?`);
       values.push(data[f]);
     }
   }
@@ -110,36 +111,35 @@ export const updateAccount = async (companyId: string, accountId: string, data: 
 
   fields.push(`updated_at=NOW()`);
 
-  const { rows } = await pool.query(
-    `UPDATE chart_of_accounts SET ${fields.join(', ')} WHERE id=$1 AND company_id=$2 RETURNING *`,
-    [accountId, companyId, ...values]
+  await pool.query(
+    `UPDATE chart_of_accounts SET ${fields.join(', ')} WHERE id=? AND company_id=?`,
+    [...values, accountId, companyId]
   );
-  return rows[0];
+  return getAccountById(companyId, accountId);
 };
 
 export const deleteAccount = async (companyId: string, accountId: string) => {
   const account = await getAccountById(companyId, accountId);
   if (account.is_system) throw new ConflictError('Cannot delete a system account');
 
-  // Check if account has journal entries
-  const { rows: jeLines } = await pool.query(
-    'SELECT id FROM journal_entry_lines WHERE account_id=$1 LIMIT 1',
+  const [jeLines] = await pool.query(
+    'SELECT id FROM journal_entry_lines WHERE account_id=? LIMIT 1',
     [accountId]
   );
-  if (jeLines.length) throw new ConflictError('Cannot delete an account with journal entries');
+  if ((jeLines as any[]).length) throw new ConflictError('Cannot delete an account with journal entries');
 
-  await pool.query('DELETE FROM chart_of_accounts WHERE id=$1 AND company_id=$2', [accountId, companyId]);
+  await pool.query('DELETE FROM chart_of_accounts WHERE id=? AND company_id=?', [accountId, companyId]);
 };
 
 // ─── Journal Entries ─────────────────────────────────────────────────────────
 
 export const peekNextJournalEntryNumber = async (companyId: string): Promise<string> => {
-  const { rows } = await pool.query(
-    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='journal_entry'`,
+  const [rows] = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=? AND document_type='journal_entry'`,
     [companyId]
   );
-  if (!rows.length) return 'JE-00001';
-  const { prefix, next_number, padding, include_date } = rows[0];
+  if (!(rows as any[]).length) return 'JE-00001';
+  const { prefix, next_number, padding, include_date } = (rows as any[])[0];
   const parts: string[] = [prefix];
   if (include_date) {
     const d = new Date();
@@ -150,25 +150,24 @@ export const peekNextJournalEntryNumber = async (companyId: string): Promise<str
 };
 
 export const listJournalEntries = async (companyId: string, filters: any) => {
-  const conditions = ['je.company_id=$1'];
+  const conditions = ['je.company_id=?'];
   const params: unknown[] = [companyId];
-  let idx = 2;
 
-  if (filters.status) { conditions.push(`je.status=$${idx++}`); params.push(filters.status); }
-  if (filters.date_from) { conditions.push(`je.entry_date>=$${idx++}`); params.push(filters.date_from); }
-  if (filters.date_to) { conditions.push(`je.entry_date<=$${idx++}`); params.push(filters.date_to); }
-  if (filters.reference_type) { conditions.push(`je.reference_type=$${idx++}`); params.push(filters.reference_type); }
+  if (filters.status) { conditions.push(`je.status=?`); params.push(filters.status); }
+  if (filters.date_from) { conditions.push(`je.entry_date>=?`); params.push(filters.date_from); }
+  if (filters.date_to) { conditions.push(`je.entry_date<=?`); params.push(filters.date_to); }
+  if (filters.reference_type) { conditions.push(`je.reference_type=?`); params.push(filters.reference_type); }
   if (filters.search) {
-    conditions.push(`(je.entry_no ILIKE $${idx} OR je.description ILIKE $${idx})`);
-    params.push(`%${filters.search}%`);
-    idx++;
+    conditions.push(`(je.entry_no LIKE ? OR je.description LIKE ?)`);
+    const s = `%${filters.search}%`;
+    params.push(s, s);
   }
 
   const where = conditions.join(' AND ');
-  const countRes = await pool.query(`SELECT COUNT(*) FROM journal_entries je WHERE ${where}`, params);
-  const total = parseInt(countRes.rows[0].count, 10);
+  const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM journal_entries je WHERE ${where}`, params);
+  const total = parseInt((countRows as any[])[0].count, 10);
 
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT je.id, je.entry_no, je.entry_date, je.description, je.reference_type, je.reference_no, je.status, je.created_at,
        COALESCE(SUM(jel.debit), 0) AS total_debit,
        COALESCE(SUM(jel.credit), 0) AS total_credit
@@ -177,32 +176,31 @@ export const listJournalEntries = async (companyId: string, filters: any) => {
      WHERE ${where}
      GROUP BY je.id, je.entry_no, je.entry_date, je.description, je.reference_type, je.reference_no, je.status, je.created_at
      ORDER BY je.entry_date DESC, je.created_at DESC
-     LIMIT $${idx} OFFSET $${idx + 1}`,
+     LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
-  return { journal_entries: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
+  return { journal_entries: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };
 };
 
 export const getJournalEntryById = async (companyId: string, jeId: string) => {
-  const { rows } = await pool.query(
-    'SELECT * FROM journal_entries WHERE id=$1 AND company_id=$2',
+  const [rows] = await pool.query(
+    'SELECT * FROM journal_entries WHERE id=? AND company_id=?',
     [jeId, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Journal entry');
+  if (!(rows as any[]).length) throw new NotFoundError('Journal entry');
 
-  const { rows: lines } = await pool.query(
+  const [lines] = await pool.query(
     `SELECT jel.*, coa.account_number, coa.name AS account_name
      FROM journal_entry_lines jel
      JOIN chart_of_accounts coa ON coa.id = jel.account_id
-     WHERE jel.journal_entry_id=$1
+     WHERE jel.journal_entry_id=?
      ORDER BY jel.line_number`,
     [jeId]
   );
-  return { ...rows[0], lines };
+  return { ...(rows as any[])[0], lines: lines as any[] };
 };
 
 export const createJournalEntry = async (companyId: string, userId: string, userName: string, data: any) => {
-  // Validate debits === credits
   const totalDebit = data.lines.reduce((s: number, l: any) => s + (l.debit || 0), 0);
   const totalCredit = data.lines.reduce((s: number, l: any) => s + (l.credit || 0), 0);
 
@@ -210,7 +208,6 @@ export const createJournalEntry = async (companyId: string, userId: string, user
     throw new ValidationError(`Journal entry is not balanced: debits (${totalDebit}) != credits (${totalCredit})`);
   }
 
-  // Each line must have either debit or credit (not both > 0)
   for (const line of data.lines) {
     if ((line.debit || 0) > 0 && (line.credit || 0) > 0) {
       throw new ValidationError('A line cannot have both debit and credit amounts');
@@ -220,11 +217,17 @@ export const createJournalEntry = async (companyId: string, userId: string, user
   return withTransaction(async (client) => {
     const entryNo = data.entry_no || await generateDocumentNumber(companyId, 'journal_entry' as any, client);
 
-    const { rows: [je] } = await client.query(
+    await client.query(
       `INSERT INTO journal_entries (company_id, entry_no, entry_date, description, reference_type, reference_id, reference_no, status, created_by, posted_by, posted_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'posted',$8,$8,NOW()) RETURNING *`,
-      [companyId, entryNo, data.entry_date, data.description || null, data.reference_type || null, data.reference_id || null, data.reference_no || null, userId]
+       VALUES (?,?,?,?,?,?,?,'posted',?,?,NOW())`,
+      [companyId, entryNo, data.entry_date, data.description || null, data.reference_type || null, data.reference_id || null, data.reference_no || null, userId, userId]
     );
+
+    const [jeRows] = await client.query(
+      'SELECT * FROM journal_entries WHERE company_id=? AND entry_no=? ORDER BY created_at DESC LIMIT 1',
+      [companyId, entryNo]
+    );
+    const je = (jeRows as any[])[0];
 
     for (let i = 0; i < data.lines.length; i++) {
       const line = data.lines[i];
@@ -233,22 +236,19 @@ export const createJournalEntry = async (companyId: string, userId: string, user
 
       await client.query(
         `INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, debit, credit, line_number)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
+         VALUES (?,?,?,?,?,?)`,
         [je.id, line.account_id, line.description || null, debit, credit, i + 1]
       );
 
-      // Update account balance
-      // For debit-normal accounts: balance += debit - credit
-      // For credit-normal accounts: balance += credit - debit
-      const { rows: acctRows } = await client.query(
-        'SELECT normal_balance FROM chart_of_accounts WHERE id=$1',
+      const [acctRows] = await client.query(
+        'SELECT normal_balance FROM chart_of_accounts WHERE id=?',
         [line.account_id]
       );
-      if (acctRows.length) {
-        const normalBalance = acctRows[0].normal_balance;
+      if ((acctRows as any[]).length) {
+        const normalBalance = (acctRows as any[])[0].normal_balance;
         const delta = normalBalance === 'debit' ? (debit - credit) : (credit - debit);
         await client.query(
-          'UPDATE chart_of_accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2',
+          'UPDATE chart_of_accounts SET balance = balance + ?, updated_at = NOW() WHERE id = ?',
           [delta, line.account_id]
         );
       }
@@ -264,17 +264,16 @@ export const createJournalEntry = async (companyId: string, userId: string, user
       description: `Journal entry ${entryNo} posted`,
     }, client);
 
-    // Reload with lines
-    const { rows: lines } = await client.query(
+    const [lines] = await client.query(
       `SELECT jel.*, coa.account_number, coa.name AS account_name
        FROM journal_entry_lines jel
        JOIN chart_of_accounts coa ON coa.id = jel.account_id
-       WHERE jel.journal_entry_id=$1
+       WHERE jel.journal_entry_id=?
        ORDER BY jel.line_number`,
       [je.id]
     );
 
-    return { ...je, lines };
+    return { ...je, lines: lines as any[] };
   });
 };
 
@@ -282,7 +281,6 @@ export const reverseJournalEntry = async (companyId: string, jeId: string, userI
   const je = await getJournalEntryById(companyId, jeId);
   if (je.status === 'reversed') throw new ConflictError('Journal entry is already reversed');
 
-  // Create reversal with swapped debits/credits
   const reversalLines = je.lines.map((line: any) => ({
     account_id: line.account_id,
     debit: parseFloat(line.credit) || 0,
@@ -299,9 +297,8 @@ export const reverseJournalEntry = async (companyId: string, jeId: string, userI
     lines: reversalLines,
   });
 
-  // Mark original as reversed
   await pool.query(
-    'UPDATE journal_entries SET status=$1, reversed_by=$2, updated_at=NOW() WHERE id=$3',
+    'UPDATE journal_entries SET status=?, reversed_by=?, updated_at=NOW() WHERE id=?',
     ['reversed', reversal.id, jeId]
   );
 
@@ -313,34 +310,31 @@ export const reverseJournalEntry = async (companyId: string, jeId: string, userI
 export const getGeneralLedger = async (companyId: string, accountId: string, startDate: string, endDate: string) => {
   const account = await getAccountById(companyId, accountId);
 
-  // Calculate opening balance: sum of all entries before startDate
-  const { rows: openingRows } = await pool.query(
+  const [openingRows] = await pool.query(
     `SELECT COALESCE(SUM(jel.debit), 0) AS total_debit, COALESCE(SUM(jel.credit), 0) AS total_credit
      FROM journal_entry_lines jel
      JOIN journal_entries je ON je.id = jel.journal_entry_id
-     WHERE jel.account_id = $1 AND je.company_id = $2 AND je.entry_date < $3 AND je.status = 'posted'`,
+     WHERE jel.account_id = ? AND je.company_id = ? AND je.entry_date < ? AND je.status = 'posted'`,
     [accountId, companyId, startDate]
   );
-  const openingDebit = parseFloat(openingRows[0].total_debit);
-  const openingCredit = parseFloat(openingRows[0].total_credit);
+  const openingDebit = parseFloat((openingRows as any[])[0].total_debit);
+  const openingCredit = parseFloat((openingRows as any[])[0].total_credit);
   const openingBalance = account.normal_balance === 'debit'
     ? openingDebit - openingCredit
     : openingCredit - openingDebit;
 
-  // Get transactions in date range
-  const { rows: transactions } = await pool.query(
+  const [transactions] = await pool.query(
     `SELECT jel.id, jel.debit, jel.credit, jel.description AS line_description,
        je.id AS journal_entry_id, je.entry_no, je.entry_date, je.description, je.reference_type, je.reference_no
      FROM journal_entry_lines jel
      JOIN journal_entries je ON je.id = jel.journal_entry_id
-     WHERE jel.account_id = $1 AND je.company_id = $2 AND je.entry_date >= $3 AND je.entry_date <= $4 AND je.status = 'posted'
+     WHERE jel.account_id = ? AND je.company_id = ? AND je.entry_date >= ? AND je.entry_date <= ? AND je.status = 'posted'
      ORDER BY je.entry_date ASC, je.created_at ASC`,
     [accountId, companyId, startDate, endDate]
   );
 
-  // Calculate running balance
   let runningBalance = openingBalance;
-  const transactionsWithBalance = transactions.map((t: any) => {
+  const transactionsWithBalance = (transactions as any[]).map((t: any) => {
     const debit = parseFloat(t.debit);
     const credit = parseFloat(t.credit);
     const delta = account.normal_balance === 'debit' ? (debit - credit) : (credit - debit);
@@ -367,36 +361,33 @@ export const getTrialBalance = async (companyId: string, asOfDate?: string) => {
   let params: unknown[];
 
   if (asOfDate) {
-    // Calculate balances from journal entries up to the date
     query = `
       SELECT coa.id, coa.account_number, coa.name, coa.account_type, coa.sub_type, coa.normal_balance,
         COALESCE(SUM(jel.debit), 0) AS total_debit,
         COALESCE(SUM(jel.credit), 0) AS total_credit
       FROM chart_of_accounts coa
       LEFT JOIN journal_entry_lines jel ON jel.account_id = coa.id
-      LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id AND je.status = 'posted' AND je.entry_date <= $2
-      WHERE coa.company_id = $1
+      LEFT JOIN journal_entries je ON je.id = jel.journal_entry_id AND je.status = 'posted' AND je.entry_date <= ?
+      WHERE coa.company_id = ?
       GROUP BY coa.id, coa.account_number, coa.name, coa.account_type, coa.sub_type, coa.normal_balance
       HAVING COALESCE(SUM(jel.debit), 0) != 0 OR COALESCE(SUM(jel.credit), 0) != 0
       ORDER BY coa.account_number`;
-    params = [companyId, asOfDate];
+    params = [asOfDate, companyId];
   } else {
-    // Use running balance from chart_of_accounts
     query = `
       SELECT id, account_number, name, account_type, sub_type, normal_balance, balance
       FROM chart_of_accounts
-      WHERE company_id = $1 AND balance != 0
+      WHERE company_id = ? AND balance != 0
       ORDER BY account_number`;
     params = [companyId];
   }
 
-  const { rows } = await pool.query(query, params);
+  const [rows] = await pool.query(query, params);
 
-  // Build trial balance with debit/credit columns
   let totalDebits = 0;
   let totalCredits = 0;
 
-  const accounts = rows.map((row: any) => {
+  const accounts = (rows as any[]).map((row: any) => {
     let balance: number;
     if (asOfDate) {
       const totalDebit = parseFloat(row.total_debit);
@@ -432,7 +423,6 @@ export const getTrialBalance = async (companyId: string, asOfDate?: string) => {
     };
   });
 
-  // Group by account_type
   const grouped: Record<string, any[]> = { asset: [], liability: [], equity: [], revenue: [], expense: [] };
   for (const acct of accounts) {
     if (grouped[acct.account_type]) {
@@ -452,14 +442,65 @@ export const getTrialBalance = async (companyId: string, asOfDate?: string) => {
 
 // ─── Helper Functions for Auto-Posting ──────────────────────────────────────
 
-export const getSystemAccount = async (companyId: string, accountNumber: string, client?: PoolClient) => {
+export const getSystemAccount = async (companyId: string, accountNumber: string, client?: Connection) => {
   const queryFn = client ? client : pool;
-  const { rows } = await queryFn.query(
-    'SELECT id FROM chart_of_accounts WHERE company_id=$1 AND account_number=$2',
+  const [rows] = await queryFn.query(
+    'SELECT id FROM chart_of_accounts WHERE company_id=? AND account_number=?',
     [companyId, accountNumber]
   );
-  if (!rows.length) return null;
-  return rows[0].id;
+  if (!(rows as any[]).length) return null;
+  return (rows as any[])[0].id;
+};
+
+export const seedChartOfAccounts = async (companyId: string, client?: Connection) => {
+  const queryFn = client ? client : pool;
+  const accounts = [
+    { number: '1000', name: 'Cash and Cash Equivalents',       type: 'asset',   sub: 'current_asset',       nb: 'debit' },
+    { number: '1010', name: 'Petty Cash',                      type: 'asset',   sub: 'current_asset',       nb: 'debit' },
+    { number: '1100', name: 'Accounts Receivable',             type: 'asset',   sub: 'current_asset',       nb: 'debit' },
+    { number: '1150', name: 'Allowance for Doubtful Accounts', type: 'asset',   sub: 'current_asset',       nb: 'credit' },
+    { number: '1200', name: 'Inventory',                       type: 'asset',   sub: 'current_asset',       nb: 'debit' },
+    { number: '1300', name: 'Prepaid Expenses',                type: 'asset',   sub: 'current_asset',       nb: 'debit' },
+    { number: '1500', name: 'Property, Plant & Equipment',     type: 'asset',   sub: 'fixed_asset',         nb: 'debit' },
+    { number: '1510', name: 'Accumulated Depreciation',        type: 'asset',   sub: 'fixed_asset',         nb: 'credit' },
+    { number: '1900', name: 'Other Assets',                    type: 'asset',   sub: 'other_asset',         nb: 'debit' },
+    { number: '2000', name: 'Accounts Payable',                type: 'liability', sub: 'current_liability', nb: 'credit' },
+    { number: '2100', name: 'Accrued Expenses',                type: 'liability', sub: 'current_liability', nb: 'credit' },
+    { number: '2200', name: 'Sales Tax Payable',               type: 'liability', sub: 'current_liability', nb: 'credit' },
+    { number: '2300', name: 'Short-term Loans',                type: 'liability', sub: 'current_liability', nb: 'credit' },
+    { number: '2500', name: 'Long-term Debt',                  type: 'liability', sub: 'long_term_liability', nb: 'credit' },
+    { number: '3000', name: "Owner's Equity",                  type: 'equity',  sub: 'equity',              nb: 'credit' },
+    { number: '3100', name: 'Retained Earnings',               type: 'equity',  sub: 'equity',              nb: 'credit' },
+    { number: '3200', name: "Owner's Drawing",                 type: 'equity',  sub: 'equity',              nb: 'debit' },
+    { number: '4000', name: 'Sales Revenue',                   type: 'revenue', sub: 'operating_revenue',   nb: 'credit' },
+    { number: '4100', name: 'Service Revenue',                 type: 'revenue', sub: 'operating_revenue',   nb: 'credit' },
+    { number: '4900', name: 'Other Income',                    type: 'revenue', sub: 'other_revenue',       nb: 'credit' },
+    { number: '5000', name: 'Cost of Goods Sold',              type: 'expense', sub: 'cost_of_sales',       nb: 'debit' },
+    { number: '5100', name: 'Salaries & Wages',                type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5200', name: 'Rent Expense',                    type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5300', name: 'Utilities Expense',               type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5400', name: 'Office Supplies',                 type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5500', name: 'Marketing & Advertising',         type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5600', name: 'Professional Fees',               type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5700', name: 'Depreciation Expense',            type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5800', name: 'Bank Charges',                    type: 'expense', sub: 'operating_expense',   nb: 'debit' },
+    { number: '5900', name: 'Other Expenses',                  type: 'expense', sub: 'other_expense',       nb: 'debit' },
+  ];
+
+  for (const a of accounts) {
+    await queryFn.query(
+      `INSERT IGNORE INTO chart_of_accounts (id, company_id, account_number, name, account_type, sub_type, normal_balance, is_system)
+       VALUES (UUID(), ?, ?, ?, ?, ?, ?, 1)`,
+      [companyId, a.number, a.name, a.type, a.sub, a.nb]
+    );
+  }
+
+  // Ensure journal_entry sequence exists for this company
+  await queryFn.query(
+    `INSERT IGNORE INTO document_sequences (id, company_id, document_type, prefix, next_number, padding, include_date)
+     VALUES (UUID(), ?, 'journal_entry', 'JE', 1, 5, 0)`,
+    [companyId]
+  );
 };
 
 export const createAutoJournalEntry = async (
@@ -472,9 +513,8 @@ export const createAutoJournalEntry = async (
   entryDate: string,
   lines: Array<{ account_id: string; debit: number; credit: number; description?: string }>,
   description: string,
-  client?: PoolClient
+  client?: Connection
 ) => {
-  // Validate balance
   const totalDebit = lines.reduce((s, l) => s + (l.debit || 0), 0);
   const totalCredit = lines.reduce((s, l) => s + (l.credit || 0), 0);
 
@@ -482,14 +522,20 @@ export const createAutoJournalEntry = async (
     throw new ValidationError(`Auto journal entry not balanced: debits (${totalDebit}) != credits (${totalCredit})`);
   }
 
-  const execute = async (c: PoolClient) => {
+  const execute = async (c: Connection) => {
     const entryNo = await generateDocumentNumber(companyId, 'journal_entry' as any, c);
 
-    const { rows: [je] } = await c.query(
+    await c.query(
       `INSERT INTO journal_entries (company_id, entry_no, entry_date, description, reference_type, reference_id, reference_no, status, created_by, posted_by, posted_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'posted',$8,$8,NOW()) RETURNING *`,
-      [companyId, entryNo, entryDate, description, referenceType, referenceId, referenceNo, userId]
+       VALUES (?,?,?,?,?,?,?,'posted',?,?,NOW())`,
+      [companyId, entryNo, entryDate, description, referenceType, referenceId, referenceNo, userId, userId]
     );
+
+    const [jeRows] = await c.query(
+      'SELECT * FROM journal_entries WHERE company_id=? AND entry_no=? ORDER BY created_at DESC LIMIT 1',
+      [companyId, entryNo]
+    );
+    const je = (jeRows as any[])[0];
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -498,20 +544,19 @@ export const createAutoJournalEntry = async (
 
       await c.query(
         `INSERT INTO journal_entry_lines (journal_entry_id, account_id, description, debit, credit, line_number)
-         VALUES ($1,$2,$3,$4,$5,$6)`,
+         VALUES (?,?,?,?,?,?)`,
         [je.id, line.account_id, line.description || null, debit, credit, i + 1]
       );
 
-      // Update account balance
-      const { rows: acctRows } = await c.query(
-        'SELECT normal_balance FROM chart_of_accounts WHERE id=$1',
+      const [acctRows] = await c.query(
+        'SELECT normal_balance FROM chart_of_accounts WHERE id=?',
         [line.account_id]
       );
-      if (acctRows.length) {
-        const normalBalance = acctRows[0].normal_balance;
+      if ((acctRows as any[]).length) {
+        const normalBalance = (acctRows as any[])[0].normal_balance;
         const delta = normalBalance === 'debit' ? (debit - credit) : (credit - debit);
         await c.query(
-          'UPDATE chart_of_accounts SET balance = balance + $1, updated_at = NOW() WHERE id = $2',
+          'UPDATE chart_of_accounts SET balance = balance + ?, updated_at = NOW() WHERE id = ?',
           [delta, line.account_id]
         );
       }

@@ -1,5 +1,5 @@
 import { pool } from '../../config/database';
-import { PoolClient } from 'pg';
+import { Connection } from 'mysql2/promise';
 
 // All menu names that are seeded by default
 export const ALL_MENUS = [
@@ -38,23 +38,21 @@ export const ALL_MENUS = [
 ];
 
 export const getMyMenus = async (companyId: string, role: string) => {
-  // Admin always gets full access — return null to signal "show everything"
   if (role === 'admin') {
     return { role, menus: null };
   }
 
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT menu_name, can_access, display_name FROM role_menu_permissions
-     WHERE company_id = $1 AND role = $2`,
+     WHERE company_id = ? AND role = ?`,
     [companyId, role]
   );
 
-  // Safety fallback: if no rows exist, treat as full access
-  if (!rows.length) {
+  if (!(rows as any[]).length) {
     return { role, menus: null };
   }
 
-  const menus = rows
+  const menus = (rows as any[])
     .filter((r: any) => r.can_access)
     .map((r: any) => ({ name: r.menu_name, display_name: r.display_name || r.menu_name }));
 
@@ -62,12 +60,12 @@ export const getMyMenus = async (companyId: string, role: string) => {
 };
 
 export const getAllPermissions = async (companyId: string) => {
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT role, menu_name, can_access, display_name FROM role_menu_permissions
-     WHERE company_id = $1 ORDER BY role, menu_name`,
+     WHERE company_id = ? ORDER BY role, menu_name`,
     [companyId]
   );
-  return rows;
+  return rows as any[];
 };
 
 export const upsertPermissions = async (
@@ -79,16 +77,15 @@ export const upsertPermissions = async (
   for (const upd of updates) {
     await pool.query(
       `INSERT INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       ON CONFLICT (company_id, role, menu_name)
-       DO UPDATE SET can_access = EXCLUDED.can_access, display_name = EXCLUDED.display_name, updated_at = NOW()`,
+       VALUES (?, ?, ?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE can_access = VALUES(can_access), display_name = VALUES(display_name), updated_at = NOW()`,
       [companyId, upd.role, upd.menu_name, upd.can_access, upd.display_name || upd.menu_name]
     );
   }
 };
 
 // Used by auth.service.ts on company registration
-export const seedDefaultPermissions = async (companyId: string, client: PoolClient) => {
+export const seedDefaultPermissions = async (companyId: string, client: Connection) => {
   const adminMenus = ALL_MENUS.map((m) => ({ role: 'admin', ...m, can_access: true, display_name: m.name }));
 
   const salespersonMenus = [
@@ -115,9 +112,8 @@ export const seedDefaultPermissions = async (companyId: string, client: PoolClie
 
   for (const m of all) {
     await client.query(
-      `INSERT INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (company_id, role, menu_name) DO NOTHING`,
+      `INSERT IGNORE INTO role_menu_permissions (company_id, role, menu_name, can_access, display_name)
+       VALUES (?, ?, ?, ?, ?)`,
       [companyId, m.role, m.name, m.can_access, m.display_name]
     );
   }

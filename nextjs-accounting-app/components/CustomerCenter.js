@@ -130,6 +130,7 @@ export default function CustomerCenter({ isOpen, onClose }) {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th className={styles.balanceCol}>Balance</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -146,6 +147,11 @@ export default function CustomerCenter({ isOpen, onClose }) {
                     </td>
                     <td>{customer.email || '-'}</td>
                     <td>{customer.phone || '-'}</td>
+                    <td className={styles.balanceCol}>
+                      <span className={parseFloat(customer.outstanding_balance) > 0 ? styles.balanceOwed : styles.balanceZero}>
+                        ${parseFloat(customer.outstanding_balance || 0).toFixed(2)}
+                      </span>
+                    </td>
                     <td>
                       <div className={styles.actionButtons}>
                         <button

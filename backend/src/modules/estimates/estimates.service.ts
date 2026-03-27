@@ -14,19 +14,19 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
 };
 
 const calculateTotals = (lineItems: any[], discountAmount = 0) => {
-  const subtotal = lineItems.reduce((s, li) => s + li.ordered_qty * li.rate, 0);
-  const taxAmount = lineItems.reduce((s, li) => s + li.ordered_qty * li.rate * (li.tax_rate || 0) / 100, 0);
+  const subtotal = lineItems.reduce((s: number, li: any) => s + li.ordered_qty * li.rate, 0);
+  const taxAmount = lineItems.reduce((s: number, li: any) => s + li.ordered_qty * li.rate * (li.tax_rate || 0) / 100, 0);
   const grandTotal = subtotal + taxAmount - discountAmount;
   return { subtotal, tax_amount: taxAmount, grand_total: Math.max(0, grandTotal) };
 };
 
 export const peekNextEstimateNumber = async (companyId: string): Promise<string> => {
-  const { rows } = await pool.query(
-    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=$1 AND document_type='estimate'`,
+  const [rows] = await pool.query(
+    `SELECT prefix, next_number, padding, include_date FROM document_sequences WHERE company_id=? AND document_type='estimate'`,
     [companyId]
   );
-  if (!rows.length) return 'EST-001';
-  const { prefix, next_number, padding, include_date } = rows[0];
+  if (!(rows as any[]).length) return 'EST-001';
+  const { prefix, next_number, padding, include_date } = (rows as any[])[0];
   const parts: string[] = [prefix];
   if (include_date) {
     const d = new Date();
@@ -37,64 +37,66 @@ export const peekNextEstimateNumber = async (companyId: string): Promise<string>
 };
 
 export const listEstimates = async (companyId: string, filters: any) => {
-  const conditions = ['company_id=$1', 'deleted_at IS NULL'];
+  const conditions = ['company_id=?', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
-  let idx = 2;
 
-  if (filters.status) { conditions.push(`status=$${idx++}`); params.push(filters.status); }
-  if (filters.customer_id) { conditions.push(`customer_id=$${idx++}`); params.push(filters.customer_id); }
-  if (filters.search) { conditions.push(`(estimate_no ILIKE $${idx} OR customer_name ILIKE $${idx})`); params.push(`%${filters.search}%`); idx++; }
-  if (filters.date_from) { conditions.push(`estimate_date>=$${idx++}`); params.push(filters.date_from); }
-  if (filters.date_to) { conditions.push(`estimate_date<=$${idx++}`); params.push(filters.date_to); }
+  if (filters.status) { conditions.push(`status=?`); params.push(filters.status); }
+  if (filters.customer_id) { conditions.push(`customer_id=?`); params.push(filters.customer_id); }
+  if (filters.search) { conditions.push(`(estimate_no LIKE ? OR customer_name LIKE ?)`); const s = `%${filters.search}%`; params.push(s, s); }
+  if (filters.date_from) { conditions.push(`estimate_date>=?`); params.push(filters.date_from); }
+  if (filters.date_to) { conditions.push(`estimate_date<=?`); params.push(filters.date_to); }
 
   const where = conditions.join(' AND ');
-  const countRes = await pool.query(`SELECT COUNT(*) FROM estimates WHERE ${where}`, params);
-  const total = parseInt(countRes.rows[0].count, 10);
-  const { rows } = await pool.query(
+  const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM estimates WHERE ${where}`, params);
+  const total = parseInt((countRows as any[])[0].count, 10);
+  const [rows] = await pool.query(
     `SELECT id, estimate_no, customer_id, customer_name, estimate_date, expiry_date, status, grand_total, converted_to_sales_order, created_at
-     FROM estimates WHERE ${where} ORDER BY estimate_date DESC LIMIT $${idx} OFFSET $${idx + 1}`,
+     FROM estimates WHERE ${where} ORDER BY estimate_date DESC LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
-  return { estimates: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
+  return { estimates: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };
 };
 
 export const getEstimateById = async (companyId: string, estimateId: string) => {
-  const { rows } = await pool.query(
-    'SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [estimateId, companyId]
+  const [rows] = await pool.query(
+    'SELECT * FROM estimates WHERE id=? AND company_id=? AND deleted_at IS NULL', [estimateId, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Estimate');
-  const estimate = rows[0];
-  const { rows: items } = await pool.query(
-    'SELECT * FROM estimate_line_items WHERE estimate_id=$1 ORDER BY line_number ASC', [estimateId]
+  if (!(rows as any[]).length) throw new NotFoundError('Estimate');
+  const estimate = (rows as any[])[0];
+  const [items] = await pool.query(
+    'SELECT * FROM estimate_line_items WHERE estimate_id=? ORDER BY line_number ASC', [estimateId]
   );
-  return { ...estimate, line_items: items };
+  return { ...estimate, line_items: items as any[] };
 };
 
 export const createEstimate = async (companyId: string, userId: string, userName: string, data: any) => {
   return withTransaction(async (client) => {
-    const custRes = await client.query('SELECT name, billing_address, shipping_address FROM customers WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [data.customer_id, companyId]);
-    if (!custRes.rows.length) throw new ValidationError('Customer not found');
-    const customer = custRes.rows[0];
+    const [custRes] = await client.query('SELECT name, billing_address, shipping_address FROM customers WHERE id=? AND company_id=? AND deleted_at IS NULL', [data.customer_id, companyId]);
+    if (!(custRes as any[]).length) throw new ValidationError('Customer not found');
+    const customer = (custRes as any[])[0];
 
     const estimateNo = data.estimate_no || await generateDocumentNumber(companyId, 'estimate', client);
     const { subtotal, tax_amount, grand_total } = calculateTotals(data.line_items, data.discount_amount);
 
-    const { rows: [est] } = await client.query(
+    await client.query(
       `INSERT INTO estimates (company_id, estimate_no, customer_id, customer_name, bill_to, ship_to, reference_no, estimate_date, expiry_date, status, subtotal, tax_id, tax_rate, tax_amount, discount_amount, grand_total, terms_and_conditions, notes, internal_notes, created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'draft',$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$19) RETURNING *`,
-      [companyId, estimateNo, data.customer_id, customer.name, data.bill_to || customer.billing_address, data.ship_to || customer.shipping_address, data.reference_no || null, data.estimate_date, data.expiry_date || null, subtotal, data.tax_id || null, data.tax_rate || 0, tax_amount, data.discount_amount || 0, grand_total, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, userId]
+       VALUES (?,?,?,?,?,?,?,?,?,'draft',?,?,?,?,?,?,?,?,?,?,?)`,
+      [companyId, estimateNo, data.customer_id, customer.name, data.bill_to || customer.billing_address, data.ship_to || customer.shipping_address, data.reference_no || null, data.estimate_date, data.expiry_date || null, subtotal, data.tax_id || null, data.tax_rate || 0, tax_amount, data.discount_amount || 0, grand_total, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, userId, userId]
     );
+    const [estRows] = await client.query('SELECT * FROM estimates WHERE company_id=? AND estimate_no=? ORDER BY created_at DESC LIMIT 1', [companyId, estimateNo]);
+    const est = (estRows as any[])[0];
 
     const lineItems = [];
     for (let i = 0; i < data.line_items.length; i++) {
       const li = data.line_items[i];
-      const { rows: [item] } = await client.query(
+      await client.query(
         `INSERT INTO estimate_line_items (estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [est.id, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
       );
-      lineItems.push(item);
     }
+    const [itemRows] = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=? ORDER BY line_number ASC', [est.id]);
+    lineItems.push(...(itemRows as any[]));
 
     await createAuditLog({ company_id: companyId, entity_type: 'estimate', entity_id: est.id, action: 'create', user_id: userId, user_name: userName, description: `Estimate ${estimateNo} created` }, client);
     return { ...est, line_items: lineItems };
@@ -103,9 +105,9 @@ export const createEstimate = async (companyId: string, userId: string, userName
 
 export const updateEstimate = async (companyId: string, estimateId: string, userId: string, userName: string, data: any) => {
   return withTransaction(async (client) => {
-    const estRes = await client.query('SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
-    if (!estRes.rows.length) throw new NotFoundError('Estimate');
-    const est = estRes.rows[0];
+    const [estRes] = await client.query('SELECT * FROM estimates WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
+    if (!(estRes as any[]).length) throw new NotFoundError('Estimate');
+    const est = (estRes as any[])[0];
     if (est.status === 'converted') throw new ConflictError('Cannot edit a converted estimate');
 
     const fields: string[] = [];
@@ -114,7 +116,7 @@ export const updateEstimate = async (companyId: string, estimateId: string, user
     allowed.forEach(f => { if (data[f] !== undefined) { fields.push(f); values.push(data[f]); } });
 
     if (data.line_items) {
-      await client.query('DELETE FROM estimate_line_items WHERE estimate_id=$1', [estimateId]);
+      await client.query('DELETE FROM estimate_line_items WHERE estimate_id=?', [estimateId]);
       const { subtotal, tax_amount, grand_total } = calculateTotals(data.line_items, data.discount_amount ?? est.discount_amount);
       fields.push('subtotal', 'tax_amount', 'grand_total');
       values.push(subtotal, tax_amount, grand_total);
@@ -123,15 +125,15 @@ export const updateEstimate = async (companyId: string, estimateId: string, user
         const li = data.line_items[i];
         await client.query(
           `INSERT INTO estimate_line_items (estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
           [estimateId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
         );
       }
     }
 
     if (fields.length) {
-      const setClause = fields.map((f, i) => `${f}=$${i + 3}`).join(', ');
-      await client.query(`UPDATE estimates SET ${setClause}, updated_by=$${fields.length + 3}, updated_at=NOW() WHERE id=$1 AND company_id=$2`, [estimateId, companyId, ...values, userId]);
+      const setClause = fields.map(f => `${f}=?`).join(', ');
+      await client.query(`UPDATE estimates SET ${setClause}, updated_by=?, updated_at=NOW() WHERE id=? AND company_id=?`, [...values, userId, estimateId, companyId]);
     }
 
     await createAuditLog({ company_id: companyId, entity_type: 'estimate', entity_id: estimateId, action: 'update', user_id: userId, user_name: userName, description: `Estimate updated` }, client);
@@ -142,19 +144,19 @@ export const updateEstimate = async (companyId: string, estimateId: string, user
 export const deleteEstimate = async (companyId: string, estimateId: string) => {
   const est = await getEstimateById(companyId, estimateId);
   if (est.status !== 'draft') throw new ConflictError('Only draft estimates can be deleted');
-  await pool.query('UPDATE estimates SET deleted_at=NOW() WHERE id=$1 AND company_id=$2', [estimateId, companyId]);
+  await pool.query('UPDATE estimates SET deleted_at=NOW() WHERE id=? AND company_id=?', [estimateId, companyId]);
 };
 
 export const updateStatus = async (companyId: string, estimateId: string, userId: string, userName: string, newStatus: string, reason?: string) => {
   return withTransaction(async (client) => {
-    const estRes = await client.query('SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
-    if (!estRes.rows.length) throw new NotFoundError('Estimate');
-    const est = estRes.rows[0];
+    const [estRes] = await client.query('SELECT * FROM estimates WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
+    if (!(estRes as any[]).length) throw new NotFoundError('Estimate');
+    const est = (estRes as any[])[0];
     const allowed = VALID_STATUS_TRANSITIONS[est.status] || [];
     if (!allowed.includes(newStatus)) {
       throw new ConflictError(`Cannot transition from ${est.status} to ${newStatus}`);
     }
-    await client.query('UPDATE estimates SET status=$1, updated_at=NOW(), updated_by=$2 WHERE id=$3', [newStatus, userId, estimateId]);
+    await client.query('UPDATE estimates SET status=?, updated_at=NOW(), updated_by=? WHERE id=?', [newStatus, userId, estimateId]);
     await createStatusHistory({ company_id: companyId, document_type: 'estimate', document_id: estimateId, document_no: est.estimate_no, from_status: est.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
     return { ...est, status: newStatus };
   });
@@ -166,40 +168,42 @@ export const convertToSalesOrder = async (companyId: string, estimateId: string,
   const soNo = await generateDocumentNumber(companyId, 'sales_order');
 
   return withTransaction(async (client) => {
-    const estRes = await client.query('SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
-    if (!estRes.rows.length) throw new NotFoundError('Estimate');
-    const est = estRes.rows[0];
+    const [estRes] = await client.query('SELECT * FROM estimates WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [estimateId, companyId]);
+    if (!(estRes as any[]).length) throw new NotFoundError('Estimate');
+    const est = (estRes as any[])[0];
     if (!['draft', 'accepted'].includes(est.status)) {
       throw new ConflictError('Estimate must be in draft or accepted status to convert');
     }
-    const { rows: items } = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=$1 ORDER BY line_number ASC', [estimateId]);
-    const totalOrderedQty = items.reduce((s: number, li: any) => s + parseFloat(li.ordered_qty), 0);
+    const [items] = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=? ORDER BY line_number ASC', [estimateId]);
+    const totalOrderedQty = (items as any[]).reduce((s: number, li: any) => s + parseFloat(li.ordered_qty), 0);
 
-    const { rows: [so] } = await client.query(
+    await client.query(
       `INSERT INTO sales_orders (company_id, sales_order_no, customer_id, customer_name, bill_to, ship_to, reference_no, po_number, source_type, estimate_id, order_date, due_date, expected_delivery_date, status, fulfillment_status, subtotal, tax_id, tax_rate, tax_amount, discount_amount, grand_total, total_ordered_qty, notes, terms_and_conditions, created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'estimate',$9,$10,$11,$12,'draft','unfulfilled',$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$22) RETURNING *`,
-      [companyId, soNo, est.customer_id, est.customer_name, est.bill_to, est.ship_to, est.reference_no, data.po_number || null, estimateId, data.order_date, data.due_date || null, data.expected_delivery_date || null, est.subtotal, est.tax_id, est.tax_rate, est.tax_amount, est.discount_amount, est.grand_total, totalOrderedQty, est.notes, est.terms_and_conditions, userId]
+       VALUES (?,?,?,?,?,?,?,?,'estimate',?,?,?,?,'draft','unfulfilled',?,?,?,?,?,?,?,?,?,?,?)`,
+      [companyId, soNo, est.customer_id, est.customer_name, est.bill_to, est.ship_to, est.reference_no, data.po_number || null, estimateId, data.order_date, data.due_date || null, data.expected_delivery_date || null, est.subtotal, est.tax_id, est.tax_rate, est.tax_amount, est.discount_amount, est.grand_total, totalOrderedQty, est.notes, est.terms_and_conditions, userId, userId]
     );
+    const [soRows] = await client.query('SELECT * FROM sales_orders WHERE company_id=? AND sales_order_no=? ORDER BY created_at DESC LIMIT 1', [companyId, soNo]);
+    const so = (soRows as any[])[0];
 
-    for (let i = 0; i < items.length; i++) {
-      const li = items[i];
+    for (let i = 0; i < (items as any[]).length; i++) {
+      const li = (items as any[])[i];
       await client.query(
         `INSERT INTO sales_order_line_items (sales_order_id, line_number, product_id, sku, description, ordered_qty, delivered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
-         VALUES ($1,$2,$3,$4,$5,$6,0,$7,$8,$9,$10,$11)`,
+         VALUES (?,?,?,?,?,?,0,?,?,?,?,?)`,
         [so.id, i + 1, li.product_id, li.sku, li.description, li.ordered_qty, li.unit_of_measure, li.rate, li.tax_id, li.tax_rate, li.tax_amount]
       );
     }
 
     if (data.mark_estimate_converted !== false) {
-      await client.query('UPDATE estimates SET status=\'converted\', converted_to_sales_order=true, sales_order_id=$1, updated_at=NOW() WHERE id=$2', [so.id, estimateId]);
+      await client.query('UPDATE estimates SET status=\'converted\', converted_to_sales_order=true, sales_order_id=?, updated_at=NOW() WHERE id=?', [so.id, estimateId]);
     }
 
     await createAuditLog({ company_id: companyId, entity_type: 'estimate', entity_id: estimateId, action: 'convert', user_id: userId, user_name: userName, description: `Converted to Sales Order ${soNo}` }, client);
     await createAuditLog({ company_id: companyId, entity_type: 'sales_order', entity_id: so.id, action: 'create', user_id: userId, user_name: userName, description: `Created from Estimate ${est.estimate_no}` }, client);
 
-    const { rows: soItems } = await client.query('SELECT * FROM sales_order_line_items WHERE sales_order_id=$1 ORDER BY line_number ASC', [so.id]);
+    const [soItems] = await client.query('SELECT * FROM sales_order_line_items WHERE sales_order_id=? ORDER BY line_number ASC', [so.id]);
     return {
-      sales_order: { ...so, line_items: soItems },
+      sales_order: { ...so, line_items: soItems as any[] },
       estimate_updated: { id: estimateId, status: 'converted', converted_to_sales_order: true, sales_order_id: so.id },
     };
   });
@@ -207,24 +211,26 @@ export const convertToSalesOrder = async (companyId: string, estimateId: string,
 
 export const duplicateEstimate = async (companyId: string, estimateId: string, userId: string, userName: string) => {
   return withTransaction(async (client) => {
-    const estRes = await client.query('SELECT * FROM estimates WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL', [estimateId, companyId]);
-    if (!estRes.rows.length) throw new NotFoundError('Estimate');
-    const est = estRes.rows[0];
-    const { rows: items } = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=$1 ORDER BY line_number', [estimateId]);
+    const [estRes] = await client.query('SELECT * FROM estimates WHERE id=? AND company_id=? AND deleted_at IS NULL', [estimateId, companyId]);
+    if (!(estRes as any[]).length) throw new NotFoundError('Estimate');
+    const est = (estRes as any[])[0];
+    const [items] = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=? ORDER BY line_number', [estimateId]);
 
     const newNo = await generateDocumentNumber(companyId, 'estimate', client);
     const today = new Date().toISOString().split('T')[0];
 
-    const { rows: [newEst] } = await client.query(
+    await client.query(
       `INSERT INTO estimates (company_id, estimate_no, customer_id, customer_name, bill_to, ship_to, reference_no, estimate_date, tax_id, tax_rate, tax_amount, discount_amount, subtotal, grand_total, status, notes, terms_and_conditions, created_by, updated_by)
-       SELECT $1,$2,customer_id,customer_name,bill_to,ship_to,reference_no,$3,tax_id,tax_rate,tax_amount,discount_amount,subtotal,grand_total,'draft',notes,terms_and_conditions,$4,$4 FROM estimates WHERE id=$5 RETURNING *`,
-      [companyId, newNo, today, userId, estimateId]
+       SELECT ?,?,customer_id,customer_name,bill_to,ship_to,reference_no,?,tax_id,tax_rate,tax_amount,discount_amount,subtotal,grand_total,'draft',notes,terms_and_conditions,?,? FROM estimates WHERE id=?`,
+      [companyId, newNo, today, userId, userId, estimateId]
     );
+    const [newEstRows] = await client.query('SELECT * FROM estimates WHERE company_id=? AND estimate_no=? ORDER BY created_at DESC LIMIT 1', [companyId, newNo]);
+    const newEst = (newEstRows as any[])[0];
 
-    for (let i = 0; i < items.length; i++) {
-      const li = items[i];
+    for (let i = 0; i < (items as any[]).length; i++) {
+      const li = (items as any[])[i];
       await client.query(
-        `INSERT INTO estimate_line_items (estimate_id,line_number,product_id,sku,description,ordered_qty,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        `INSERT INTO estimate_line_items (estimate_id,line_number,product_id,sku,description,ordered_qty,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [newEst.id, i + 1, li.product_id, li.sku, li.description, li.ordered_qty, li.unit_of_measure, li.rate, li.tax_id, li.tax_rate, li.tax_amount]
       );
     }

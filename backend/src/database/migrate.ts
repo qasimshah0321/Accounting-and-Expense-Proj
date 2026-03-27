@@ -1,31 +1,29 @@
 import fs from 'fs';
 import path from 'path';
-import { Pool } from 'pg';
+import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const useSSL = process.env.DB_SSL === 'true';
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME || 'erp_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  ssl: useSSL ? { rejectUnauthorized: false } : false,
-  connectionTimeoutMillis: 10000,
-});
-
-const run = async () => {
-  const client = await pool.connect();
+export const runMigrations = async () => {
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306', 10),
+    database: process.env.DB_NAME || 'erp_db',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    ssl: useSSL ? { rejectUnauthorized: false } : undefined,
+    connectTimeout: 10000,
+    multipleStatements: true,
+  });
   try {
-    // Create migrations tracking table
-    await client.query(`
+    await conn.query(`
       CREATE TABLE IF NOT EXISTS schema_migrations (
-        id SERIAL PRIMARY KEY,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         filename VARCHAR(255) NOT NULL UNIQUE,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        applied_at DATETIME NOT NULL DEFAULT NOW()
       )
     `);
 
@@ -34,29 +32,31 @@ const run = async () => {
       .filter(f => f.endsWith('.sql'))
       .sort();
 
+    let applied = 0;
     for (const file of files) {
-      const { rows } = await client.query('SELECT id FROM schema_migrations WHERE filename=$1', [file]);
-      if (rows.length) {
-        console.log(`  skipped: ${file} (already applied)`);
-        continue;
-      }
+      const [rows] = await conn.query('SELECT id FROM schema_migrations WHERE filename=?', [file]);
+      if ((rows as any[]).length) continue;
       const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
-      console.log(`  applying: ${file}`);
-      await client.query('BEGIN');
-      await client.query(sql);
-      await client.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [file]);
-      await client.query('COMMIT');
-      console.log(`  applied: ${file}`);
+      console.log(`  [migrate] applying: ${file}`);
+      await conn.beginTransaction();
+      await conn.query(sql);
+      await conn.query('INSERT INTO schema_migrations (filename) VALUES (?)', [file]);
+      await conn.commit();
+      applied++;
     }
-    console.log('Migrations complete.');
+    if (applied > 0) console.log(`  [migrate] ${applied} migration(s) applied.`);
+    else console.log('  [migrate] All migrations already applied.');
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Migration failed:', err);
-    process.exit(1);
+    await conn.rollback();
+    throw err;
   } finally {
-    client.release();
-    await pool.end();
+    await conn.end();
   }
 };
 
-run();
+// Allow running directly: ts-node src/database/migrate.ts
+if (require.main === module) {
+  runMigrations()
+    .then(() => { console.log('Migrations complete.'); process.exit(0); })
+    .catch(err => { console.error('Migration failed:', err); process.exit(1); });
+}

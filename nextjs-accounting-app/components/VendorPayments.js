@@ -39,7 +39,7 @@ export default function VendorPayments({ isOpen, onClose, currencySymbol = '$' }
     setListError('')
     try {
       const res = await api.getVendorPayments()
-      setPayments(res.data?.payments || res.payments || res.data || [])
+      setPayments(res.data?.vendor_payments || res.data?.payments || res.payments || [])
     } catch (err) {
       setListError(err.message)
     } finally {

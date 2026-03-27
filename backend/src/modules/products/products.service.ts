@@ -7,62 +7,65 @@ export const listProducts = async (
   companyId: string,
   filters: { page: number; limit: number; offset: number; search?: string; product_type?: string; category?: string; is_active?: string; is_for_sale?: string; is_for_purchase?: string }
 ) => {
-  const conditions = ['company_id=$1', 'deleted_at IS NULL'];
+  const conditions = ['company_id=?', 'deleted_at IS NULL'];
   const params: unknown[] = [companyId];
-  let idx = 2;
 
   if (filters.search) {
-    conditions.push(`(sku ILIKE $${idx} OR name ILIKE $${idx} OR barcode ILIKE $${idx})`);
-    params.push(`%${filters.search}%`); idx++;
+    conditions.push(`(sku LIKE ? OR name LIKE ? OR barcode LIKE ?)`);
+    const s = `%${filters.search}%`;
+    params.push(s, s, s);
   }
-  if (filters.product_type) { conditions.push(`product_type=$${idx++}`); params.push(filters.product_type); }
-  if (filters.category) { conditions.push(`category=$${idx++}`); params.push(filters.category); }
-  if (filters.is_active !== undefined) { conditions.push(`is_active=$${idx++}`); params.push(filters.is_active === 'true'); }
-  if (filters.is_for_sale !== undefined) { conditions.push(`is_for_sale=$${idx++}`); params.push(filters.is_for_sale === 'true'); }
-  if (filters.is_for_purchase !== undefined) { conditions.push(`is_for_purchase=$${idx++}`); params.push(filters.is_for_purchase === 'true'); }
+  if (filters.product_type) { conditions.push(`product_type=?`); params.push(filters.product_type); }
+  if (filters.category) { conditions.push(`category=?`); params.push(filters.category); }
+  if (filters.is_active !== undefined) { conditions.push(`is_active=?`); params.push(filters.is_active === 'true'); }
+  if (filters.is_for_sale !== undefined) { conditions.push(`is_for_sale=?`); params.push(filters.is_for_sale === 'true'); }
+  if (filters.is_for_purchase !== undefined) { conditions.push(`is_for_purchase=?`); params.push(filters.is_for_purchase === 'true'); }
 
   const where = conditions.join(' AND ');
-  const countRes = await pool.query(`SELECT COUNT(*) FROM products WHERE ${where}`, params);
-  const total = parseInt(countRes.rows[0].count, 10);
-  const { rows } = await pool.query(
-    `SELECT * FROM products WHERE ${where} ORDER BY name ASC LIMIT $${idx} OFFSET $${idx + 1}`,
+  const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM products WHERE ${where}`, params);
+  const total = parseInt((countRows as any[])[0].count, 10);
+  const [rows] = await pool.query(
+    `SELECT * FROM products WHERE ${where} ORDER BY name ASC LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
-  return { products: rows, pagination: buildPaginationMeta(filters.page, filters.limit, total) };
+  return { products: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };
 };
 
 export const getProductById = async (companyId: string, productId: string) => {
-  const { rows } = await pool.query(
-    'SELECT p.*, t.name as tax_name, t.rate as tax_rate_value FROM products p LEFT JOIN taxes t ON t.id = p.tax_id WHERE p.id=$1 AND p.company_id=$2 AND p.deleted_at IS NULL',
+  const [rows] = await pool.query(
+    'SELECT p.*, t.name as tax_name, t.rate as tax_rate_value FROM products p LEFT JOIN taxes t ON t.id = p.tax_id WHERE p.id=? AND p.company_id=? AND p.deleted_at IS NULL',
     [productId, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Product');
-  return rows[0];
+  if (!(rows as any[]).length) throw new NotFoundError('Product');
+  return (rows as any[])[0];
 };
 
 export const createProduct = async (companyId: string, userId: string, data: Record<string, unknown>) => {
-  const { rows } = await pool.query(
+  await pool.query(
     `INSERT INTO products (
       company_id, sku, barcode, name, description, product_type, category, subcategory, brand, manufacturer,
-      cost_price, selling_price, wholesale_price, currency, unit_of_measure, track_inventory,
+      cost_price, selling_price, target_price, wholesale_price, currency, unit_of_measure, track_inventory,
       current_stock, reorder_level, reorder_quantity, stock_location, tax_id, is_taxable,
       weight, weight_unit, dimensions, is_active, is_for_sale, is_for_purchase, image_url, notes,
       created_by, updated_by
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$31)
-    RETURNING *`,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       companyId, data.sku, data.barcode || null, data.name, data.description || null,
       data.product_type, data.category || null, data.subcategory || null, data.brand || null, data.manufacturer || null,
-      data.cost_price ?? 0, data.selling_price ?? 0, data.wholesale_price || null, data.currency || 'USD',
+      data.cost_price ?? 0, data.selling_price ?? 0, data.target_price ?? 0, data.wholesale_price || null, data.currency || 'USD',
       data.unit_of_measure || 'pcs', data.track_inventory ?? true,
       data.current_stock ?? 0, data.reorder_level ?? 0, data.reorder_quantity ?? 0,
       data.stock_location || null, data.tax_id || null, data.is_taxable ?? true,
       data.weight || null, data.weight_unit || null, data.dimensions || null,
       data.is_active ?? true, data.is_for_sale ?? true, data.is_for_purchase ?? true,
-      data.image_url || null, data.notes || null, userId,
+      data.image_url || null, data.notes || null, userId, userId,
     ]
   );
-  return rows[0];
+  const [newRows] = await pool.query(
+    'SELECT * FROM products WHERE company_id=? AND sku=? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1',
+    [companyId, data.sku]
+  );
+  return (newRows as any[])[0];
 };
 
 export const updateProduct = async (companyId: string, productId: string, userId: string, data: Record<string, unknown>) => {
@@ -70,72 +73,74 @@ export const updateProduct = async (companyId: string, productId: string, userId
   const excluded = ['company_id', 'id', 'created_at', 'created_by'];
   const fields = Object.keys(data).filter(k => !excluded.includes(k));
   if (!fields.length) return getProductById(companyId, productId);
-  const setClause = fields.map((f, i) => `${f}=$${i + 3}`).join(', ');
+  const setClause = fields.map(f => `${f}=?`).join(', ');
   const values = fields.map(f => (data[f] === '' ? null : data[f]));
-  const { rows } = await pool.query(
-    `UPDATE products SET ${setClause}, updated_by=$${fields.length + 3}, updated_at=NOW()
-     WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL RETURNING *`,
-    [productId, companyId, ...values, userId]
+  await pool.query(
+    `UPDATE products SET ${setClause}, updated_by=?, updated_at=NOW()
+     WHERE id=? AND company_id=? AND deleted_at IS NULL`,
+    [...values, userId, productId, companyId]
   );
-  return rows[0];
+  return getProductById(companyId, productId);
 };
 
 export const deleteProduct = async (companyId: string, productId: string) => {
   await getProductById(companyId, productId);
-  await pool.query('UPDATE products SET deleted_at=NOW() WHERE id=$1 AND company_id=$2', [productId, companyId]);
+  await pool.query('UPDATE products SET deleted_at=NOW() WHERE id=? AND company_id=?', [productId, companyId]);
 };
 
 export const getStockLevels = async (companyId: string, productId: string) => {
   await getProductById(companyId, productId);
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT psl.*, sl.name AS location_name, sl.code AS location_code, sl.description AS location_type
      FROM product_stock_locations psl
      JOIN stock_locations sl ON sl.id = psl.location_id
-     WHERE psl.company_id=$1 AND psl.product_id=$2`,
+     WHERE psl.company_id=? AND psl.product_id=?`,
     [companyId, productId]
   );
-  return rows;
+  return rows as any[];
 };
 
 export const getTransactionHistory = async (companyId: string, productId: string, pagination: { page: number; limit: number; offset: number }) => {
   await getProductById(companyId, productId);
-  const countRes = await pool.query('SELECT COUNT(*) FROM inventory_transactions WHERE company_id=$1 AND product_id=$2', [companyId, productId]);
-  const total = parseInt(countRes.rows[0].count, 10);
-  const { rows } = await pool.query(
-    `SELECT * FROM inventory_transactions WHERE company_id=$1 AND product_id=$2 ORDER BY transaction_date DESC LIMIT $3 OFFSET $4`,
+  const [countRows] = await pool.query('SELECT COUNT(*) as count FROM inventory_transactions WHERE company_id=? AND product_id=?', [companyId, productId]);
+  const total = parseInt((countRows as any[])[0].count, 10);
+  const [rows] = await pool.query(
+    `SELECT * FROM inventory_transactions WHERE company_id=? AND product_id=? ORDER BY transaction_date DESC LIMIT ? OFFSET ?`,
     [companyId, productId, pagination.limit, pagination.offset]
   );
-  return { transactions: rows, pagination: buildPaginationMeta(pagination.page, pagination.limit, total) };
+  return { transactions: rows as any[], pagination: buildPaginationMeta(pagination.page, pagination.limit, total) };
 };
 
 export const adjustStock = async (companyId: string, productId: string, userId: string, data: { quantity: number; reason: string; stock_location?: string; unit_cost?: number; notes?: string }) => {
   return withTransaction(async (client) => {
-    const prodRes = await client.query('SELECT * FROM products WHERE id=$1 AND company_id=$2 AND deleted_at IS NULL FOR UPDATE', [productId, companyId]);
-    if (!prodRes.rows.length) throw new NotFoundError('Product');
-    const product = prodRes.rows[0];
+    const [prodRows] = await client.query('SELECT * FROM products WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [productId, companyId]);
+    if (!(prodRows as any[]).length) throw new NotFoundError('Product');
+    const product = (prodRows as any[])[0];
 
     const balanceBefore = parseFloat(product.current_stock);
     const balanceAfter = balanceBefore + data.quantity;
 
-    const { rows } = await client.query(
+    await client.query(
       `INSERT INTO inventory_transactions (company_id, product_id, transaction_type, quantity, balance_after, reference_no, notes, created_by)
-       VALUES ($1,$2,'adjustment',$3,$4,$5,$6,$7) RETURNING *`,
+       VALUES (?,?,'adjustment',?,?,?,?,?)`,
       [companyId, productId, data.quantity, balanceAfter, data.reason, data.notes || null, userId]
     );
 
-    await client.query('UPDATE products SET current_stock=$1, updated_at=NOW() WHERE id=$2', [balanceAfter, productId]);
+    const [txRows] = await client.query('SELECT * FROM inventory_transactions WHERE company_id=? AND product_id=? ORDER BY created_at DESC LIMIT 1', [companyId, productId]);
+
+    await client.query('UPDATE products SET current_stock=?, updated_at=NOW() WHERE id=?', [balanceAfter, productId]);
     await createAuditLog({ company_id: companyId, entity_type: 'product', entity_id: productId, action: 'update', user_id: userId, user_name: userId, description: `Stock adjusted by ${data.quantity}. Reason: ${data.reason}` }, client);
 
-    return { ...rows[0], balance_before: balanceBefore, balance_after: balanceAfter };
+    return { ...(txRows as any[])[0], balance_before: balanceBefore, balance_after: balanceAfter };
   });
 };
 
 export const getLowStockProducts = async (companyId: string) => {
-  const { rows } = await pool.query(
-    `SELECT * FROM products WHERE company_id=$1 AND track_inventory=true AND current_stock<=reorder_level AND deleted_at IS NULL ORDER BY current_stock ASC`,
+  const [rows] = await pool.query(
+    `SELECT * FROM products WHERE company_id=? AND track_inventory=true AND current_stock<=reorder_level AND deleted_at IS NULL ORDER BY current_stock ASC`,
     [companyId]
   );
-  return rows;
+  return rows as any[];
 };
 
 // ── Default product catalogue (seeded from tableau_stock.xlsx) ──────────────
@@ -243,27 +248,14 @@ const DEFAULT_PRODUCTS: Array<{ name: string; sku: string; selling_price: number
 export const seedDefaultProducts = async (companyId: string, client: any): Promise<void> => {
   if (!DEFAULT_PRODUCTS.length) return;
 
-  const flat: unknown[] = [];
-  const placeholders: string[] = [];
-
-  DEFAULT_PRODUCTS.forEach((p, i) => {
-    const b = i * 6;
-    placeholders.push(
-      '($' + (b + 1) + ',$' + (b + 2) + ',$' + (b + 3) + ',$' + (b + 4) + ',$' + (b + 5) + ',$' + (b + 6) + ')'
+  for (const p of DEFAULT_PRODUCTS) {
+    await client.query(
+      `INSERT IGNORE INTO products
+        (company_id, name, sku, selling_price, cost_price, current_stock,
+         product_type, track_inventory, is_active, is_for_sale, is_for_purchase,
+         unit_of_measure, notes)
+       VALUES (?, ?, ?, ?, 0, ?, 'inventory', TRUE, TRUE, TRUE, TRUE, 'pcs', NULLIF(?, ''))`,
+      [companyId, p.name, p.sku, p.selling_price, p.current_stock, p.notes || '']
     );
-    flat.push(companyId, p.name, p.sku, p.selling_price, p.current_stock, p.notes);
-  });
-
-  await client.query(
-    'INSERT INTO products' +
-    '  (company_id, name, sku, selling_price, cost_price, current_stock,' +
-    '   product_type, track_inventory, is_active, is_for_sale, is_for_purchase,' +
-    "   unit_of_measure, notes)" +
-    ' SELECT v.company_id, v.name, v.sku, v.selling_price::numeric, 0, v.current_stock::numeric,' +
-    "  'inventory', TRUE, TRUE, TRUE, TRUE, 'pcs', NULLIF(v.notes, '')" +
-    ' FROM (VALUES ' + placeholders.join(', ') + ')' +
-    '  AS v(company_id, name, sku, selling_price, current_stock, notes)' +
-    ' ON CONFLICT (company_id, sku) DO NOTHING',
-    flat
-  );
+  }
 };

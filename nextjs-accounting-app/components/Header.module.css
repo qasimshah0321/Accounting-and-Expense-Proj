@@ -122,9 +122,52 @@
   right: 4px;
   width: 8px;
   height: 8px;
-  background: #e53e3e;
+  background: #2CA01C;
   border-radius: 50%;
   border: 2px solid white;
+}
+
+.notifDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  min-width: 260px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14);
+  z-index: 200;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  padding: 16px;
+}
+
+.notifDropdownMsg {
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.notifToggleBtn {
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #2CA01C;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.notifToggleBtn:hover {
+  background: #238a15;
+}
+
+.notifToggleBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .userAvatarWrap {

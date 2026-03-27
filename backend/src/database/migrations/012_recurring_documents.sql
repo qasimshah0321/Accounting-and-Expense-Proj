@@ -1,26 +1,27 @@
--- Migration 012: Recurring Documents
+-- Migration 012: Recurring Documents (MySQL)
 -- Allows creation of recurring invoice/bill/expense templates
 
 CREATE TABLE IF NOT EXISTS recurring_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  document_type VARCHAR(20) NOT NULL CHECK (document_type IN ('invoice','bill','expense')),
+  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+  company_id CHAR(36) NOT NULL,
+  document_type VARCHAR(20) NOT NULL,
   name VARCHAR(200) NOT NULL,
   description TEXT,
-  frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('weekly','monthly','quarterly','annually')),
+  frequency VARCHAR(20) NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE,
   next_run_date DATE NOT NULL,
   last_run_date DATE,
-  total_runs INTEGER DEFAULT 0,
-  max_runs INTEGER,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-  template_data JSONB NOT NULL DEFAULT '{}',
-  created_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
+  total_runs INT DEFAULT 0,
+  max_runs INT,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  template_data JSON NOT NULL,
+  created_by CHAR(36),
+  created_at DATETIME NOT NULL DEFAULT NOW(),
+  updated_at DATETIME NOT NULL DEFAULT NOW(),
+  deleted_at DATETIME,
+  CONSTRAINT fk_recurring_docs_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_recurring_docs_company ON recurring_documents(company_id);
-CREATE INDEX IF NOT EXISTS idx_recurring_docs_next_run ON recurring_documents(next_run_date) WHERE is_active=true AND deleted_at IS NULL;
+CREATE INDEX idx_recurring_docs_company ON recurring_documents(company_id);
+CREATE INDEX idx_recurring_docs_next_run ON recurring_documents(next_run_date);

@@ -1,15 +1,7 @@
 -- ============================================================
--- Migration 005: Fix taxes column constraints
+-- Migration 005: Fix taxes column constraints (MySQL)
 -- ============================================================
-
--- tax_type was renamed from 'type' and kept NOT NULL — make it nullable with default
-ALTER TABLE taxes ALTER COLUMN tax_type DROP NOT NULL;
-ALTER TABLE taxes ALTER COLUMN tax_type SET DEFAULT NULL;
-
--- Drop old CHECK constraint (was for 'percentage','fixed')
-ALTER TABLE taxes DROP CONSTRAINT IF EXISTS taxes_type_check;
-ALTER TABLE taxes DROP CONSTRAINT IF EXISTS taxes_tax_type_check;
-
--- Add updated CHECK constraint matching validation schema values
-ALTER TABLE taxes ADD CONSTRAINT taxes_tax_type_check
-  CHECK (tax_type IS NULL OR tax_type IN ('sales_tax','vat','gst','service_tax','percentage','fixed'));
+-- No-op for MySQL: the 001 schema already defines taxes.type correctly.
+-- CHECK constraints in MySQL 8.0.16+ are enforced, but the column is VARCHAR
+-- with no CHECK in our simplified MySQL schema (MySQL handles type validation
+-- at the application layer).

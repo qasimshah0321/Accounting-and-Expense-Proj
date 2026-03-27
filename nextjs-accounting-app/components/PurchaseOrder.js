@@ -16,6 +16,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingOrder, setEditingOrder] = useState(null)
+  const viewMode = editingOrder ? ['approved', 'received', 'cancelled'].includes(editingOrder.status) : false
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [purchaseOrderNo, setPurchaseOrderNo] = useState('')

@@ -5,32 +5,31 @@ import { createBill } from '../bills/bills.service';
 import { createExpense } from '../expenses/expenses.service';
 
 export const listRecurring = async (companyId: string) => {
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT * FROM recurring_documents
-     WHERE company_id = $1 AND deleted_at IS NULL
+     WHERE company_id = ? AND deleted_at IS NULL
      ORDER BY next_run_date ASC`,
     [companyId]
   );
-  return rows;
+  return rows as any[];
 };
 
 export const getRecurringById = async (companyId: string, id: string) => {
-  const { rows } = await pool.query(
+  const [rows] = await pool.query(
     `SELECT * FROM recurring_documents
-     WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL`,
+     WHERE id = ? AND company_id = ? AND deleted_at IS NULL`,
     [id, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Recurring document');
-  return rows[0];
+  if (!(rows as any[]).length) throw new NotFoundError('Recurring document');
+  return (rows as any[])[0];
 };
 
 export const createRecurring = async (companyId: string, userId: string, data: any) => {
-  const { rows } = await pool.query(
+  await pool.query(
     `INSERT INTO recurring_documents
        (company_id, document_type, name, description, frequency,
         start_date, end_date, next_run_date, max_runs, template_data, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$6,$8,$9,$10)
-     RETURNING *`,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
     [
       companyId,
       data.document_type,
@@ -39,20 +38,24 @@ export const createRecurring = async (companyId: string, userId: string, data: a
       data.frequency,
       data.start_date,
       data.end_date || null,
+      data.start_date,
       data.max_runs || null,
       JSON.stringify(data.template_data || {}),
       userId,
     ]
   );
-  return rows[0];
+  const [newRows] = await pool.query(
+    'SELECT * FROM recurring_documents WHERE company_id=? AND name=? ORDER BY created_at DESC LIMIT 1',
+    [companyId, data.name]
+  );
+  return (newRows as any[])[0];
 };
 
 export const updateRecurring = async (companyId: string, id: string, data: any) => {
   const existing = await getRecurringById(companyId, id);
 
   const fields: string[] = [];
-  const values: any[] = [companyId, id];
-  let idx = 3;
+  const values: any[] = [];
 
   const allowed = [
     'name', 'document_type', 'frequency', 'start_date', 'end_date',
@@ -61,41 +64,38 @@ export const updateRecurring = async (companyId: string, id: string, data: any) 
 
   for (const key of allowed) {
     if (data[key] !== undefined) {
-      fields.push(`${key} = $${idx}`);
+      fields.push(`${key} = ?`);
       values.push(data[key]);
-      idx++;
     }
   }
 
   if (data.template_data !== undefined) {
-    fields.push(`template_data = $${idx}`);
+    fields.push(`template_data = ?`);
     values.push(JSON.stringify(data.template_data));
-    idx++;
   }
 
   if (!fields.length) return existing;
 
   fields.push(`updated_at = NOW()`);
 
-  const { rows } = await pool.query(
+  await pool.query(
     `UPDATE recurring_documents SET ${fields.join(', ')}
-     WHERE company_id = $1 AND id = $2 AND deleted_at IS NULL
-     RETURNING *`,
-    values
+     WHERE company_id = ? AND id = ? AND deleted_at IS NULL`,
+    [...values, companyId, id]
   );
-  if (!rows.length) throw new NotFoundError('Recurring document');
-  return rows[0];
+  const [updatedRows] = await pool.query('SELECT * FROM recurring_documents WHERE id=? AND company_id=?', [id, companyId]);
+  if (!(updatedRows as any[]).length) throw new NotFoundError('Recurring document');
+  return (updatedRows as any[])[0];
 };
 
 export const deleteRecurring = async (companyId: string, id: string) => {
-  const { rows } = await pool.query(
+  await getRecurringById(companyId, id);
+  await pool.query(
     `UPDATE recurring_documents SET deleted_at = NOW(), updated_at = NOW()
-     WHERE id = $1 AND company_id = $2 AND deleted_at IS NULL
-     RETURNING id`,
+     WHERE id = ? AND company_id = ? AND deleted_at IS NULL`,
     [id, companyId]
   );
-  if (!rows.length) throw new NotFoundError('Recurring document');
-  return rows[0];
+  return { id };
 };
 
 /**
@@ -170,18 +170,18 @@ export const generateDocument = async (companyId: string, userId: string, id: st
 
   await pool.query(
     `UPDATE recurring_documents
-     SET next_run_date = $3,
-         last_run_date = CURRENT_DATE,
-         total_runs = $4,
-         is_active = $5,
+     SET next_run_date = ?,
+         last_run_date = CURDATE(),
+         total_runs = ?,
+         is_active = ?,
          updated_at = NOW()
-     WHERE id = $1 AND company_id = $2`,
+     WHERE id = ? AND company_id = ?`,
     [
-      id,
-      companyId,
       nextRunDate,
       newTotalRuns,
       !(shouldDeactivate || pastEndDate),
+      id,
+      companyId,
     ]
   );
 

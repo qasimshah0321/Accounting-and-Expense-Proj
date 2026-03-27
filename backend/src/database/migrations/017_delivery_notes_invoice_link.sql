@@ -1,5 +1,7 @@
--- Migration 017: Add invoice_id foreign key to delivery_notes.
+-- Migration 017: Add invoice_id column to delivery_notes (MySQL)
 -- The convertToInvoice service function sets invoice_id on the delivery note
--- after creating the invoice, but this column was missing from the schema.
+-- after creating the invoice.
 
-ALTER TABLE delivery_notes ADD COLUMN IF NOT EXISTS invoice_id UUID REFERENCES invoices(id);
+-- MySQL doesn't support ADD COLUMN IF NOT EXISTS in standard ALTER TABLE.
+-- This column is already in the 001 schema for fresh databases.
+-- For upgrades, run: ALTER TABLE delivery_notes ADD COLUMN invoice_id CHAR(36);

@@ -34,8 +34,17 @@ export default function Login({ onLogin }) {
   const handleLoginChange = (e) =>
     setLoginForm((p) => ({ ...p, [e.target.name]: e.target.value }))
 
-  const handleRegChange = (e) =>
-    setRegForm((p) => ({ ...p, [e.target.name]: e.target.value }))
+  const handleRegChange = (e) => {
+    const { name, value } = e.target
+    setRegForm((p) => {
+      const updated = { ...p, [name]: value }
+      // Auto-generate username from first + last name
+      const first = (name === 'first_name' ? value : p.first_name).trim()
+      const last  = (name === 'last_name'  ? value : p.last_name).trim()
+      updated.username = (first + last).toLowerCase().replace(/\s+/g, '') || updated.username
+      return updated
+    })
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()

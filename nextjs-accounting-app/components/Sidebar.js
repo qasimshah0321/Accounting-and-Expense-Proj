@@ -189,13 +189,15 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.active : ''} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.sidebarHeader}>
-        <button
-          className={styles.toggleBtn}
-          onClick={onToggleCollapse}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
-        </button>
+        {userRole !== 'customer' && (
+          <button
+            className={styles.toggleBtn}
+            onClick={onToggleCollapse}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+          </button>
+        )}
         {userRole !== 'customer' && (
           <button
             className={styles.createBtn}

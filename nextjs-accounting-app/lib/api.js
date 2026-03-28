@@ -798,6 +798,16 @@ export const updateRolePermissions = (data) =>
     body: JSON.stringify(data),
   }).then(handle)
 
+// ─── In-app Notifications ────────────────────────────────────────────────────
+export const getNotifications = (limit = 30) =>
+  fetch(`${API_BASE}/notifications?limit=${limit}`, { headers: buildHeaders() }).then(handle)
+
+export const markNotificationRead = (id) =>
+  fetch(`${API_BASE}/notifications/${id}/read`, { method: 'PUT', headers: buildHeaders() }).then(handle)
+
+export const markAllNotificationsRead = () =>
+  fetch(`${API_BASE}/notifications/read-all`, { method: 'PUT', headers: buildHeaders() }).then(handle)
+
 // ─── User Management (admin) ─────────────────────────────────────────────────
 export const getUsers = () =>
   fetch(`${API_BASE}/users`, { headers: buildHeaders() }).then(handle)

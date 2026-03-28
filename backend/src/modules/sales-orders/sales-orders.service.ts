@@ -4,6 +4,7 @@ import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
 import { notifyAdmins, notifyCustomer } from '../../services/pushNotificationService';
+import { createForAdmins, createForCustomer } from '../../services/notificationService';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ['confirmed', 'cancelled'],
@@ -114,10 +115,10 @@ export const createSalesOrder = async (companyId: string, userId: string, userNa
     return { ...so, line_items: lineItems };
   });
 
-  // Fire-and-forget: notify admins AFTER transaction commits
-  notifyAdmins(companyId, 'New Sales Order', `${userName} placed order ${result.sales_order_no}`, {
-    type: 'sales_order', action: 'created', id: result.id, sales_order_no: result.sales_order_no,
-  }).catch(() => {});
+  // Fire-and-forget: notify admins AFTER transaction commits (web push + in-app bell)
+  const soData = { type: 'sales_order', action: 'created', id: result.id, sales_order_no: result.sales_order_no };
+  notifyAdmins(companyId, 'New Sales Order', `${userName} placed order ${result.sales_order_no}`, soData).catch(() => {});
+  createForAdmins(companyId, 'sales_order', 'New Sales Order', `${userName} placed order ${result.sales_order_no}`, soData).catch(() => {});
 
   return result;
 };
@@ -165,11 +166,11 @@ export const updateStatus = async (companyId: string, orderId: string, userId: s
     return { ...so, status: newStatus };
   });
 
-  // Fire-and-forget: notify the customer linked to this order AFTER transaction commits
+  // Fire-and-forget: notify the customer linked to this order AFTER transaction commits (web push + in-app bell)
   const statusLabel = newStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  notifyCustomer(companyId, result.customer_id, 'Order Update', `Your order ${result.sales_order_no} is now ${statusLabel}`, {
-    type: 'sales_order', action: 'status_change', id: result.id, sales_order_no: result.sales_order_no, status: newStatus,
-  }).catch(() => {});
+  const statusData = { type: 'sales_order', action: 'status_change', id: result.id, sales_order_no: result.sales_order_no, status: newStatus };
+  notifyCustomer(companyId, result.customer_id, 'Order Update', `Your order ${result.sales_order_no} is now ${statusLabel}`, statusData).catch(() => {});
+  createForCustomer(companyId, result.customer_id, 'sales_order', 'Order Update', `Your order ${result.sales_order_no} is now ${statusLabel}`, statusData).catch(() => {});
 
   return result;
 };

@@ -7,7 +7,7 @@ import TaxPopup from './TaxPopup'
 import ProductSelectorPopup from './ProductSelectorPopup'
 import * as api from '../lib/api'
 
-export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$', sidebarCollapsed = false }) {
+export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$', sidebarCollapsed = false, companyProfile = null }) {
   // ─── List state ───────────────────────────────────────────────────────────
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
@@ -527,6 +527,184 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     }
   }
 
+  // ─── Print / PDF ──────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    const co = companyProfile || {}
+    const coName = co.name || 'My Company'
+    const coAddress = [co.address, co.city, co.state, co.postal_code].filter(Boolean).join(', ')
+    const coEmail = co.email || ''
+    const coPhone = co.phone || ''
+    const coWebsite = co.website || ''
+    const coGst = co.tax_number || co.gst_number || ''
+
+    const validItems = lineItems.filter(i => i.description?.trim())
+    const subtotal = calculateSubtotal()
+    const taxAmt = calculateTax()
+    const total = calculateTotal()
+    const taxLabel = selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Tax'
+
+    const fmtMoney = (v) => `${currencySymbol}${(parseFloat(v) || 0).toFixed(2)}`
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-CA') : ''
+
+    const itemRows = validItems.map(item => `
+      <tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;">
+          <strong>${item.description}</strong>
+          ${item.sku ? `<br/><span style="font-size:11px;color:#6b7280;">SKU: ${item.sku}</span>` : ''}
+        </td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.rate)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">0.00%</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.rate)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">${fmtMoney(item.amount)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Sales Order ${orderNo}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; padding: 30px; }
+    .page { max-width: 780px; margin: 0 auto; }
+    /* Header */
+    .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .logo-area { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 38px; height: 38px; border-radius: 50%; background: #2CA01C; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 20px; height: 20px; }
+    .company-name-logo { font-size: 20px; font-weight: 800; color: #1a1a1a; }
+    .doc-title { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+    /* Company + Meta */
+    .meta-row { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #2CA01C; }
+    .company-info p { margin-bottom: 3px; font-size: 12.5px; line-height: 1.5; }
+    .company-info strong { font-size: 14px; }
+    .doc-meta { text-align: right; }
+    .doc-meta table { margin-left: auto; }
+    .doc-meta td { padding: 2px 0 2px 16px; font-size: 12.5px; }
+    .doc-meta td:first-child { color: #6b7280; }
+    .doc-meta td:last-child { font-weight: 600; }
+    /* Bill/Ship */
+    .address-row { display: flex; gap: 20px; margin-bottom: 20px; }
+    .address-box { flex: 1; border: 1px solid #d1d5db; border-radius: 4px; padding: 12px 14px; min-height: 80px; }
+    .address-box h4 { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .address-box p { font-size: 12.5px; line-height: 1.6; }
+    /* Items table */
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .items-table thead tr { background: #2CA01C; color: white; }
+    .items-table thead th { padding: 9px 10px; text-align: left; font-size: 12px; font-weight: 600; }
+    .items-table thead th:not(:first-child):not(:nth-child(2)) { text-align: right; }
+    .items-table tbody tr:nth-child(even) { background: #f9fafb; }
+    /* Bottom */
+    .bottom-row { display: flex; gap: 24px; align-items: flex-start; }
+    .payments-col { flex: 1; }
+    .payments-col h4 { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .totals-col { min-width: 240px; }
+    .totals-table { width: 100%; border-collapse: collapse; }
+    .totals-table td { padding: 5px 10px; font-size: 13px; }
+    .totals-table td:last-child { text-align: right; font-weight: 600; }
+    .totals-table .grand-row td { background: #2CA01C; color: white; font-size: 14px; font-weight: 700; padding: 8px 10px; }
+    .notes-section { margin-top: 16px; font-size: 12px; color: #374151; }
+    .notes-section strong { display: block; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; font-size: 11px; margin-bottom: 4px; }
+    /* Signature */
+    .signature-row { display: flex; gap: 40px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .sig-field { flex: 1; }
+    .sig-field .sig-line { border-bottom: 1px solid #374151; margin-bottom: 6px; height: 32px; }
+    .sig-field span { font-size: 11px; color: #6b7280; }
+    @media print { body { padding: 0; } .page { max-width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3,17 8,12 12,15 17,8 21,11"/>
+          <polyline points="17,8 21,8 21,12"/>
+        </svg>
+      </div>
+      <span class="company-name-logo">${coName}</span>
+    </div>
+    <div class="doc-title">Sales Order</div>
+  </div>
+
+  <div class="meta-row">
+    <div class="company-info">
+      <p><strong>${coName}</strong></p>
+      ${coAddress ? `<p>${coAddress}</p>` : ''}
+      ${coEmail ? `<p>Email: ${coEmail}</p>` : ''}
+      ${coPhone ? `<p>Phone: ${coPhone}</p>` : ''}
+      ${coWebsite ? `<p>Website: ${coWebsite}</p>` : ''}
+    </div>
+    <div class="doc-meta">
+      <table>
+        <tr><td>Associate:</td><td>${user?.name || user?.email || ''}</td></tr>
+        <tr><td>Date:</td><td>${fmtDate(salesOrderDate)}</td></tr>
+        <tr><td>Sales Order #:</td><td>${orderNo}</td></tr>
+        ${poNumber ? `<tr><td>Ref No:</td><td>${poNumber}</td></tr>` : ''}
+        ${coGst ? `<tr><td>GST #:</td><td>${coGst}</td></tr>` : ''}
+      </table>
+    </div>
+  </div>
+
+  <div class="address-row">
+    <div class="address-box">
+      <h4>Bill To</h4>
+      <p>${(billTo || selectedCustomer || '').replace(/\n/g, '<br/>')}</p>
+    </div>
+    <div class="address-box">
+      <h4>Ship To</h4>
+      <p>${(shipTo || selectedCustomer || '').replace(/\n/g, '<br/>')}</p>
+    </div>
+  </div>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:70px;">Quantity</th>
+        <th>Product / Description</th>
+        <th style="width:110px;">Original Price</th>
+        <th style="width:80px;">Discount</th>
+        <th style="width:110px;">Unit Price</th>
+        <th style="width:110px;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <div class="bottom-row">
+    <div class="payments-col">
+      ${notes ? `<div class="notes-section"><strong>Notes / Terms</strong>${notes}</div>` : ''}
+    </div>
+    <div class="totals-col">
+      <table class="totals-table">
+        <tr><td>Sub Total:</td><td>${fmtMoney(subtotal)}</td></tr>
+        ${taxAmt > 0 ? `<tr><td>${taxLabel}:</td><td>${fmtMoney(taxAmt)}</td></tr>` : ''}
+        <tr class="grand-row"><td>Total:</td><td>${fmtMoney(total)}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="signature-row">
+    <div class="sig-field"><div class="sig-line"></div><span>Signature</span></div>
+    <div class="sig-field"><div class="sig-line"></div><span>Name (print)</span></div>
+    <div class="sig-field"><div class="sig-line"></div><span>Date</span></div>
+  </div>
+
+</div>
+<script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>`
+
+    const win = window.open('', '_blank', 'width=900,height=700')
+    win.document.write(html)
+    win.document.close()
+  }
+
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredOrders = orders.filter(o =>
     (o.sales_order_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -977,6 +1155,17 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
               </div>
               {!viewMode && (
                 <div className={styles.footerRight}>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={handlePrint}
+                      style={{ marginRight: 8, padding: '8px 18px', background: '#6b7280', color: '#fff',
+                               border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                               display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      title="Print / Save as PDF"
+                    >
+                      <i className="fas fa-print"></i> Print
+                    </button>
+                  )}
                   <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
                     <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
                     {saving ? 'Saving...' : editingOrder ? 'Update' : 'Save'}

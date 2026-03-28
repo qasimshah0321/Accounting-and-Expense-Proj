@@ -33,6 +33,7 @@ import usersRoutes from './modules/users/users.routes';
 import rolePermissionsRoutes from './modules/role-permissions/role-permissions.routes';
 import utilsRoutes from './modules/utils/utils.routes';
 import pushRoutes from './modules/push/push.routes';
+import notificationRoutes from './modules/notifications/notifications.routes';
 
 const app = express();
 
@@ -88,6 +89,7 @@ app.use(`${API_PREFIX}/recurring`, recurringRoutes);
 app.use(`${API_PREFIX}/users`, usersRoutes);
 app.use(`${API_PREFIX}/role-permissions`, rolePermissionsRoutes);
 app.use(`${API_PREFIX}/push`, pushRoutes);
+app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}`, utilsRoutes);
 
 // SPA fallback: serve index.html for any non-API route (client-side routing)

@@ -257,6 +257,7 @@ export default function Home() {
         user={user}
         companyName={companyProfile?.name || ''}
         onOpenSettings={() => { setActiveMenu('Company Settings'); setActivePanel('CompanySettings'); }}
+        onNavigate={(panel) => setActivePanel(panel)}
       />
 
       <CreateMenu
@@ -291,6 +292,7 @@ export default function Home() {
             onDirtyChange={setIsDirty}
             user={user}
             currencySymbol={currencySymbol}
+            companyProfile={companyProfile}
           />
           <SalesOrder
             isOpen={activePanel === 'SalesOrder'}
@@ -301,6 +303,7 @@ export default function Home() {
             user={user}
             currencySymbol={currencySymbol}
             sidebarCollapsed={isSidebarCollapsed}
+            companyProfile={companyProfile}
           />
           <Estimate
             isOpen={activePanel === 'Estimate'}
@@ -318,6 +321,7 @@ export default function Home() {
             onShipViaUpdate={setShipVias}
             onDirtyChange={setIsDirty}
             user={user}
+            companyProfile={companyProfile}
           />
 
           {/* Purchases */}
@@ -329,6 +333,7 @@ export default function Home() {
             onDirtyChange={setIsDirty}
             user={user}
             currencySymbol={currencySymbol}
+            companyProfile={companyProfile}
           />
           <BillCenter
             isOpen={activePanel === 'BillCenter'}

@@ -5,7 +5,7 @@ import * as api from '@/lib/api'
 
 const MENU_GROUPS = [
   { group: 'General', items: ['Dashboard'] },
-  { group: 'Sales', items: ['Invoices', 'Sales Order', 'Delivery Notes', 'Estimates/Quotations', 'Customer Payments'] },
+  { group: 'Sales', items: ['Invoices', 'Sales Order', 'Delivery Notes', 'Estimates/Quotations', 'Customer Payments', 'Quick Order'] },
   { group: 'Purchases', items: ['Bills', 'Expenses', 'Purchase Order', 'Bill Payments'] },
   { group: 'Contacts', items: ['Customer Center', 'Vendor Center'] },
   { group: 'Inventory', items: ['Product Center', 'Stock Valuation', 'Stock Mobility'] },

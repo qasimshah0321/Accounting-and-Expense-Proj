@@ -16,6 +16,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingEstimate, setEditingEstimate] = useState(null)
+  const [viewMode, setViewMode] = useState(false)
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [lineItems, setLineItems] = useState([
@@ -170,6 +171,21 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
       setEditingEstimate(full)
       populateForm(full)
       onDirtyChange(false)
+      setViewMode(false)
+      setShowForm(true)
+    } catch (err) {
+      setListError('Failed to load estimate: ' + err.message)
+    }
+  }
+
+  const handleViewEstimate = async (estimate) => {
+    setListError('')
+    try {
+      const res = await api.getEstimate(estimate.id)
+      const full = res.data || res
+      setEditingEstimate(full)
+      populateForm(full)
+      setViewMode(true)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load estimate: ' + err.message)
@@ -191,6 +207,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
     onDirtyChange(false)
     setShowForm(false)
     setEditingEstimate(null)
+    setViewMode(false)
   }
 
   // ─── Form event handlers ──────────────────────────────────────────────────
@@ -444,12 +461,22 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          <button className={styles.btnEdit} title="Edit" onClick={() => handleEditEstimate(e)}>
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteEstimate(e.id)}>
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {e.status !== 'draft' && (
+                            <button title="View" onClick={() => handleViewEstimate(e)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          )}
+                          {e.status === 'draft' && (
+                            <button className={styles.btnEdit} title="Edit" onClick={() => handleEditEstimate(e)}>
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {e.status === 'draft' && (
+                            <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteEstimate(e.id)}>
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -484,7 +511,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingEstimate ? `Edit Estimate ${editingEstimate.estimate_no || ''}` : 'Create Estimate / Quotation'}</h2>
+                <h2>{viewMode ? `View Estimate ${editingEstimate?.estimate_no || ''}` : editingEstimate ? `Edit Estimate ${editingEstimate.estimate_no || ''}` : 'Create Estimate / Quotation'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -507,9 +534,11 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                             placeholder="Search or select customer"
                             value={customerSearchText}
                             onChange={handleCustomerInputChange}
-                            onFocus={() => setShowCustomerDropdown(true)}
+                            onFocus={() => !viewMode && setShowCustomerDropdown(true)}
+                            readOnly={viewMode}
+                            style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
-                          {showCustomerDropdown && (
+                          {!viewMode && showCustomerDropdown && (
                             <div className={styles.autocompleteDropdown}>
                               <div className={styles.autocompleteOption + ' ' + styles.addNewOption} onClick={handleAddNewCustomer}>
                                 <i className="fas fa-plus"></i> Add New
@@ -531,11 +560,11 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                       </div>
                       <div className={styles.formGroup}>
                         <label>Bill To</label>
-                        <textarea className={styles.formControlStandard} placeholder="Billing address will populate automatically" value={billTo} onChange={(e) => setBillTo(e.target.value)} rows="3" />
+                        <textarea className={styles.formControlStandard} placeholder="Billing address will populate automatically" value={billTo} onChange={(e) => setBillTo(e.target.value)} rows="3" readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Ship To</label>
-                        <textarea className={styles.formControlStandard} placeholder="Shipping address will populate automatically" value={shipTo} onChange={(e) => setShipTo(e.target.value)} rows="3" />
+                        <textarea className={styles.formControlStandard} placeholder="Shipping address will populate automatically" value={shipTo} onChange={(e) => setShipTo(e.target.value)} rows="3" readOnly={viewMode} />
                       </div>
                     </div>
 
@@ -546,7 +575,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>
-                        <input type="date" className={styles.formControlStandard} value={estimateDate} onChange={(e) => setEstimateDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={estimateDate} onChange={(e) => setEstimateDate(e.target.value)} readOnly={viewMode} />
                       </div>
                     </div>
                   </div>
@@ -579,8 +608,9 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                                   placeholder="SKU"
                                   value={item.sku}
                                   onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'sku' &&
                                   getProductSuggestions(item.id, 'sku').length > 0 && (
@@ -621,8 +651,9 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                                   placeholder="Item description"
                                   value={item.description}
                                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'description' &&
                                   getProductSuggestions(item.id, 'description').length > 0 && (
@@ -655,11 +686,11 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                                 )}
                               </div>
                             </td>
-                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} readOnly={viewMode} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" readOnly={isCustomerRole || viewMode} onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => !(isCustomerRole || viewMode) && handleFieldFocus(item.id)} style={isCustomerRole || viewMode ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} /></td>
                             <td className={styles.amountCell}>{currencySymbol}{item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>
-                              <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>
+                              <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1 || viewMode}>
                                 <i className="fas fa-trash"></i>
                               </button>
                             </td>
@@ -673,7 +704,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                     <div className={styles.notesAttachmentsSection}>
                       <div className={styles.formGroup}>
                         <label>Notes</label>
-                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)}></textarea>
+                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} readOnly={viewMode}></textarea>
                       </div>
                       <div className={styles.formGroup}>
                         <label>Attachments</label>
@@ -698,7 +729,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className={styles.totalLabel}>Tax:</span>
                             <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '200px' }} ref={taxDropdownRef}>
-                              <div className={styles.taxSelectButton} onClick={() => setShowTaxDropdown(true)}>
+                              <div className={styles.taxSelectButton} onClick={() => !viewMode && setShowTaxDropdown(true)}>
                                 <span>{selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Select tax'}</span>
                                 <i className="fas fa-chevron-down"></i>
                               </div>
@@ -732,14 +763,16 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
             <div className={styles.popupFooter}>
               <div className={styles.footerLeft}>
                 {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
-                <button className={styles.btnCancel} onClick={handleFormClose}>Cancel</button>
+                <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
-              <div className={styles.footerRight}>
-                <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
-                  <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
-                  {saving ? 'Saving...' : editingEstimate ? 'Update' : 'Save'}
-                </button>
-              </div>
+              {!viewMode && (
+                <div className={styles.footerRight}>
+                  <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
+                    <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
+                    {saving ? 'Saving...' : editingEstimate ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

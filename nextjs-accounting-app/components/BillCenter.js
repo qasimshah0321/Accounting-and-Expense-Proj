@@ -14,6 +14,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingBill, setEditingBill] = useState(null)
+  const [viewMode, setViewMode] = useState(false)
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [lineItems, setLineItems] = useState([
@@ -182,6 +183,21 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
       setEditingBill(full)
       populateForm(full)
       onDirtyChange(false)
+      setViewMode(false)
+      setShowForm(true)
+    } catch (err) {
+      setListError('Failed to load bill: ' + err.message)
+    }
+  }
+
+  const handleViewBill = async (bill) => {
+    setListError('')
+    try {
+      const res = await api.getBill(bill.id)
+      const full = res.data || res
+      setEditingBill(full)
+      populateForm(full)
+      setViewMode(true)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load bill: ' + err.message)
@@ -203,6 +219,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     onDirtyChange(false)
     setShowForm(false)
     setEditingBill(null)
+    setViewMode(false)
   }
 
   // ─── Vendor autocomplete handlers ──────────────────────────────────────
@@ -485,12 +502,22 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          <button className={styles.btnEdit} title="Edit" onClick={() => handleEditBill(bill)}>
-                            <i className="fas fa-edit"></i>
-                          </button>
-                          <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteBill(bill.id)}>
-                            <i className="fas fa-trash"></i>
-                          </button>
+                          {bill.status !== 'draft' && (
+                            <button title="View" onClick={() => handleViewBill(bill)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          )}
+                          {bill.status === 'draft' && (
+                            <button className={styles.btnEdit} title="Edit" onClick={() => handleEditBill(bill)}>
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
+                          {bill.status === 'draft' && (
+                            <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteBill(bill.id)}>
+                              <i className="fas fa-trash"></i>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -527,7 +554,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
             {/* Header */}
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingBill ? `Edit Bill ${editingBill.bill_no || ''}` : 'Create Bill'}</h2>
+                <h2>{viewMode ? `View Bill ${editingBill?.bill_no || ''}` : editingBill ? `Edit Bill ${editingBill.bill_no || ''}` : 'Create Bill'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -554,9 +581,11 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                             placeholder="Search or select vendor"
                             value={vendorSearchText}
                             onChange={handleVendorInputChange}
-                            onFocus={() => setShowVendorDropdown(true)}
+                            onFocus={() => !viewMode && setShowVendorDropdown(true)}
+                            readOnly={viewMode}
+                            style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
-                          {showVendorDropdown && (
+                          {!viewMode && showVendorDropdown && (
                             <div className={styles.autocompleteDropdown}>
                               <div
                                 className={styles.autocompleteOption + ' ' + styles.addNewOption}
@@ -594,6 +623,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           placeholder="Vendor's invoice number"
                           value={vendorInvoiceNo}
                           onChange={(e) => setVendorInvoiceNo(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                     </div>
@@ -619,6 +649,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           className={styles.formControlStandard}
                           value={billDate}
                           onChange={(e) => setBillDate(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                       <div className={styles.formGroup}>
@@ -628,6 +659,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           className={styles.formControlStandard}
                           value={dueDate}
                           onChange={(e) => setDueDate(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                       <div className={styles.formGroup}>
@@ -638,6 +670,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           placeholder="PO-12345"
                           value={referenceNo}
                           onChange={(e) => setReferenceNo(e.target.value)}
+                          readOnly={viewMode}
                         />
                       </div>
                     </div>
@@ -674,8 +707,9 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                   placeholder="Item description"
                                   value={item.description}
                                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'description' &&
                                   getProductSuggestions(item.id, 'description').length > 0 && (
@@ -716,6 +750,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                 min="1"
                                 onChange={(e) => updateLineItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                                 onFocus={() => handleFieldFocus(item.id)}
+                                readOnly={viewMode}
                               />
                             </td>
                             <td>
@@ -727,6 +762,8 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                                 step="0.01"
                                 onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
                                 onFocus={() => handleFieldFocus(item.id)}
+                                readOnly={viewMode}
+                                style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                               />
                             </td>
                             <td className={styles.amountCell}>
@@ -736,7 +773,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                               <button
                                 className={styles.btnRemove}
                                 onClick={() => removeLineItem(item.id)}
-                                disabled={lineItems.length === 1}
+                                disabled={lineItems.length === 1 || viewMode}
                               >
                                 <i className="fas fa-trash"></i>
                               </button>
@@ -759,6 +796,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                           placeholder="Add any additional notes..."
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
+                          readOnly={viewMode}
                         ></textarea>
                       </div>
                     </div>
@@ -778,7 +816,7 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                             <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '200px' }} ref={taxDropdownRef}>
                               <div
                                 className={styles.taxSelectButton}
-                                onClick={() => setShowTaxDropdown(true)}
+                                onClick={() => !viewMode && setShowTaxDropdown(true)}
                               >
                                 <span>{selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Select tax'}</span>
                                 <i className="fas fa-chevron-down"></i>
@@ -824,14 +862,16 @@ export default function BillCenter({ isOpen, onClose, taxes, onTaxUpdate, onDirt
             <div className={styles.popupFooter}>
               <div className={styles.footerLeft}>
                 {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
-                <button className={styles.btnCancel} onClick={handleFormClose}>Cancel</button>
+                <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
-              <div className={styles.footerRight}>
-                <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
-                  <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
-                  {saving ? 'Saving...' : editingBill ? 'Update' : 'Save'}
-                </button>
-              </div>
+              {!viewMode && (
+                <div className={styles.footerRight}>
+                  <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
+                    <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
+                    {saving ? 'Saving...' : editingBill ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

@@ -6,7 +6,7 @@ import VendorPopup from './VendorPopup'
 import TaxPopup from './TaxPopup'
 import * as api from '../lib/api'
 
-export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$' }) {
+export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirtyChange = () => {}, user, currencySymbol = '$', companyProfile = null }) {
   const isCustomerRole = user?.role === 'customer'
 
   // ─── List state ───────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingOrder, setEditingOrder] = useState(null)
-  const viewMode = editingOrder ? ['approved', 'received', 'cancelled'].includes(editingOrder.status) : false
+  const [viewMode, setViewMode] = useState(false)
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [purchaseOrderNo, setPurchaseOrderNo] = useState('')
@@ -177,6 +177,21 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
       setEditingOrder(full)
       populateForm(full)
       onDirtyChange(false)
+      setViewMode(false)
+      setShowForm(true)
+    } catch (err) {
+      setListError('Failed to load purchase order: ' + err.message)
+    }
+  }
+
+  const handleViewOrder = async (order) => {
+    setListError('')
+    try {
+      const res = await api.getPurchaseOrder(order.id)
+      const full = res.data || res
+      setEditingOrder(full)
+      populateForm(full)
+      setViewMode(true)
       setShowForm(true)
     } catch (err) {
       setListError('Failed to load purchase order: ' + err.message)
@@ -198,6 +213,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
     onDirtyChange(false)
     setShowForm(false)
     setEditingOrder(null)
+    setViewMode(false)
   }
 
   const handleOrderStatus = async (id, newStatus) => {
@@ -363,6 +379,153 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
     }
   }
 
+  // ─── Print / PDF ──────────────────────────────────────────────────────────
+  const handlePrint = () => {
+    const co = companyProfile || {}
+    const coName = co.name || 'My Company'
+    const coAddress = [co.address, co.city, co.state, co.postal_code].filter(Boolean).join(', ')
+    const coEmail = co.email || ''
+    const coPhone = co.phone || ''
+    const coWebsite = co.website || ''
+    const coGst = co.tax_number || co.gst_number || ''
+
+    const validItems = lineItems.filter(i => i.description?.trim())
+    const subtotal = calculateSubtotal()
+    const taxAmt = calculateTax()
+    const total = calculateTotal()
+    const taxLabel = selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Tax'
+
+    const fmtMoney = (v) => `${currencySymbol}${(parseFloat(v) || 0).toFixed(2)}`
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-CA') : ''
+
+    const itemRows = validItems.map(item => `
+      <tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;">
+          <strong>${item.description}</strong>
+          ${item.sku ? `<br/><span style="font-size:11px;color:#6b7280;">SKU: ${item.sku}</span>` : ''}
+        </td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.rate)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.amount)}</td>
+      </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Purchase Order ${purchaseOrderNo}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; padding: 30px; }
+    .page { max-width: 780px; margin: 0 auto; }
+    .doc-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .logo-area { display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 38px; height: 38px; border-radius: 50%; background: #2CA01C; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 20px; height: 20px; }
+    .company-name-logo { font-size: 20px; font-weight: 800; color: #1a1a1a; }
+    .doc-title { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+    .meta-row { display: flex; justify-content: space-between; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #2CA01C; }
+    .company-info p { margin-bottom: 3px; font-size: 12.5px; line-height: 1.5; }
+    .company-info strong { font-size: 14px; }
+    .doc-meta { text-align: right; }
+    .doc-meta table { margin-left: auto; }
+    .doc-meta td { padding: 2px 0 2px 16px; font-size: 12.5px; }
+    .doc-meta td:first-child { color: #6b7280; }
+    .doc-meta td:last-child { font-weight: 600; }
+    .vendor-box { border: 1px solid #d1d5db; border-radius: 4px; padding: 12px 14px; margin-bottom: 20px; max-width: 320px; }
+    .vendor-box h4 { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .vendor-box p { font-size: 12.5px; line-height: 1.6; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .items-table thead tr { background: #2CA01C; color: white; }
+    .items-table thead th { padding: 9px 10px; text-align: left; font-size: 12px; font-weight: 600; }
+    .items-table thead th:not(:first-child):not(:nth-child(2)) { text-align: right; }
+    .items-table tbody tr:nth-child(even) { background: #f9fafb; }
+    .bottom-row { display: flex; gap: 24px; align-items: flex-start; }
+    .notes-col { flex: 1; font-size: 12px; color: #374151; }
+    .notes-col strong { display: block; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; font-size: 11px; margin-bottom: 4px; }
+    .totals-col { min-width: 240px; }
+    .totals-table { width: 100%; border-collapse: collapse; }
+    .totals-table td { padding: 5px 10px; font-size: 13px; }
+    .totals-table td:last-child { text-align: right; font-weight: 600; }
+    .totals-table .grand-row td { background: #2CA01C; color: white; font-size: 14px; font-weight: 700; padding: 8px 10px; }
+    .signature-row { display: flex; gap: 40px; margin-top: 40px; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .sig-field { flex: 1; }
+    .sig-field .sig-line { border-bottom: 1px solid #374151; margin-bottom: 6px; height: 32px; }
+    .sig-field span { font-size: 11px; color: #6b7280; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-header">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3,17 8,12 12,15 17,8 21,11"/><polyline points="17,8 21,8 21,12"/>
+        </svg>
+      </div>
+      <span class="company-name-logo">${coName}</span>
+    </div>
+    <div class="doc-title">Purchase Order</div>
+  </div>
+  <div class="meta-row">
+    <div class="company-info">
+      <p><strong>${coName}</strong></p>
+      ${coAddress ? `<p>${coAddress}</p>` : ''}
+      ${coEmail ? `<p>Email: ${coEmail}</p>` : ''}
+      ${coPhone ? `<p>Phone: ${coPhone}</p>` : ''}
+      ${coWebsite ? `<p>Website: ${coWebsite}</p>` : ''}
+    </div>
+    <div class="doc-meta">
+      <table>
+        <tr><td>Prepared by:</td><td>${user?.name || user?.email || ''}</td></tr>
+        <tr><td>Date:</td><td>${fmtDate(orderDate)}</td></tr>
+        <tr><td>Purchase Order #:</td><td>${purchaseOrderNo}</td></tr>
+        ${dueDate ? `<tr><td>Expected By:</td><td>${fmtDate(dueDate)}</td></tr>` : ''}
+        ${coGst ? `<tr><td>GST #:</td><td>${coGst}</td></tr>` : ''}
+      </table>
+    </div>
+  </div>
+  <div class="vendor-box">
+    <h4>Vendor</h4>
+    <p><strong>${selectedVendor}</strong></p>
+    ${vendorAddress ? `<p>${vendorAddress.replace(/\n/g, '<br/>')}</p>` : ''}
+  </div>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:70px;">Qty</th>
+        <th>Product / Description</th>
+        <th style="width:130px;">Unit Price</th>
+        <th style="width:130px;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+  </table>
+  <div class="bottom-row">
+    <div class="notes-col">${notes ? `<strong>Notes</strong>${notes}` : ''}</div>
+    <div class="totals-col">
+      <table class="totals-table">
+        <tr><td>Subtotal:</td><td>${fmtMoney(subtotal)}</td></tr>
+        ${taxAmt > 0 ? `<tr><td>${taxLabel}:</td><td>${fmtMoney(taxAmt)}</td></tr>` : ''}
+        <tr class="grand-row"><td>Total:</td><td>${fmtMoney(total)}</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="signature-row">
+    <div class="sig-field"><div class="sig-line"></div><span>Authorized Signature</span></div>
+    <div class="sig-field"><div class="sig-line"></div><span>Name (print)</span></div>
+    <div class="sig-field"><div class="sig-line"></div><span>Date</span></div>
+  </div>
+</div>
+<script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>`
+    const win = window.open('', '_blank', 'width=900,height=700')
+    win.document.write(html)
+    win.document.close()
+  }
+
   // ─── List display helpers ─────────────────────────────────────────────────
   const filteredOrders = orders.filter(o =>
     (o.purchase_order_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -463,6 +626,12 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
+                          {o.status !== 'draft' && (
+                            <button title="View" onClick={() => handleViewOrder(o)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-eye"></i>
+                            </button>
+                          )}
                           {o.status === 'draft' && (
                             <button title="Approve PO" onClick={() => handleOrderStatus(o.id, 'approved')} style={{ fontSize: 11, padding: '2px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                               Approve
@@ -517,7 +686,11 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
 
             <div className={styles.popupHeader}>
               <div className={styles.headerLeft}>
-                <h2>{editingOrder ? `Edit Purchase Order ${editingOrder.purchase_order_no || ''}` : 'Create Purchase Order'}</h2>
+                <h2>{viewMode
+                  ? `View Purchase Order ${editingOrder?.purchase_order_no || ''}`
+                  : editingOrder
+                    ? `Edit Purchase Order ${editingOrder.purchase_order_no || ''}`
+                    : 'Create Purchase Order'}</h2>
               </div>
               <div className={styles.headerRight}>
                 <button className={styles.closeBtn} onClick={handleFormClose}>
@@ -540,9 +713,11 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                             placeholder="Search or select vendor"
                             value={vendorSearchText}
                             onChange={handleVendorInputChange}
-                            onFocus={() => setShowVendorDropdown(true)}
+                            onFocus={() => !viewMode && setShowVendorDropdown(true)}
+                            readOnly={viewMode}
+                            style={viewMode ? { backgroundColor: '#f5f5f5', cursor: 'default' } : {}}
                           />
-                          {showVendorDropdown && (
+                          {!viewMode && showVendorDropdown && (
                             <div className={styles.autocompleteDropdown}>
                               <div className={styles.autocompleteOption + ' ' + styles.addNewOption} onClick={handleAddNewVendor}>
                                 <i className="fas fa-plus"></i> Add New
@@ -564,11 +739,11 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                       </div>
                       <div className={styles.formGroup}>
                         <label>Vendor Address</label>
-                        <textarea className={styles.formControlStandard} placeholder="Address will populate automatically" value={vendorAddress} onChange={(e) => setVendorAddress(e.target.value)} rows="3" />
+                        <textarea className={styles.formControlStandard} placeholder="Address will populate automatically" value={vendorAddress} onChange={(e) => setVendorAddress(e.target.value)} rows="3" readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Ref. No.</label>
-                        <input type="text" className={styles.formControlStandard} placeholder="REF-12345" value={refNumber} onChange={(e) => setRefNumber(e.target.value)} />
+                        <input type="text" className={styles.formControlStandard} placeholder="REF-12345" value={refNumber} onChange={(e) => setRefNumber(e.target.value)} readOnly={viewMode} />
                       </div>
                     </div>
 
@@ -579,15 +754,15 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                       </div>
                       <div className={styles.formGroup}>
                         <label>Date</label>
-                        <input type="date" className={styles.formControlStandard} value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={orderDate} onChange={(e) => setOrderDate(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Expected Delivery</label>
-                        <input type="date" className={styles.formControlStandard} value={expectedDeliveryDate} onChange={(e) => setExpectedDeliveryDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={expectedDeliveryDate} onChange={(e) => setExpectedDeliveryDate(e.target.value)} readOnly={viewMode} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>Due Date</label>
-                        <input type="date" className={styles.formControlStandard} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                        <input type="date" className={styles.formControlStandard} value={dueDate} onChange={(e) => setDueDate(e.target.value)} readOnly={viewMode} />
                       </div>
                     </div>
                   </div>
@@ -620,8 +795,9 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                                   placeholder="SKU"
                                   value={item.sku}
                                   onChange={(e) => updateLineItem(item.id, 'sku', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('sku') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'sku' &&
                                   getProductSuggestions(item.id, 'sku').length > 0 && (
@@ -662,8 +838,9 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                                   placeholder="Item description"
                                   value={item.description}
                                   onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                  onFocus={() => { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') }}
+                                  onFocus={() => { if (!viewMode) { handleFieldFocus(item.id); setActiveItemId(item.id); setActiveField('description') } }}
                                   onBlur={() => setTimeout(() => { setActiveItemId(null); setActiveField(null) }, 150)}
+                                  readOnly={viewMode}
                                 />
                                 {activeItemId === item.id && activeField === 'description' &&
                                   getProductSuggestions(item.id, 'description').length > 0 && (
@@ -696,11 +873,11 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                                 )}
                               </div>
                             </td>
-                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} /></td>
+                            <td><input type="number" className={styles.formControlTable} value={item.quantity} min="1" step="1" onChange={(e) => updateLineItem(item.id, 'quantity', parseInt(e.target.value) || 0)} onFocus={() => handleFieldFocus(item.id)} readOnly={viewMode} /></td>
                             <td><input type="number" className={styles.formControlTable} value={item.rate} min="0" step="0.01" readOnly={isCustomerRole || viewMode} onChange={(e) => updateLineItem(item.id, 'rate', parseFloat(e.target.value) || 0)} onFocus={() => !(isCustomerRole || viewMode) && handleFieldFocus(item.id)} style={isCustomerRole || viewMode ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} /></td>
                             <td className={styles.amountCell}>{currencySymbol}{item.amount.toFixed(2)}</td>
                             <td className={styles.actionCell}>
-                              <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1}>
+                              <button className={styles.btnRemove} onClick={() => removeLineItem(item.id)} disabled={lineItems.length === 1 || viewMode}>
                                 <i className="fas fa-trash"></i>
                               </button>
                             </td>
@@ -714,7 +891,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                     <div className={styles.notesAttachmentsSection}>
                       <div className={styles.formGroup}>
                         <label>Notes</label>
-                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)}></textarea>
+                        <textarea className={styles.formControlStandard} rows="3" placeholder="Add any additional notes..." value={notes} onChange={(e) => setNotes(e.target.value)} readOnly={viewMode}></textarea>
                       </div>
                       <div className={styles.formGroup}>
                         <label>Attachments</label>
@@ -739,7 +916,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className={styles.totalLabel}>Tax:</span>
                             <div className={styles.taxSelectWrapper} style={{ position: 'relative', width: '200px' }} ref={taxDropdownRef}>
-                              <div className={styles.taxSelectButton} onClick={() => setShowTaxDropdown(true)}>
+                              <div className={styles.taxSelectButton} onClick={() => !viewMode && setShowTaxDropdown(true)}>
                                 <span>{selectedTax ? `${selectedTax.name} (${selectedTax.rate}%)` : 'Select tax'}</span>
                                 <i className="fas fa-chevron-down"></i>
                               </div>
@@ -773,14 +950,33 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
             <div className={styles.popupFooter}>
               <div className={styles.footerLeft}>
                 {error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
-                <button className={styles.btnCancel} onClick={handleFormClose}>Cancel</button>
+                <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
-              <div className={styles.footerRight}>
-                <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
-                  <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
-                  {saving ? 'Saving...' : editingOrder ? 'Update' : 'Save'}
-                </button>
-              </div>
+              {!viewMode ? (
+                <div className={styles.footerRight}>
+                  {user?.role === 'admin' && (
+                    <button
+                      onClick={handlePrint}
+                      style={{ marginRight: 8, padding: '8px 18px', background: '#6b7280', color: '#fff',
+                               border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                               display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      title="Print / Save as PDF"
+                    >
+                      <i className="fas fa-print"></i> Print
+                    </button>
+                  )}
+                  <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
+                    <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
+                    {saving ? 'Saving...' : editingOrder ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              ) : user?.role === 'admin' && (
+                <div className={styles.footerRight}>
+                  <button onClick={handlePrint} style={{ padding: '8px 18px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Print / Save as PDF">
+                    <i className="fas fa-print"></i> Print
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

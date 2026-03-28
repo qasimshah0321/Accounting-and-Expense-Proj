@@ -20,7 +20,7 @@ const CUSTOMER_FLOW = [
     icon: 'fa-clipboard-list',
     title: 'Sales Order',
     desc: 'Confirm the customer order once quote is accepted',
-    menu: 'Sale Order',
+    menu: 'Sales Order',
     color: '#7c3aed',
     bg: '#f5f3ff',
     border: '#ddd6fe',
@@ -98,6 +98,9 @@ const MASTER_DATA = [
   { icon: 'fa-percent', label: 'Tax Configuration', menu: 'Tax', color: '#d97706' },
   { icon: 'fa-shipping-fast', label: 'Ship Via', menu: 'Ship Via', color: '#16a34a' },
   { icon: 'fa-redo-alt', label: 'Recurring Docs', menu: 'Recurring', color: '#f59e0b' },
+  { icon: 'fa-bolt', label: 'Quick Order', menu: 'Quick Order', color: '#f59e0b' },
+  { icon: 'fa-users-cog', label: 'Users & Roles', menu: 'Users & Roles', color: '#64748b' },
+  { icon: 'fa-shield-alt', label: 'Role Permissions', menu: 'Role Permissions', color: '#64748b' },
   { icon: 'fa-building', label: 'Company Settings', menu: 'Company Settings', color: '#64748b' },
 ]
 

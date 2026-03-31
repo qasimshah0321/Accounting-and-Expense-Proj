@@ -213,9 +213,11 @@ export default function Header({ onMenuToggle, onLogout, user, companyName, onOp
                 <div className={styles.dropdownUserName}>{user?.name || 'User'}</div>
                 <div className={styles.dropdownUserEmail}>{user?.email || ''}</div>
               </div>
-              <button className={styles.dropdownItem} onClick={() => { onOpenSettings?.(); setShowUserMenu(false) }}>
-                <i className="fas fa-cog" /> Company Settings
-              </button>
+              {user?.role !== 'customer' && (
+                <button className={styles.dropdownItem} onClick={() => { onOpenSettings?.(); setShowUserMenu(false) }}>
+                  <i className="fas fa-cog" /> Company Settings
+                </button>
+              )}
               <button className={`${styles.dropdownItem} ${styles.dropdownSignOut}`} onClick={() => { setShowUserMenu(false); onLogout?.() }}>
                 <i className="fas fa-sign-out-alt" /> Sign Out
               </button>

@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "ZeroPoint Accounting",
+    "slug": "zeropoint",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a237e"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.zeropoint.accounting"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a237e"
+      },
+      "package": "com.zeropoint.accounting"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "qasimshah0321s-organization",
+    "extra": {
+      "eas": {
+        "projectId": "d1e978b5-e250-47b0-acf8-2c50ed4be5d7"
+      }
+    }
+  }
+}

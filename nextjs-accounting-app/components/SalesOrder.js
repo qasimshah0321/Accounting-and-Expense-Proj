@@ -75,6 +75,33 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
     } catch {}
   }, [])
 
+  // ─── Auto-refresh for customer role ──────────────────────────────────────
+  // 1) Listen for service-worker messages (instant update when push arrives)
+  // 2) Poll every 30 s as fallback when push is not enabled
+  useEffect(() => {
+    if (!isOpen || user?.role !== 'customer' || showForm) return
+
+    // SW message listener — fires instantly when admin changes status
+    const onSwMessage = (event) => {
+      if (event.data?.type === 'SALES_ORDER_UPDATE') {
+        loadOrders()
+      }
+    }
+    if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', onSwMessage)
+    }
+
+    // Polling fallback — re-fetch every 30 s
+    const interval = setInterval(loadOrders, 30000)
+
+    return () => {
+      clearInterval(interval)
+      if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+        navigator.serviceWorker.removeEventListener('message', onSwMessage)
+      }
+    }
+  }, [isOpen, user?.role, showForm, loadOrders])
+
   useEffect(() => {
     if (isOpen) {
       loadOrders()
@@ -732,13 +759,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
   return (
     <>
       {/* ── Sales Order List View ─────────────────────────────────────────── */}
-      <div
-        className={styles.invoiceListOverlay}
-        style={isCustomerRole ? {
-          left: sidebarCollapsed ? '70px' : 'var(--sidebar-width)',
-          top: 'var(--header-height)'
-        } : {}}
-      >
+      <div className={styles.invoiceListOverlay}>
         <div className={styles.invoiceListContainer}>
 
           <div className={styles.listHeader}>
@@ -749,9 +770,11 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
               <button className={styles.btnNewInvoice} onClick={handleNewOrder}>
                 <i className="fas fa-plus"></i> {isCustomerRole ? 'Create Order' : 'New Sales Order'}
               </button>
-              <button className={styles.closeBtn} onClick={onClose}>
-                <i className="fas fa-times"></i>
-              </button>
+              {!isCustomerRole && (
+                <button className={styles.closeBtn} onClick={onClose}>
+                  <i className="fas fa-times"></i>
+                </button>
+              )}
             </div>
           </div>
 

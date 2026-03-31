@@ -33,4 +33,11 @@ export const config = {
     privateKey: process.env.VAPID_PRIVATE_KEY || '',
     email: process.env.VAPID_EMAIL || 'mailto:admin@candydada.com',
   },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'AccountPro <noreply@candydada.com>',
+  },
 };

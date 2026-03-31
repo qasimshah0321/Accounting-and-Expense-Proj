@@ -1,0 +1,33 @@
+# Exclude heavy build caches and node_modules from EAS archive
+# These are not needed for the mobile build
+
+# Next.js build cache (488MB+)
+nextjs-accounting-app/.next/
+nextjs-accounting-app/node_modules/
+
+# Backend build artifacts
+backend/node_modules/
+backend/dist/
+
+# Mobile node_modules (EAS installs fresh on build server)
+mobile/node_modules/
+
+# Test and dev files
+playwright-tests/
+check_db.py
+deploy.py
+deploy_frontend.py
+flow_*.py
+flow_*.js
+flow_*.sh
+insert_products.sql
+backend-architecture.md
+INSTALLATION.md
+
+# Documentation screenshots (root-level only, not assets/)
+customer.png
+dashboardcharts.png
+EasyAccount.png
+invoice-bottom-section.png
+Invoice-popup.png
+invoice-upper-section.png

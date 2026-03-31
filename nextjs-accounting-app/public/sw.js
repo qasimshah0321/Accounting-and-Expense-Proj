@@ -24,6 +24,15 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'AccountPro', options)
   )
+
+  // Notify open pages so they can refresh the order list immediately
+  if (data.data?.type === 'sales_order') {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      windowClients.forEach((client) => {
+        client.postMessage({ type: 'SALES_ORDER_UPDATE', data: data.data })
+      })
+    })
+  }
 })
 
 self.addEventListener('notificationclick', (event) => {

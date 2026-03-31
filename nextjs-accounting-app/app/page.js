@@ -268,18 +268,22 @@ export default function Home() {
       />
 
       <div className={styles.mainContainer}>
-        <Sidebar
-          isOpen={isSidebarOpen}
-          isCollapsed={isSidebarCollapsed}
-          activeMenu={activeMenu}
-          onMenuClick={handleMenuClick}
-          onCreateClick={() => setIsCreateMenuOpen(true)}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          permittedMenus={permittedMenus}
-          userRole={user?.role}
-        />
+        {user?.role !== 'customer' && (
+          <Sidebar
+            isOpen={isSidebarOpen}
+            isCollapsed={isSidebarCollapsed}
+            activeMenu={activeMenu}
+            onMenuClick={handleMenuClick}
+            onCreateClick={() => setIsCreateMenuOpen(true)}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            permittedMenus={permittedMenus}
+            userRole={user?.role}
+          />
+        )}
 
-        <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}>
+        <main className={`${styles.mainContent} ${isSidebarCollapsed ? styles.collapsed : ''}`}
+          style={user?.role === 'customer' ? { marginLeft: 0 } : {}}
+        >
 
           {/* ── All panels open inside the main area ── */}
 

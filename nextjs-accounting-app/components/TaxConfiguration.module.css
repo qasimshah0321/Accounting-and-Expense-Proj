@@ -7,22 +7,6 @@
   bottom: 0;
   background-color: var(--white);
   z-index: 3000;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.taxConfigContainer {
-  width: 100%;
-  height: 100%;
-  background-color: var(--white);
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
@@ -31,12 +15,20 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.taxConfigContainer {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Header */
@@ -117,6 +109,7 @@
 
 .searchWrapper {
   position: relative;
+  flex: 1;
   max-width: 500px;
 }
 

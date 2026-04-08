@@ -57,11 +57,13 @@ export const getCustomerById = async (companyId: string, customerId: string) => 
 };
 
 export const createCustomer = async (companyId: string, userId: string, data: Record<string, unknown>) => {
-  const [countRows] = await pool.query(
-    'SELECT COUNT(*) as count FROM customers WHERE company_id = ?', [companyId]
+  // Use MAX(customer_no) to avoid conflicts with soft-deleted records
+  const [maxRows] = await pool.query(
+    "SELECT COALESCE(MAX(CAST(SUBSTRING(customer_no, 6) AS UNSIGNED)), 0) + 1 AS next_num FROM customers WHERE company_id = ?",
+    [companyId]
   );
-  const count = parseInt((countRows as any[])[0].count, 10) + 1;
-  const customerNo = `CUST-${String(count).padStart(4, '0')}`;
+  const nextNum = parseInt((maxRows as any[])[0].next_num, 10);
+  const customerNo = `CUST-${String(nextNum).padStart(4, '0')}`;
 
   await pool.query(
     `INSERT INTO customers (

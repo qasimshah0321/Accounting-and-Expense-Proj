@@ -63,3 +63,48 @@ export const unsubscribe = async (req: AuthRequest, res: Response, next: NextFun
     sendSuccess(res, null, 'Push subscription removed');
   } catch (err) { next(err); }
 };
+
+/**
+ * POST /api/v1/push/expo-subscribe
+ * Body: { expo_push_token: 'ExponentPushToken[...]' }
+ * Saves (or updates) an Expo push token for the authenticated user.
+ */
+export const expoSubscribe = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { expo_push_token } = req.body;
+    if (!expo_push_token) throw new ValidationError('expo_push_token is required');
+
+    const companyId = getCompanyId(req);
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    let linkedCustomerId: string | null = null;
+    if (userRole === 'customer') {
+      const [mapRes] = await pool.query(
+        'SELECT customer_id FROM user_customer_map WHERE user_id = ? AND company_id = ?',
+        [userId, companyId]
+      );
+      if ((mapRes as any[]).length > 0) linkedCustomerId = (mapRes as any[])[0].customer_id;
+    }
+
+    // Upsert: if a row for this user+token already exists update it, otherwise insert
+    const [existing] = await pool.query(
+      'SELECT id FROM push_subscriptions WHERE user_id=? AND expo_push_token=?',
+      [userId, expo_push_token]
+    );
+    if ((existing as any[]).length === 0) {
+      await pool.query(
+        `INSERT INTO push_subscriptions (id, company_id, user_id, user_role, linked_customer_id, expo_push_token, endpoint, p256dh, auth)
+         VALUES (UUID(), ?, ?, ?, ?, ?, '', '', '')`,
+        [companyId, userId, userRole, linkedCustomerId, expo_push_token]
+      );
+    } else {
+      await pool.query(
+        'UPDATE push_subscriptions SET expo_push_token=?, updated_at=NOW() WHERE user_id=? AND expo_push_token=?',
+        [expo_push_token, userId, expo_push_token]
+      );
+    }
+
+    sendSuccess(res, null, 'Expo push token saved', 201);
+  } catch (err) { next(err); }
+};

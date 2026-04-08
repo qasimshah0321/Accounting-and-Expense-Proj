@@ -11,6 +11,8 @@ const lineItemSchema = z.object({
   tax_id: z.string().uuid().optional().nullable(),
   tax_rate: z.number().min(0).default(0),
   tax_amount: z.number().min(0).default(0),
+  sales_order_line_item_id: z.string().uuid().optional().nullable(),
+  dn_line_item_id: z.string().uuid().optional().nullable(),
 });
 
 export const createInvoiceSchema = z.object({

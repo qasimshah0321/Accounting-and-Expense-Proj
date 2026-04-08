@@ -353,6 +353,45 @@ export const deleteEstimate = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+export const updateEstimateStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/estimates/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, ...(reason ? { reason } : {}) }),
+  }).then(handle)
+
+export const convertEstimateToSO = (id, data) =>
+  fetch(`${API_BASE}/estimates/${id}/convert-to-sales-order`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+// ─── RFQs ────────────────────────────────────────────────────────────────────
+export const getNextRFQNumber = () =>
+  fetch(`${API_BASE}/rfqs/next-number`, { headers: buildHeaders() }).then(handle)
+
+export const getRFQs = () =>
+  fetch(`${API_BASE}/rfqs?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getRFQ = (id) =>
+  fetch(`${API_BASE}/rfqs/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createRFQ = (data) =>
+  fetch(`${API_BASE}/rfqs`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const updateRFQ = (id, data) =>
+  fetch(`${API_BASE}/rfqs/${id}`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const deleteRFQ = (id) =>
+  fetch(`${API_BASE}/rfqs/${id}`, { method: 'DELETE', headers: buildHeaders() }).then(handle)
+
+export const updateRFQStatus = (id, status) =>
+  fetch(`${API_BASE}/rfqs/${id}/status`, { method: 'PATCH', headers: buildHeaders(), body: JSON.stringify({ status }) }).then(handle)
+
+export const convertRFQToPO = (id, data) =>
+  fetch(`${API_BASE}/rfqs/${id}/convert-to-po`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
 // ─── Delivery Notes ──────────────────────────────────────────────────────────
 export const getNextDeliveryNoteNumber = () =>
   fetch(`${API_BASE}/delivery-notes/next-number`, { headers: buildHeaders() }).then(handle)
@@ -500,6 +539,13 @@ export const getCustomerPayment = (id) =>
 
 export const createCustomerPayment = (data) =>
   fetch(`${API_BASE}/customer-payments`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const allocateCustomerPayment = (id, data) =>
+  fetch(`${API_BASE}/customer-payments/${id}/allocate`, {
     method: 'POST',
     headers: buildHeaders(),
     body: JSON.stringify(data),

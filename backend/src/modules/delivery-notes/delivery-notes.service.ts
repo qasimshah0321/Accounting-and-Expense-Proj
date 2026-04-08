@@ -7,10 +7,73 @@ import { createAuditLog, createStatusHistory } from '../../services/auditService
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ['ready_to_ship', 'cancelled'],
   ready_to_ship: ['shipped', 'draft', 'cancelled'],
-  shipped: ['in_transit', 'cancelled'],
-  in_transit: ['delivered'],
-  delivered: [],
+  shipped: ['in_transit', 'cancelled', 'partially_invoiced', 'invoiced'],
+  in_transit: ['delivered', 'partially_invoiced', 'invoiced'],
+  delivered: ['partially_invoiced', 'invoiced'],
+  partially_invoiced: ['invoiced'],
+  invoiced: [],
+  accepted: [],
   cancelled: [],
+};
+
+/** Recalculate invoiced_qty on DN line items and update DN status (partially_invoiced / invoiced). */
+export const recalcDNInvoicedQty = async (dnId: string, client: any) => {
+  // Reset all invoiced_qty for this DN
+  await client.query('UPDATE delivery_note_line_items SET invoiced_qty = 0 WHERE delivery_note_id = ?', [dnId]);
+
+  // Sum quantities from all active invoice line items linked to this DN
+  const [grouped] = await client.query(
+    `SELECT ili.dn_line_item_id, SUM(ili.quantity) AS total_invoiced
+     FROM invoice_line_items ili
+     JOIN invoices inv ON inv.id = ili.invoice_id
+     WHERE inv.delivery_note_id = ?
+       AND inv.status != 'cancelled'
+       AND inv.deleted_at IS NULL
+       AND ili.dn_line_item_id IS NOT NULL
+     GROUP BY ili.dn_line_item_id`,
+    [dnId]
+  );
+
+  for (const row of (grouped as any[])) {
+    await client.query(
+      'UPDATE delivery_note_line_items SET invoiced_qty = ? WHERE id = ?',
+      [row.total_invoiced, row.dn_line_item_id]
+    );
+  }
+
+  // Read updated line items to determine DN status
+  const [lineItems] = await client.query(
+    'SELECT shipped_qty, invoiced_qty FROM delivery_note_line_items WHERE delivery_note_id = ?',
+    [dnId]
+  );
+  const items = lineItems as any[];
+  const shippedItems = items.filter(li => parseFloat(li.shipped_qty) > 0);
+  const anyInvoiced = items.some(li => parseFloat(li.invoiced_qty) > 0);
+  const allFullyInvoiced = shippedItems.length > 0 &&
+    shippedItems.every(li => parseFloat(li.invoiced_qty) >= parseFloat(li.shipped_qty));
+
+  const [dnRows] = await client.query('SELECT status FROM delivery_notes WHERE id = ?', [dnId]);
+  const currentStatus = (dnRows as any[])[0]?.status;
+  const invoicableStatuses = ['shipped', 'in_transit', 'delivered', 'accepted', 'partially_invoiced', 'invoiced'];
+
+  if (!invoicableStatuses.includes(currentStatus)) return;
+
+  let newStatus: string;
+  if (allFullyInvoiced) {
+    newStatus = 'invoiced';
+  } else if (anyInvoiced) {
+    newStatus = 'partially_invoiced';
+  } else {
+    // All invoices removed — revert to shipped (last physical state)
+    newStatus = 'shipped';
+  }
+
+  if (newStatus !== currentStatus) {
+    await client.query(
+      'UPDATE delivery_notes SET status = ?, invoiced = ?, updated_at = NOW() WHERE id = ?',
+      [newStatus, allFullyInvoiced ? 1 : 0, dnId]
+    );
+  }
 };
 
 export const peekNextDeliveryNoteNumber = async (companyId: string): Promise<string> => {
@@ -55,6 +118,39 @@ export const getDeliveryNoteById = async (companyId: string, dnId: string) => {
   return { ...(rows as any[])[0], line_items: items as any[] };
 };
 
+const recalcSODeliveredQty = async (soId: string, client: any) => {
+  // Reset all delivered_qty for this SO's line items to 0
+  await client.query('UPDATE sales_order_line_items SET delivered_qty = 0 WHERE sales_order_id = ?', [soId]);
+
+  // Sum shipped_qty from all active (non-cancelled, non-deleted) DN line items grouped by SO line item.
+  // Using shipped_qty (not ordered_qty) so backordered quantities remain available for future DNs.
+  const [grouped] = await client.query(
+    `SELECT dnli.sales_order_line_item_id, SUM(dnli.shipped_qty) AS total_delivered
+     FROM delivery_note_line_items dnli
+     JOIN delivery_notes dn ON dn.id = dnli.delivery_note_id
+     WHERE dn.sales_order_id = ? AND dn.deleted_at IS NULL AND dn.status != 'cancelled'
+       AND dnli.sales_order_line_item_id IS NOT NULL
+     GROUP BY dnli.sales_order_line_item_id`,
+    [soId]
+  );
+
+  for (const row of (grouped as any[])) {
+    await client.query(
+      'UPDATE sales_order_line_items SET delivered_qty = ? WHERE id = ?',
+      [row.total_delivered, row.sales_order_line_item_id]
+    );
+  }
+
+  // Update SO-level totals
+  await client.query(
+    `UPDATE sales_orders
+     SET total_delivered_qty = (SELECT COALESCE(SUM(delivered_qty), 0) FROM sales_order_line_items WHERE sales_order_id = sales_orders.id),
+         total_pending_qty   = (SELECT COALESCE(SUM(GREATEST(0, ordered_qty - delivered_qty)), 0) FROM sales_order_line_items WHERE sales_order_id = sales_orders.id)
+     WHERE id = ?`,
+    [soId]
+  );
+};
+
 export const createDeliveryNote = async (companyId: string, userId: string, userName: string, data: any) => {
   return withTransaction(async (client) => {
     const [custRes] = await client.query('SELECT name FROM customers WHERE id=? AND company_id=? AND deleted_at IS NULL', [data.customer_id, companyId]);
@@ -81,9 +177,14 @@ export const createDeliveryNote = async (companyId: string, userId: string, user
     for (let i = 0; i < data.line_items.length; i++) {
       const li = data.line_items[i];
       await client.query(
-        `INSERT INTO delivery_note_line_items (delivery_note_id,line_number,product_id,sku,description,ordered_qty,shipped_qty,unit_of_measure,stock_location) VALUES (?,?,?,?,?,?,?,?,?)`,
-        [dn.id, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.shipped_qty, li.unit_of_measure || 'pcs', li.stock_location || null]
+        `INSERT INTO delivery_note_line_items (delivery_note_id,line_number,product_id,sku,description,ordered_qty,shipped_qty,unit_of_measure,stock_location,sales_order_line_item_id) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        [dn.id, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.shipped_qty, li.unit_of_measure || 'pcs', li.stock_location || null, li.sales_order_line_item_id || null]
       );
+    }
+
+    // Update delivered quantities on the linked SO
+    if (data.sales_order_id) {
+      await recalcSODeliveredQty(data.sales_order_id, client);
     }
 
     const [dnItems] = await client.query('SELECT * FROM delivery_note_line_items WHERE delivery_note_id=? ORDER BY line_number', [dn.id]);
@@ -113,8 +214,8 @@ export const updateDeliveryNote = async (companyId: string, dnId: string, userId
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
         await client.query(
-          `INSERT INTO delivery_note_line_items (delivery_note_id,line_number,product_id,sku,description,ordered_qty,shipped_qty,unit_of_measure,stock_location) VALUES (?,?,?,?,?,?,?,?,?)`,
-          [dnId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.shipped_qty, li.unit_of_measure || 'pcs', li.stock_location || null]
+          `INSERT INTO delivery_note_line_items (delivery_note_id,line_number,product_id,sku,description,ordered_qty,shipped_qty,unit_of_measure,stock_location,sales_order_line_item_id) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+          [dnId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.shipped_qty, li.unit_of_measure || 'pcs', li.stock_location || null, li.sales_order_line_item_id || null]
         );
       }
       await client.query(
@@ -151,6 +252,13 @@ export const updateDeliveryNote = async (companyId: string, dnId: string, userId
         dnId,
       ]
     );
+
+    // Recalc delivered qty on linked SO if it exists
+    const soId = data.sales_order_id !== undefined ? data.sales_order_id : dn.sales_order_id;
+    if (soId) {
+      await recalcSODeliveredQty(soId, client);
+    }
+
     return getDeliveryNoteById(companyId, dnId);
   });
 };
@@ -159,6 +267,15 @@ export const deleteDeliveryNote = async (companyId: string, dnId: string) => {
   const dn = await getDeliveryNoteById(companyId, dnId);
   if (!['draft', 'ready_to_ship'].includes(dn.status)) throw new ConflictError('Cannot delete a delivery note that has been shipped');
   await pool.query('UPDATE delivery_notes SET deleted_at=NOW() WHERE id=? AND company_id=?', [dnId, companyId]);
+  // Recalc SO delivered qty after deletion
+  if (dn.sales_order_id) {
+    const conn = await (pool as any).getConnection();
+    try {
+      await recalcSODeliveredQty(dn.sales_order_id, conn);
+    } finally {
+      conn.release();
+    }
+  }
 };
 
 export const updateStatus = async (companyId: string, dnId: string, userId: string, userName: string, newStatus: string, reason?: string) => {
@@ -231,6 +348,11 @@ export const shipDeliveryNote = async (companyId: string, dnId: string, userId: 
     await client.query('UPDATE delivery_notes SET status=\'shipped\',shipment_date=?,updated_at=NOW(),updated_by=? WHERE id=?', [shipmentDate, userId, dnId]);
     await createStatusHistory({ company_id: companyId, document_type: 'delivery_note', document_id: dnId, document_no: dn.delivery_note_no, from_status: dn.status, to_status: 'shipped', changed_by: userId, changed_by_name: userName }, client);
 
+    // Recalc SO delivered qty now that shipped_qty values are confirmed
+    if (dn.sales_order_id) {
+      await recalcSODeliveredQty(dn.sales_order_id, client);
+    }
+
     return { delivery_note: { ...dn, status: 'shipped', shipment_date: shipmentDate }, inventory_transactions: inventoryTransactions, product_stock_updated: stockUpdates };
   });
 };
@@ -251,8 +373,9 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
   // Validate before allocating a sequence number
   const [dnCheck] = await pool.query('SELECT status, invoiced FROM delivery_notes WHERE id=? AND company_id=? AND deleted_at IS NULL', [dnId, companyId]);
   if (!(dnCheck as any[]).length) throw new NotFoundError('Delivery Note');
-  if (!['shipped', 'delivered'].includes((dnCheck as any[])[0].status)) throw new ConflictError('Delivery Note must be shipped or delivered to convert to invoice');
-  if ((dnCheck as any[])[0].invoiced) throw new ConflictError('Delivery Note already invoiced');
+  const dnCheckStatus = (dnCheck as any[])[0].status;
+  if (!['shipped', 'in_transit', 'delivered', 'partially_invoiced'].includes(dnCheckStatus)) throw new ConflictError(`Delivery Note must be shipped or delivered to convert to invoice (current: ${dnCheckStatus})`);
+  if ((dnCheck as any[])[0].invoiced) throw new ConflictError('Delivery Note already fully invoiced');
 
   // Generate the invoice number OUTSIDE the transaction
   const invNo = await generateDocumentNumber(companyId, 'invoice');
@@ -261,8 +384,8 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
     const [dnRes] = await client.query('SELECT * FROM delivery_notes WHERE id=? AND company_id=? AND deleted_at IS NULL', [dnId, companyId]);
     if (!(dnRes as any[]).length) throw new NotFoundError('Delivery Note');
     const dn = (dnRes as any[])[0];
-    if (!['shipped', 'delivered'].includes(dn.status)) throw new ConflictError('Delivery Note must be shipped or delivered to convert to invoice');
-    if (dn.invoiced) throw new ConflictError('Delivery Note already invoiced');
+    if (!['shipped', 'in_transit', 'delivered', 'partially_invoiced'].includes(dn.status)) throw new ConflictError(`Delivery Note must be shipped or delivered to convert to invoice (current: ${dn.status})`);
+    if (dn.invoiced) throw new ConflictError('Delivery Note already fully invoiced');
 
     const [itemsRes] = await client.query('SELECT * FROM delivery_note_line_items WHERE delivery_note_id=? ORDER BY line_number', [dnId]);
     const items = itemsRes as any[];
@@ -341,14 +464,19 @@ export const convertToInvoice = async (companyId: string, dnId: string, userId: 
     for (let i = 0; i < invItems.length; i++) {
       const li = invItems[i];
       await client.query(
-        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description || '', parseFloat(li.shipped_qty) || 1, li.unit_of_measure || 'pcs', li.rate, 0, li.tax_id || taxId, li.tax_rate, li.tax_amount]
+        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount,dn_line_item_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description || '', parseFloat(li.shipped_qty) || 1, li.unit_of_measure || 'pcs', li.rate, 0, li.tax_id || taxId, li.tax_rate, li.tax_amount, li.id || null]
       );
     }
 
-    await client.query('UPDATE delivery_notes SET invoiced=true,invoice_id=?,status=\'accepted\',updated_at=NOW() WHERE id=?', [inv.id, dnId]);
+    // Store invoice_id link and then recalculate DN invoiced status
+    await client.query('UPDATE delivery_notes SET invoice_id=?,updated_at=NOW() WHERE id=?', [inv.id, dnId]);
+    await recalcDNInvoicedQty(dnId, client);
+
     const [invLineItems] = await client.query('SELECT * FROM invoice_line_items WHERE invoice_id=? ORDER BY line_number', [inv.id]);
-    return { invoice: { ...inv, line_items: invLineItems as any[] }, delivery_note_updated: { id: dnId, invoiced: true, invoice_id: inv.id, status: 'accepted' } };
+    const [updatedDn] = await client.query('SELECT status, invoiced FROM delivery_notes WHERE id=?', [dnId]);
+    const dnResult = (updatedDn as any[])[0];
+    return { invoice: { ...inv, line_items: invLineItems as any[] }, delivery_note_updated: { id: dnId, invoiced: dnResult.invoiced, invoice_id: inv.id, status: dnResult.status } };
   });
 };
 

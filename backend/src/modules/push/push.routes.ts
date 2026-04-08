@@ -11,5 +11,6 @@ router.get('/vapid-public-key', ctrl.getVapidPublicKey);
 // Subscribe/unsubscribe require authentication
 router.post('/subscribe', authenticate, tenantIsolation, ctrl.subscribe);
 router.delete('/unsubscribe', authenticate, tenantIsolation, ctrl.unsubscribe);
+router.post('/expo-subscribe', authenticate, tenantIsolation, ctrl.expoSubscribe);
 
 export default router;

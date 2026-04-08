@@ -26,9 +26,18 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // ─── View modal state ─────────────────────────────────────────────────────
+  const [viewingPayment, setViewingPayment] = useState(null)
+  const [viewInvoices, setViewInvoices] = useState([])
+  const [viewLoadingInvoices, setViewLoadingInvoices] = useState(false)
+  const [allocateInvoiceId, setAllocateInvoiceId] = useState(null)
+  const [allocateAmount, setAllocateAmount] = useState('')
+  const [allocating, setAllocating] = useState(false)
+  const [allocateError, setAllocateError] = useState('')
+
   // ─── Outstanding invoices for allocation ──────────────────────────────────
   const [outstandingInvoices, setOutstandingInvoices] = useState([])
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null)
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([])
   const [loadingInvoices, setLoadingInvoices] = useState(false)
 
   const autocompleteRef = useRef(null)
@@ -77,6 +86,7 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
       }).finally(() => setLoadingInvoices(false))
     } else {
       setOutstandingInvoices([])
+      setSelectedInvoiceIds([])
     }
   }, [selectedCustomerId])
 
@@ -103,7 +113,7 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
     setReferenceNo('')
     setDepositToAccount('')
     setNotes('')
-    setSelectedInvoiceId(null)
+    setSelectedInvoiceIds([])
     setOutstandingInvoices([])
     setError('')
   }
@@ -125,6 +135,59 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
       setPayments(prev => prev.filter(p => p.id !== id))
     } catch (err) {
       setListError('Delete failed: ' + err.message)
+    }
+  }
+
+  const handleViewPayment = async (payment) => {
+    setViewingPayment(payment)
+    setAllocateInvoiceId(null)
+    setAllocateAmount('')
+    setAllocateError('')
+    if (payment.allocation_status !== 'applied') {
+      setViewLoadingInvoices(true)
+      Promise.all([
+        api.getOutstandingInvoices(payment.customer_id),
+        api.getPartiallyPaidInvoices(payment.customer_id),
+      ]).then(([unpaidRes, partialRes]) => {
+        const unpaid = unpaidRes.data?.invoices || unpaidRes.invoices || []
+        const partial = partialRes.data?.invoices || partialRes.invoices || []
+        setViewInvoices([...unpaid, ...partial])
+      }).catch(() => setViewInvoices([]))
+      .finally(() => setViewLoadingInvoices(false))
+    } else {
+      setViewInvoices([])
+    }
+  }
+
+  const handleAllocate = async () => {
+    if (!allocateInvoiceId) { setAllocateError('Please select an invoice'); return }
+    const amt = parseFloat(allocateAmount)
+    if (!amt || amt <= 0) { setAllocateError('Enter a valid amount'); return }
+    const unallocated = parseFloat(viewingPayment.unallocated_amount)
+    if (amt > unallocated) { setAllocateError(`Cannot exceed unapplied amount (${formatCurrency(unallocated)})`); return }
+    setAllocating(true)
+    setAllocateError('')
+    try {
+      await api.allocateCustomerPayment(viewingPayment.id, { invoice_id: allocateInvoiceId, amount: amt })
+      // Refresh both the list and the viewing payment
+      await loadPayments()
+      const updated = await api.getCustomerPayment(viewingPayment.id)
+      const updatedPmt = updated.data || updated
+      setViewingPayment(prev => ({ ...prev, unallocated_amount: updatedPmt.unallocated_amount, amount: updatedPmt.amount }))
+      setAllocateInvoiceId(null)
+      setAllocateAmount('')
+      // Refresh the invoice list
+      const [unpaidRes, partialRes] = await Promise.all([
+        api.getOutstandingInvoices(viewingPayment.customer_id),
+        api.getPartiallyPaidInvoices(viewingPayment.customer_id),
+      ])
+      const unpaid = unpaidRes.data?.invoices || unpaidRes.invoices || []
+      const partial = partialRes.data?.invoices || partialRes.invoices || []
+      setViewInvoices([...unpaid, ...partial])
+    } catch (err) {
+      setAllocateError(err.message)
+    } finally {
+      setAllocating(false)
     }
   }
 
@@ -163,7 +226,7 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
       reference_no: referenceNo || undefined,
       deposit_to_account: depositToAccount || undefined,
       notes: notes || undefined,
-      invoice_id: selectedInvoiceId || undefined,
+      invoice_ids: selectedInvoiceIds.length > 0 ? selectedInvoiceIds : undefined,
     }
     try {
       await api.createCustomerPayment(payload)
@@ -278,6 +341,9 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                       <td>{p.reference_no || '-'}</td>
                       <td>
                         <div className={styles.actionButtons}>
+                          <button className={styles.btnEdit} title="View" onClick={() => handleViewPayment(p)}>
+                            <i className="fas fa-eye"></i>
+                          </button>
                           <button className={styles.btnDelete} title="Delete" onClick={() => handleDeletePayment(p.id)}>
                             <i className="fas fa-trash"></i>
                           </button>
@@ -451,7 +517,14 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                         <table className={styles.itemsTable}>
                           <thead>
                             <tr>
-                              <th style={{ width: '40px' }}></th>
+                              <th style={{ width: '40px' }}>
+                                <input
+                                  type="checkbox"
+                                  title="Select all"
+                                  checked={selectedInvoiceIds.length === outstandingInvoices.length}
+                                  onChange={(e) => setSelectedInvoiceIds(e.target.checked ? outstandingInvoices.map(i => i.id) : [])}
+                                />
+                              </th>
                               <th>Invoice #</th>
                               <th>Date</th>
                               <th>Due Date</th>
@@ -461,24 +534,26 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                             </tr>
                           </thead>
                           <tbody>
-                            {outstandingInvoices.map((inv) => (
-                              <tr key={inv.id} style={selectedInvoiceId === inv.id ? { backgroundColor: '#eff6ff' } : {}}>
-                                <td>
-                                  <input
-                                    type="radio"
-                                    name="invoiceAlloc"
-                                    checked={selectedInvoiceId === inv.id}
-                                    onChange={() => setSelectedInvoiceId(inv.id)}
-                                  />
-                                </td>
-                                <td><strong>{inv.invoice_no}</strong></td>
-                                <td>{formatDate(inv.invoice_date)}</td>
-                                <td>{formatDate(inv.due_date)}</td>
-                                <td>{formatCurrency(inv.grand_total || inv.total_amount)}</td>
-                                <td>{formatCurrency(inv.amount_paid)}</td>
-                                <td style={{ fontWeight: 600, color: '#ef4444' }}>{formatCurrency(inv.amount_due)}</td>
-                              </tr>
-                            ))}
+                            {outstandingInvoices.map((inv) => {
+                              const isChecked = selectedInvoiceIds.includes(inv.id)
+                              return (
+                                <tr key={inv.id} style={{ cursor: 'pointer', ...(isChecked ? { backgroundColor: '#eff6ff' } : {}) }} onClick={() => setSelectedInvoiceIds(prev => isChecked ? prev.filter(id => id !== inv.id) : [...prev, inv.id])}>
+                                  <td onClick={e => e.stopPropagation()}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isChecked}
+                                      onChange={(e) => setSelectedInvoiceIds(prev => e.target.checked ? [...prev, inv.id] : prev.filter(id => id !== inv.id))}
+                                    />
+                                  </td>
+                                  <td><strong>{inv.invoice_no}</strong></td>
+                                  <td>{formatDate(inv.invoice_date)}</td>
+                                  <td>{formatDate(inv.due_date)}</td>
+                                  <td>{formatCurrency(inv.grand_total || inv.total_amount)}</td>
+                                  <td>{formatCurrency(inv.amount_paid)}</td>
+                                  <td style={{ fontWeight: 600, color: '#ef4444' }}>{formatCurrency(inv.amount_due)}</td>
+                                </tr>
+                              )
+                            })}
                           </tbody>
                         </table>
                       ) : (
@@ -487,34 +562,49 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                         </div>
                       )}
                     </div>
-                    {selectedInvoiceId && (() => {
-                      const selInv = outstandingInvoices.find(i => i.id === selectedInvoiceId)
+                    {selectedInvoiceIds.length > 0 && (() => {
                       const payAmt = parseFloat(amount) || 0
-                      const amtDue = parseFloat(selInv?.amount_due || 0)
-                      const willApply = Math.min(payAmt, amtDue)
-                      const leftOver = payAmt - willApply
+                      const totalDue = selectedInvoiceIds.reduce((sum, id) => {
+                        const inv = outstandingInvoices.find(i => i.id === id)
+                        return sum + parseFloat(inv?.amount_due || 0)
+                      }, 0)
+                      // Simulate allocation across selected invoices in order
+                      let remaining = payAmt
+                      let totalApplied = 0
+                      for (const id of selectedInvoiceIds) {
+                        if (remaining <= 0) break
+                        const inv = outstandingInvoices.find(i => i.id === id)
+                        const due = parseFloat(inv?.amount_due || 0)
+                        const apply = Math.min(remaining, due)
+                        totalApplied += apply
+                        remaining -= apply
+                      }
+                      const leftOver = payAmt - totalApplied
                       return (
-                        <div style={{ padding: '10px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+                        <div style={{ padding: '10px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+                          <span style={{ color: '#64748b' }}>
+                            {selectedInvoiceIds.length} invoice{selectedInvoiceIds.length > 1 ? 's' : ''} selected — Total due: {formatCurrency(totalDue)}
+                          </span>
                           {payAmt > 0 && (
                             <>
                               <span style={{ color: '#16a34a', fontWeight: 600 }}>
-                                Will apply: {formatCurrency(willApply)}
+                                Will apply: {formatCurrency(totalApplied)}
                               </span>
                               {leftOver > 0 && (
                                 <span style={{ color: '#d97706', fontWeight: 600 }}>
                                   Unapplied remainder: {formatCurrency(leftOver)}
                                 </span>
                               )}
-                              {leftOver === 0 && payAmt >= amtDue && (
-                                <span style={{ color: '#16a34a' }}>Invoice will be fully paid</span>
+                              {leftOver === 0 && payAmt >= totalDue && (
+                                <span style={{ color: '#16a34a' }}>All selected invoices will be fully paid</span>
                               )}
                             </>
                           )}
                           <button
                             style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '13px', marginLeft: 'auto' }}
-                            onClick={() => setSelectedInvoiceId(null)}
+                            onClick={() => setSelectedInvoiceIds([])}
                           >
-                            Clear selection (record as unapplied)
+                            Clear selection
                           </button>
                         </div>
                       )
@@ -536,6 +626,156 @@ export default function CustomerPayments({ isOpen, onClose, currencySymbol = '$'
                   <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
                   {saving ? 'Saving...' : 'Record Payment'}
                 </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── View Payment Modal ────────────────────────────────────────────── */}
+      {viewingPayment && (
+        <div className={styles.invoicePopupOverlay}>
+          <div className={styles.invoicePopup}>
+
+            <div className={styles.popupHeader}>
+              <div className={styles.headerLeft}>
+                <h2>Payment — {viewingPayment.payment_no}</h2>
+              </div>
+              <div className={styles.headerRight}>
+                <button className={styles.closeBtn} onClick={() => setViewingPayment(null)}>
+                  <i className="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.popupContent}>
+              <div className={styles.invoiceUpperSection}>
+                <div className={styles.sectionCard}>
+                  <div className={styles.invoiceHeaderRow}>
+                    <div className={styles.customerSection}>
+                      <div className={styles.formGroup}>
+                        <label>Customer</label>
+                        <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14 }}>{viewingPayment.customer_name || '-'}</div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Payment Method</label>
+                        <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14, textTransform: 'capitalize' }}>{(viewingPayment.payment_method || '-').replace(/_/g, ' ')}</div>
+                      </div>
+                      {viewingPayment.notes && (
+                        <div className={styles.formGroup}>
+                          <label>Notes</label>
+                          <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14 }}>{viewingPayment.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.invoiceDetailsColumn}>
+                      <div className={styles.formGroup}>
+                        <label>Payment Date</label>
+                        <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14 }}>{formatDate(viewingPayment.payment_date)}</div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Amount</label>
+                        <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14, fontWeight: 700 }}>{formatCurrency(viewingPayment.amount)}</div>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Unapplied Amount</label>
+                        <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14, fontWeight: 600, color: parseFloat(viewingPayment.unallocated_amount) > 0 ? '#d97706' : '#16a34a' }}>
+                          {formatCurrency(viewingPayment.unallocated_amount)}
+                        </div>
+                      </div>
+                      {viewingPayment.reference_no && (
+                        <div className={styles.formGroup}>
+                          <label>Reference No.</label>
+                          <div style={{ padding: '8px 12px', border: '1px solid var(--border-color)', borderRadius: 6, background: '#f9fafb', fontSize: 14 }}>{viewingPayment.reference_no}</div>
+                        </div>
+                      )}
+                      <div className={styles.formGroup}>
+                        <label>Status</label>
+                        <div style={{ padding: '8px 12px', fontSize: 14 }}>
+                          {viewingPayment.allocation_status === 'applied' && <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>Applied</span>}
+                          {viewingPayment.allocation_status === 'partial' && <span style={{ background: '#fef9c3', color: '#b45309', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>Partial</span>}
+                          {viewingPayment.allocation_status === 'unapplied' && <span style={{ background: '#fee2e2', color: '#dc2626', padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600 }}>Unapplied</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Apply to Invoice — shown when unapplied or partial */}
+              {viewingPayment.allocation_status !== 'applied' && parseFloat(viewingPayment.unallocated_amount) > 0 && (
+                <div className={styles.invoiceBottomSection}>
+                  <div className={styles.sectionCard}>
+                    <div className={styles.sectionHeader}>
+                      <h3>Apply to Invoice</h3>
+                    </div>
+                    {allocateError && (
+                      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 6, padding: '8px 14px', margin: '0 0 12px', fontSize: 13 }}>
+                        {allocateError}
+                      </div>
+                    )}
+                    <div className={styles.tableContainer}>
+                      {viewLoadingInvoices ? (
+                        <div className={styles.loadingState}><i className="fas fa-spinner fa-spin"></i><p>Loading invoices...</p></div>
+                      ) : viewInvoices.length > 0 ? (
+                        <table className={styles.itemsTable}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: 40 }}></th>
+                              <th>Invoice #</th>
+                              <th>Date</th>
+                              <th>Due</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {viewInvoices.map(inv => (
+                              <tr key={inv.id} style={{ cursor: 'pointer', ...(allocateInvoiceId === inv.id ? { backgroundColor: '#eff6ff' } : {}) }}
+                                onClick={() => { setAllocateInvoiceId(inv.id); setAllocateAmount(String(Math.min(parseFloat(viewingPayment.unallocated_amount), parseFloat(inv.amount_due)).toFixed(2))) }}>
+                                <td><input type="radio" readOnly checked={allocateInvoiceId === inv.id} /></td>
+                                <td><strong>{inv.invoice_no}</strong></td>
+                                <td>{formatDate(inv.invoice_date)}</td>
+                                <td style={{ fontWeight: 600, color: '#ef4444' }}>{formatCurrency(inv.amount_due)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className={styles.emptyState} style={{ padding: 20 }}><p>No outstanding invoices for this customer</p></div>
+                      )}
+                    </div>
+                    {allocateInvoiceId && (
+                      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', borderTop: '1px solid #e2e8f0' }}>
+                        <label style={{ fontSize: 13, fontWeight: 600 }}>Amount to apply:</label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          max={viewingPayment.unallocated_amount}
+                          value={allocateAmount}
+                          onChange={e => setAllocateAmount(e.target.value)}
+                          style={{ width: 120, padding: '6px 10px', border: '1px solid var(--border-color)', borderRadius: 6, fontSize: 14 }}
+                        />
+                        <button
+                          className={styles.btnSecondary}
+                          onClick={handleAllocate}
+                          disabled={allocating}
+                          style={{ marginLeft: 'auto' }}
+                        >
+                          <i className={allocating ? 'fas fa-spinner fa-spin' : 'fas fa-link'}></i>
+                          {allocating ? 'Applying...' : 'Apply Payment'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.popupFooter}>
+              <div className={styles.footerLeft}></div>
+              <div className={styles.footerRight}>
+                <button className={styles.btnCancel} onClick={() => setViewingPayment(null)}>Close</button>
               </div>
             </div>
 

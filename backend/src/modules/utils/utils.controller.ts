@@ -42,7 +42,7 @@ export const resetDocumentSequence = async (req: AuthRequest, res: Response, nex
 export const getCompanyInfo = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, phone, address, city, state, country, postal_code, tax_number, currency, timezone, created_at FROM companies WHERE id=?',
+      'SELECT id, name, email, phone, address, city, state, country, postal_code, tax_number, currency, timezone, dn_requirement, created_at FROM companies WHERE id=?',
       [getCompanyId(req)]
     );
     sendSuccess(res, (rows as any[])[0] || null, 'Company info retrieved');
@@ -52,7 +52,7 @@ export const getCompanyInfo = async (req: AuthRequest, res: Response, next: Next
 export const updateCompanyInfo = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const companyId = getCompanyId(req);
-    const allowed = ['name', 'email', 'phone', 'address', 'city', 'state', 'country', 'postal_code', 'tax_number', 'currency', 'timezone'];
+    const allowed = ['name', 'email', 'phone', 'address', 'city', 'state', 'country', 'postal_code', 'tax_number', 'currency', 'timezone', 'dn_requirement'];
     const fields = Object.keys(req.body).filter(k => allowed.includes(k));
     if (!fields.length) { sendSuccess(res, null, 'No changes'); return; }
     const setClause = fields.map(f => `${f}=?`).join(', ');
@@ -61,7 +61,7 @@ export const updateCompanyInfo = async (req: AuthRequest, res: Response, next: N
       [...fields.map(f => req.body[f]), companyId]
     );
     const [rows] = await pool.query(
-      'SELECT id,name,email,phone,address,city,state,country,postal_code,tax_number,currency,timezone FROM companies WHERE id=?',
+      'SELECT id,name,email,phone,address,city,state,country,postal_code,tax_number,currency,timezone,dn_requirement FROM companies WHERE id=?',
       [companyId]
     );
     sendSuccess(res, (rows as any[])[0], 'Company info updated');

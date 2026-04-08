@@ -17,9 +17,9 @@ export const getShipViaById = async (companyId: string, id: string) => {
 
 export const createShipVia = async (companyId: string, userId: string, data: Record<string, unknown>) => {
   await pool.query(
-    `INSERT INTO ship_via (company_id, name, description, carrier, service_type, estimated_days, tracking_url_template, is_active, created_by, updated_by)
-     VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    [companyId, data.name, data.description || null, data.carrier || null, data.service_type || null, data.estimated_days || null, data.tracking_url_template || null, data.is_active ?? true, userId, userId]
+    `INSERT INTO ship_via (company_id, name, description, is_active, created_by, updated_by)
+     VALUES (?,?,?,?,?,?)`,
+    [companyId, data.name, data.description || null, data.is_active ?? true, userId, userId]
   );
   const [newRows] = await pool.query(
     'SELECT * FROM ship_via WHERE company_id=? AND name=? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1',

@@ -845,12 +845,7 @@ export default function SalesOrder({ isOpen, onClose, taxes, onTaxUpdate, onDirt
                               Confirm
                             </button>
                           )}
-                          {(o.status === 'confirmed' || o.status === 'in_progress') && !isCustomerRole && (
-                            <button title="Create Delivery Note" onClick={() => handleCreateDeliveryNote(o)}
-                              style={{ fontSize: 11, padding: '2px 8px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-                              <i className="fas fa-truck"></i> Create DN
-                            </button>
-                          )}
+
                           {o.status === 'draft' && (
                             <button className={styles.btnEdit} title="Edit" onClick={() => handleEditOrder(o)}>
                               <i className="fas fa-edit"></i>

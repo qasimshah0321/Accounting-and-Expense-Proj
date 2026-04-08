@@ -29,6 +29,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false)
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
   const [estimateDate, setEstimateDate] = useState(new Date().toISOString().split('T')[0])
+  const [expiryDate, setExpiryDate] = useState('')
   const [billTo, setBillTo] = useState('')
   const [shipTo, setShipTo] = useState('')
   const [notes, setNotes] = useState('')
@@ -39,6 +40,9 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [products, setProducts] = useState([])
+  const [convertDialog, setConvertDialog] = useState(null)
+  const [convertDate, setConvertDate] = useState('')
+  const [converting, setConverting] = useState(false)
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
@@ -115,6 +119,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
     setSelectedCustomerId(null)
     setCustomerSearchText('')
     setEstimateDate(new Date().toISOString().split('T')[0])
+    setExpiryDate('')
     setBillTo('')
     setShipTo('')
     setNotes('')
@@ -132,6 +137,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
     setSelectedCustomerId(estimate.customer_id)
     setCustomerSearchText(estimate.customer_name || '')
     setEstimateDate(estimate.estimate_date ? estimate.estimate_date.split('T')[0] : new Date().toISOString().split('T')[0])
+    setExpiryDate(estimate.expiry_date ? estimate.expiry_date.split('T')[0] : '')
     setBillTo(estimate.bill_to || '')
     setShipTo(estimate.ship_to || '')
     setNotes(estimate.notes || '')
@@ -300,6 +306,7 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
       ...(estimateNo && !editingEstimate ? { estimate_no: estimateNo } : {}),
       customer_id: selectedCustomerId,
       estimate_date: estimateDate,
+      expiry_date: expiryDate || undefined,
       bill_to: billTo,
       ship_to: shipTo,
       tax_id: selectedTax?.id || null,
@@ -329,6 +336,35 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
       setError(err.message)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleStatusChange = async (id, newStatus) => {
+    setListError('')
+    try {
+      await api.updateEstimateStatus(id, newStatus)
+      loadEstimates()
+    } catch (err) {
+      setListError('Status update failed: ' + err.message)
+    }
+  }
+
+  const handleConvertToSO = (estimate) => {
+    setConvertDialog({ estimate })
+    setConvertDate(new Date().toISOString().split('T')[0])
+  }
+
+  const doConvert = async () => {
+    setConverting(true)
+    try {
+      await api.convertEstimateToSO(convertDialog.estimate.id, { order_date: convertDate })
+      setConvertDialog(null)
+      loadEstimates()
+    } catch (err) {
+      setListError('Convert failed: ' + err.message)
+      setConvertDialog(null)
+    } finally {
+      setConverting(false)
     }
   }
 
@@ -380,8 +416,9 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
     switch (status) {
       case 'sent': return styles.statusSent
       case 'accepted': return styles.statusPaid
-      case 'declined': return styles.statusOverdue
+      case 'rejected': return styles.statusOverdue
       case 'expired': return styles.statusCancelled
+      case 'converted': return styles.statusSent
       default: return styles.statusDraft
     }
   }
@@ -461,20 +498,36 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
-                          {e.status !== 'draft' && (
-                            <button title="View" onClick={() => handleViewEstimate(e)}
-                              style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
-                              <i className="fas fa-eye"></i>
+                          <button title="View" onClick={() => handleViewEstimate(e)}
+                            style={{ fontSize: 11, padding: '2px 8px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                            <i className="fas fa-eye"></i>
+                          </button>
+                          {e.status === 'draft' && <>
+                            <button title="Send to Customer" onClick={() => handleStatusChange(e.id, 'sent')}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-paper-plane"></i>
                             </button>
-                          )}
-                          {e.status === 'draft' && (
                             <button className={styles.btnEdit} title="Edit" onClick={() => handleEditEstimate(e)}>
                               <i className="fas fa-edit"></i>
                             </button>
-                          )}
-                          {e.status === 'draft' && (
                             <button className={styles.btnDelete} title="Delete" onClick={() => handleDeleteEstimate(e.id)}>
                               <i className="fas fa-trash"></i>
+                            </button>
+                          </>}
+                          {e.status === 'sent' && <>
+                            <button title="Mark Accepted" onClick={() => handleStatusChange(e.id, 'accepted')}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-check"></i>
+                            </button>
+                            <button title="Mark Rejected" onClick={() => handleStatusChange(e.id, 'rejected')}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#ef4444', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-times"></i>
+                            </button>
+                          </>}
+                          {e.status === 'accepted' && (
+                            <button title="Convert to Sales Order" onClick={() => handleConvertToSO(e)}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-exchange-alt"></i> Convert to SO
                             </button>
                           )}
                         </div>
@@ -576,6 +629,10 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
                       <div className={styles.formGroup}>
                         <label>Date</label>
                         <input type="date" className={styles.formControlStandard} value={estimateDate} onChange={(e) => setEstimateDate(e.target.value)} readOnly={viewMode} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Expiry Date</label>
+                        <input type="date" className={styles.formControlStandard} value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} readOnly={viewMode} />
                       </div>
                     </div>
                   </div>
@@ -778,6 +835,38 @@ export default function Estimate({ isOpen, onClose, taxes, onTaxUpdate, onDirtyC
 
           <CustomerPopup isOpen={isCustomerPopupOpen} onClose={handleCustomerPopupClose} onSave={handleCustomerSave} />
           <TaxPopup isOpen={isTaxPopupOpen} onClose={handleTaxPopupClose} onSave={handleTaxSave} />
+        </div>
+      )}
+
+      {/* ── Convert to Sales Order Dialog ─────────────────────────────────── */}
+      {convertDialog && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 400, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, color: '#1e293b' }}>
+              <i className="fas fa-exchange-alt" style={{ color: '#7c3aed', marginRight: 8 }}></i>
+              Convert to Sales Order
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748b' }}>
+              Estimate <strong>{convertDialog.estimate.estimate_no}</strong> will be converted and marked as converted.
+            </p>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#374151' }}>Order Date *</label>
+              <input
+                type="date"
+                value={convertDate}
+                onChange={e => setConvertDate(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConvertDialog(null)} style={{ padding: '8px 18px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>
+                Cancel
+              </button>
+              <button onClick={doConvert} disabled={converting || !convertDate} style={{ padding: '8px 18px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {converting ? <><i className="fas fa-spinner fa-spin"></i> Converting...</> : 'Convert to SO'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

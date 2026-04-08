@@ -90,9 +90,9 @@ export const createEstimate = async (companyId: string, userId: string, userName
     for (let i = 0; i < data.line_items.length; i++) {
       const li = data.line_items[i];
       await client.query(
-        `INSERT INTO estimate_line_items (estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-        [est.id, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
+        `INSERT INTO estimate_line_items (company_id, estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [companyId, est.id, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
       );
     }
     const [itemRows] = await client.query('SELECT * FROM estimate_line_items WHERE estimate_id=? ORDER BY line_number ASC', [est.id]);
@@ -124,9 +124,9 @@ export const updateEstimate = async (companyId: string, estimateId: string, user
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
         await client.query(
-          `INSERT INTO estimate_line_items (estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-          [estimateId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
+          `INSERT INTO estimate_line_items (company_id, estimate_id, line_number, product_id, sku, description, ordered_qty, unit_of_measure, rate, tax_id, tax_rate, tax_amount)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [companyId, estimateId, i + 1, li.product_id || null, li.sku || null, li.description, li.ordered_qty, li.unit_of_measure || 'pcs', li.rate, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0]
         );
       }
     }
@@ -230,8 +230,8 @@ export const duplicateEstimate = async (companyId: string, estimateId: string, u
     for (let i = 0; i < (items as any[]).length; i++) {
       const li = (items as any[])[i];
       await client.query(
-        `INSERT INTO estimate_line_items (estimate_id,line_number,product_id,sku,description,ordered_qty,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-        [newEst.id, i + 1, li.product_id, li.sku, li.description, li.ordered_qty, li.unit_of_measure, li.rate, li.tax_id, li.tax_rate, li.tax_amount]
+        `INSERT INTO estimate_line_items (company_id,estimate_id,line_number,product_id,sku,description,ordered_qty,unit_of_measure,rate,tax_id,tax_rate,tax_amount) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [companyId, newEst.id, i + 1, li.product_id, li.sku, li.description, li.ordered_qty, li.unit_of_measure, li.rate, li.tax_id, li.tax_rate, li.tax_amount]
       );
     }
 

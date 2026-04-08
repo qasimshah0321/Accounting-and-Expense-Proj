@@ -54,28 +54,37 @@ export const createCustomerPayment = async (companyId: string, userId: string, d
     const [pmtRows] = await client.query('SELECT * FROM customer_payments WHERE company_id=? AND payment_no=? ORDER BY created_at DESC LIMIT 1', [companyId, paymentNo]);
     const payment = (pmtRows as any[])[0];
 
-    if (data.invoice_id) {
-      const [invRes] = await client.query(
-        'SELECT amount_due, amount_paid FROM invoices WHERE id=? AND company_id=? AND deleted_at IS NULL',
-        [data.invoice_id, companyId]
-      );
-      if ((invRes as any[]).length) {
-        const amountDue = parseFloat((invRes as any[])[0].amount_due);
-        const allocate = Math.min(data.amount, amountDue);
-        const newAmountPaid = parseFloat((invRes as any[])[0].amount_paid || 0) + allocate;
-        const newAmountDue = amountDue - allocate;
-        const paymentStatus = newAmountDue <= 0 ? 'paid' : 'partially_paid';
-        await client.query(
-          'UPDATE invoices SET amount_paid=?, amount_due=?, payment_status=?, updated_at=NOW() WHERE id=?',
-          [newAmountPaid, newAmountDue, paymentStatus, data.invoice_id]
+    // Support both single invoice_id and multiple invoice_ids
+    const invoiceIds: string[] = data.invoice_ids?.length
+      ? data.invoice_ids
+      : data.invoice_id ? [data.invoice_id] : [];
+
+    if (invoiceIds.length > 0) {
+      let remaining = data.amount;
+      for (const invId of invoiceIds) {
+        if (remaining <= 0) break;
+        const [invRes] = await client.query(
+          'SELECT amount_due, amount_paid FROM invoices WHERE id=? AND company_id=? AND deleted_at IS NULL',
+          [invId, companyId]
         );
-        const unallocated = data.amount - allocate;
-        await client.query(
-          'UPDATE customer_payments SET unallocated_amount=? WHERE id=?',
-          [unallocated, payment.id]
-        );
-        payment.unallocated_amount = unallocated;
+        if ((invRes as any[]).length) {
+          const amountDue = parseFloat((invRes as any[])[0].amount_due);
+          const allocate = Math.min(remaining, amountDue);
+          const newAmountPaid = parseFloat((invRes as any[])[0].amount_paid || 0) + allocate;
+          const newAmountDue = amountDue - allocate;
+          const paymentStatus = newAmountDue <= 0 ? 'paid' : 'partially_paid';
+          await client.query(
+            'UPDATE invoices SET amount_paid=?, amount_due=?, payment_status=?, updated_at=NOW() WHERE id=?',
+            [newAmountPaid, newAmountDue, paymentStatus, invId]
+          );
+          remaining -= allocate;
+        }
       }
+      await client.query(
+        'UPDATE customer_payments SET unallocated_amount=? WHERE id=?',
+        [remaining, payment.id]
+      );
+      payment.unallocated_amount = remaining;
     }
 
     try {

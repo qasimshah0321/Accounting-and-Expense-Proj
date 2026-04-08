@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { registerRootComponent } from 'expo';
 import { AuthProvider } from './src/context/AuthContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import AppNavigator from './src/navigation/AppNavigator';
 
 // Keep splash screen visible while loading
@@ -50,10 +51,12 @@ export default function App() {
     <ErrorBoundary>
       <SafeAreaProvider onLayout={onLayoutRootView}>
         <AuthProvider>
-          <NavigationContainer>
-            <StatusBar style="light" backgroundColor="#1a237e" />
-            <AppNavigator />
-          </NavigationContainer>
+          <NotificationProvider>
+            <NavigationContainer>
+              <StatusBar style="light" backgroundColor="#1a237e" />
+              <AppNavigator />
+            </NavigationContainer>
+          </NotificationProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </ErrorBoundary>

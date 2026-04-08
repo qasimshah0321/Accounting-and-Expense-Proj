@@ -167,6 +167,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
         description: item.description || '',
         ordered: parseInt(item.ordered_qty) || 0,
         shipped: parseInt(item.shipped_qty) || 0,
+        sales_order_line_item_id: item.sales_order_line_item_id || null,
         backordered: Math.max(0, (parseInt(item.ordered_qty) || 0) - (parseInt(item.shipped_qty) || 0)),
         product_id: item.product_id || null,
       })))
@@ -300,7 +301,8 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
       const orders = res.data?.sales_orders || []
       const actionable = orders.filter(o =>
         ['confirmed', 'in_progress'].includes(o.status) &&
-        parseFloat(o.total_ordered_qty || 0) > parseFloat(o.total_delivered_qty || 0)
+        parseFloat(o.total_ordered_qty || 0) > parseFloat(o.total_delivered_qty || 0) &&
+        o.status !== 'completed'
       )
       setSoPickerOrders(actionable)
       if (actionable.length > 0) setShowSoPicker(true)
@@ -332,6 +334,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
             shipped: 0,
             backordered: remaining,
             product_id: li.product_id || null,
+            sales_order_line_item_id: li.id || null,
           }
         })
         .filter(li => li.ordered > 0)
@@ -420,6 +423,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
         description: item.description,
         ordered_qty: item.ordered,
         shipped_qty: item.shipped,
+        sales_order_line_item_id: item.sales_order_line_item_id || undefined,
       })),
     }
     try {

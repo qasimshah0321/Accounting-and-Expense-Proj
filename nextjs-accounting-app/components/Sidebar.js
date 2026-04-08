@@ -15,8 +15,7 @@ const menuItems = [
       { id: 'delivery-notes', name: 'Delivery Notes' },
       { id: 'sales-order', name: 'Sales Order' },
       { id: 'estimates-quotations', name: 'Estimates/Quotations' },
-      { id: 'sale-receipts', name: 'Sale Receipts' },
-      { id: 'customer-payments', name: 'Customer Payments' },
+      { id: 'customer-payments', name: 'Sales Receipt' },
       { id: 'refunds', name: 'Refunds' },
     ]
   },
@@ -215,7 +214,7 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
           {menuItems.map((item) => {
             // Filter submenus by permissions
             const visibleSubmenus = item.submenus
-              ? item.submenus.filter(sub => !allowed || allowed.has(sub.name))
+              ? item.submenus.filter(sub => (!allowed || allowed.has(sub.name)) && !sub.hidden)
               : null
             // If has submenus but all hidden, skip this group
             if (item.submenus && visibleSubmenus.length === 0) return null

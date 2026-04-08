@@ -45,11 +45,23 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
-  // ─── DN Picker state ──────────────────────────────────────────────────────
-  const [linkedDeliveryNoteId, setLinkedDeliveryNoteId] = useState(null)
+  // ─── SO Picker state ──────────────────────────────────────────────────────
+  const [showSoPicker, setShowSoPicker] = useState(false)
+  const [soPickerItems, setSoPickerItems] = useState([])
+  const [soPickerLoading, setSoPickerLoading] = useState(false)
+  const [selectedSoIds, setSelectedSoIds] = useState([])
+  const [showInvoiceTypeModal, setShowInvoiceTypeModal] = useState(false)
+  const [showPartialModal, setShowPartialModal] = useState(false)
+  const [partialItems, setPartialItems] = useState([])
+  const [linkedSoData, setLinkedSoData] = useState([])
+
+  // ─── DN Picker state (mandatory mode) ──────────────────────────────────
+  const [dnRequirement, setDnRequirement] = useState('optional')
   const [showDnPicker, setShowDnPicker] = useState(false)
-  const [dnPickerNotes, setDnPickerNotes] = useState([])
+  const [dnPickerItems, setDnPickerItems] = useState([])
   const [dnPickerLoading, setDnPickerLoading] = useState(false)
+  const [selectedDnId, setSelectedDnId] = useState(null)
+  const [linkedDnData, setLinkedDnData] = useState(null)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -80,6 +92,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       loadInvoices()
       loadCustomers()
       api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
+      // Load DN requirement setting
+      api.getCompanyProfile().then(res => {
+        const data = res.data || {}
+        setDnRequirement(data.dn_requirement || 'optional')
+      }).catch(() => {})
     }
   }, [isOpen, loadInvoices, loadCustomers])
 
@@ -154,8 +171,17 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setNotes('')
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
-    setLinkedDeliveryNoteId(null)
+    setShowSoPicker(false)
+    setSoPickerItems([])
+    setSelectedSoIds([])
+    setShowInvoiceTypeModal(false)
+    setShowPartialModal(false)
+    setPartialItems([])
+    setLinkedSoData([])
     setShowDnPicker(false)
+    setDnPickerItems([])
+    setSelectedDnId(null)
+    setLinkedDnData(null)
     try {
       const res = await api.getNextInvoiceNumber()
       setInvoiceNo(res.data?.invoice_no || res.invoice_no || '')
@@ -249,8 +275,16 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setShowForm(false)
     setViewMode(false)
     setEditingInvoice(null)
-    setLinkedDeliveryNoteId(null)
+    setShowSoPicker(false)
+    setSelectedSoIds([])
+    setShowInvoiceTypeModal(false)
+    setShowPartialModal(false)
+    setPartialItems([])
+    setLinkedSoData([])
     setShowDnPicker(false)
+    setDnPickerItems([])
+    setSelectedDnId(null)
+    setLinkedDnData(null)
   }
 
   // ─── Form event handlers ──────────────────────────────────────────────────
@@ -270,66 +304,311 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setSelectedCustomerId(customer?.id || null)
     setCustomerSearchText(customerName)
     setShowCustomerDropdown(false)
-    setLinkedDeliveryNoteId(null)
     if (customer) {
       setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
       setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
-      if (!editingInvoice) fetchCustomerDeliveryNotes(customer.id)
+      if (!editingInvoice) {
+        if (dnRequirement === 'mandatory') {
+          fetchCustomerDeliveryNotes(customer.id)
+        } else {
+          fetchCustomerSalesOrders(customer.id)
+        }
+      }
     }
   }
 
+  const fetchCustomerSalesOrders = async (customerId) => {
+    setSoPickerLoading(true)
+    try {
+      const res = await api.getSalesOrdersForCustomer(customerId)
+      const orders = res.data?.sales_orders || res.data?.orders || res.data || []
+      const confirmed = orders.filter(o =>
+        (o.status === 'confirmed' || o.status === 'in_progress') && o.status !== 'completed'
+      )
+      if (confirmed.length === 0) return
+      // Fetch full details to check invoiced quantities and filter fully-invoiced SOs
+      const detailed = await Promise.all(
+        confirmed.map(o => api.getSalesOrder(o.id).then(r => r.data || r).catch(() => null))
+      )
+      const withBacklog = detailed.filter(so => {
+        if (!so) return false
+        const items = so.line_items || []
+        return items.some(li =>
+          (parseFloat(li.ordered_qty) || 0) > (parseFloat(li.invoiced_qty) || 0)
+        )
+      })
+      if (withBacklog.length > 0) {
+        setSoPickerItems(withBacklog)
+        setSelectedSoIds([])
+        setShowSoPicker(true)
+      }
+    } catch {}
+    finally { setSoPickerLoading(false) }
+  }
+
+  // ─── DN Picker flow (mandatory mode) ──────────────────────────────────────
   const fetchCustomerDeliveryNotes = async (customerId) => {
     setDnPickerLoading(true)
     try {
       const res = await api.getDeliveryNotesForCustomer(customerId)
       const notes = res.data?.delivery_notes || res.data || []
-      const available = notes.filter(n =>
-        (n.status === 'shipped' || n.status === 'delivered') && !n.invoiced
+      // Show shipped/delivered DNs that are not yet fully invoiced
+      const eligible = notes.filter(dn =>
+        ['shipped', 'in_transit', 'delivered', 'partially_invoiced'].includes(dn.status) && !dn.invoiced
       )
-      if (available.length > 0) {
-        setDnPickerNotes(available)
+      if (eligible.length > 0) {
+        setDnPickerItems(eligible)
+        setSelectedDnId(null)
         setShowDnPicker(true)
       }
     } catch {}
     finally { setDnPickerLoading(false) }
   }
 
-  const handleDnSelect = async (dn) => {
+  const handleDnSelect = (dnId) => {
+    setSelectedDnId(dnId === selectedDnId ? null : dnId)
+  }
+
+  const handleDnPickerProceed = async () => {
+    if (!selectedDnId) return
     setShowDnPicker(false)
-    setLinkedDeliveryNoteId(dn.id)
+    setDnPickerLoading(true)
     try {
-      const res = await api.getDeliveryNote(dn.id)
-      const full = res.data || res
-      setReferenceNo(full.delivery_note_no || '')
-      if (full.ship_to) setShipTo(full.ship_to)
-      if (full.bill_to) setBillTo(full.bill_to)
-      if (full.line_items && full.line_items.length > 0) {
-        // Fetch linked SO rates if available
-        let soRateMap = {}
-        if (full.sales_order_id) {
-          try {
-            const soRes = await api.getSalesOrder(full.sales_order_id)
-            const soFull = soRes.data || soRes
-            ;(soFull.line_items || []).forEach(li => {
-              soRateMap[li.id] = parseFloat(li.rate) || 0
-            })
-          } catch {}
+      const res = await api.getDeliveryNote(selectedDnId)
+      const dn = res.data || res
+      setLinkedDnData(dn)
+
+      // Fetch SO pricing if available
+      let soLineItemByProductId = new Map()
+      let soLineItemBySku = new Map()
+      let soLineItemsByPosition = []
+      if (dn.sales_order_id) {
+        try {
+          const soRes = await api.getSalesOrder(dn.sales_order_id)
+          const so = soRes.data || soRes
+          if (so && so.line_items) {
+            for (const soli of so.line_items) {
+              if (soli.product_id) soLineItemByProductId.set(soli.product_id, soli)
+              if (soli.sku) soLineItemBySku.set(soli.sku.toLowerCase(), soli)
+              soLineItemsByPosition.push(soli)
+            }
+          }
+          if (so.sales_order_no) setReferenceNo(so.sales_order_no)
+        } catch {}
+      }
+
+      // Build line items from DN shipped quantities with SO pricing
+      const items = (dn.line_items || []).map((li, idx) => {
+        let rate = 0, taxRate = 0
+        // Match to SO line items for pricing
+        let soli = null
+        if (li.product_id && soLineItemByProductId.has(li.product_id)) {
+          soli = soLineItemByProductId.get(li.product_id)
+        } else if (li.sku && soLineItemBySku.has(li.sku.toLowerCase())) {
+          soli = soLineItemBySku.get(li.sku.toLowerCase())
+        } else if (soLineItemsByPosition[idx]) {
+          soli = soLineItemsByPosition[idx]
         }
-        setLineItems(full.line_items.map((li, idx) => {
-          const rate = soRateMap[li.sales_order_line_item_id] || parseFloat(li.rate) || 0
-          const qty = parseFloat(li.shipped_qty) || parseFloat(li.quantity) || 1
-          return {
-            id: idx + 1,
+        if (soli) {
+          rate = parseFloat(soli.rate) || 0
+          taxRate = parseFloat(soli.tax_rate) || 0
+        }
+        const qty = parseFloat(li.shipped_qty) || 0
+        return {
+          id: idx + 1,
+          sku: li.sku || '',
+          description: li.description || '',
+          quantity: qty,
+          rate,
+          discount: 0,
+          amount: qty * rate,
+          dn_line_item_id: li.id,
+        }
+      }).filter(item => item.quantity > 0)
+
+      if (items.length > 0) setLineItems(items)
+      onDirtyChange(true)
+    } catch (err) {
+      setError('Failed to load delivery note details: ' + err.message)
+    } finally {
+      setDnPickerLoading(false)
+    }
+  }
+
+  const toggleSoSelection = (soId) => {
+    setSelectedSoIds(prev =>
+      prev.includes(soId) ? prev.filter(id => id !== soId) : [...prev, soId]
+    )
+  }
+
+  const handleSoPickerProceed = () => {
+    if (selectedSoIds.length === 0) return
+    setShowSoPicker(false)
+    // Use already-fetched detailed SO data from soPickerItems
+    const selected = soPickerItems.filter(so => selectedSoIds.includes(so.id))
+    setLinkedSoData(selected)
+    if (selected[0]?.sales_order_no) setReferenceNo(selected[0].sales_order_no)
+    setShowInvoiceTypeModal(true)
+  }
+
+  const handleFullInvoice = () => {
+    setShowInvoiceTypeModal(false)
+    const items = []
+    let idx = 1
+    for (const so of linkedSoData) {
+      for (const li of (so.line_items || [])) {
+        const ordered = parseFloat(li.ordered_qty) || 0
+        const invoiced = parseFloat(li.invoiced_qty || 0)
+        const qty = ordered - invoiced
+        if (qty > 0) {
+          items.push({
+            id: idx++,
             sku: li.sku || '',
             description: li.description || '',
             quantity: qty,
-            rate,
+            rate: parseFloat(li.rate) || 0,
             discount: 0,
-            amount: qty * rate,
-          }
-        }))
+            amount: qty * (parseFloat(li.rate) || 0),
+            sales_order_line_item_id: li.id,
+          })
+        }
       }
-    } catch (err) { console.error('DN select error:', err) }
+    }
+    if (items.length > 0) setLineItems(items)
+    onDirtyChange(true)
+  }
+
+  const handlePartialInvoice = () => {
+    setShowInvoiceTypeModal(false)
+    const items = []
+    for (const so of linkedSoData) {
+      for (const li of (so.line_items || [])) {
+        const ordered = parseFloat(li.ordered_qty) || 0
+        const invoiced = parseFloat(li.invoiced_qty || 0)
+        const backlog = ordered - invoiced
+        if (backlog > 0) {
+          items.push({
+            key: `${so.id}_${li.id}`,
+            soNo: so.sales_order_no,
+            sku: li.sku || '',
+            description: li.description || '',
+            orderedQty: ordered,
+            invoicedQty: invoiced,
+            backlog,
+            invoiceQty: backlog,
+            rate: parseFloat(li.rate) || 0,
+            soLineItemId: li.id,
+          })
+        }
+      }
+    }
+    setPartialItems(items)
+    setShowPartialModal(true)
+  }
+
+  const handleApplyPartial = () => {
+    setShowPartialModal(false)
+    const items = partialItems
+      .filter(pi => parseFloat(pi.invoiceQty) > 0)
+      .map((pi, idx) => ({
+        id: idx + 1,
+        sku: pi.sku,
+        description: pi.description,
+        quantity: parseFloat(pi.invoiceQty) || 0,
+        rate: pi.rate,
+        discount: 0,
+        amount: (parseFloat(pi.invoiceQty) || 0) * pi.rate,
+        sales_order_line_item_id: pi.soLineItemId,
+      }))
+    if (items.length > 0) setLineItems(items)
+    onDirtyChange(true)
+  }
+
+  const handlePrintDeliveryNotes = () => {
+    if (!linkedSoData || linkedSoData.length === 0) {
+      alert('No linked sales orders. Select customer and sales orders first.')
+      return
+    }
+    const co = companyProfile || {}
+    const coName = co.name || 'My Company'
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-CA') : ''
+    const today = new Date().toLocaleDateString('en-CA')
+
+    // Build a map of SO line item id → current invoice qty from the active line items
+    const currentInvoiceQtyMap = {}
+    lineItems.forEach(li => {
+      if (li.sales_order_line_item_id) {
+        currentInvoiceQtyMap[li.sales_order_line_item_id] = (currentInvoiceQtyMap[li.sales_order_line_item_id] || 0) + (parseFloat(li.quantity) || 0)
+      }
+    })
+
+    const soRows = linkedSoData.map(so => {
+      const itemRows = (so.line_items || []).map(li => {
+        const ordered = parseFloat(li.ordered_qty) || 0
+        const prevInvoiced = parseFloat(li.invoiced_qty || 0)
+        const thisInvoiceQty = currentInvoiceQtyMap[li.id] || 0
+        const backlogAfter = ordered - prevInvoiced - thisInvoiceQty
+        return `<tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;">${li.sku || '-'}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;">${li.description || ''}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;">${ordered}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:600;color:#7c3aed;">${prevInvoiced}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:600;color:#2563eb;">${thisInvoiceQty}</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:600;color:${backlogAfter > 0 ? '#dc2626' : '#16a34a'};">${backlogAfter}</td>
+        </tr>`
+      }).join('')
+      return `
+        <div style="margin-bottom:28px;page-break-inside:avoid;">
+          <h3 style="margin:0 0 6px;font-size:15px;color:#374151;border-left:4px solid #2CA01C;padding-left:10px;">Sales Order: ${so.sales_order_no}</h3>
+          <p style="margin:0 0 10px;font-size:12px;color:#6b7280;">Customer: ${so.customer_name || ''} &nbsp;|&nbsp; Date: ${fmtDate(so.order_date)}</p>
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:#2CA01C;color:white;">
+                <th style="padding:9px 10px;text-align:left;font-size:12px;font-weight:600;">SKU</th>
+                <th style="padding:9px 10px;text-align:left;font-size:12px;font-weight:600;">Description</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;font-weight:600;">Total Ordered</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;font-weight:600;">Prev Invoiced</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;font-weight:600;">This Invoice</th>
+                <th style="padding:9px 10px;text-align:center;font-size:12px;font-weight:600;">Backlog</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>`
+    }).join('')
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Delivery Notes - ${selectedCustomer}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; padding: 30px; }
+    .page { max-width: 780px; margin: 0 auto; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #2CA01C;">
+    <div>
+      <h1 style="font-size:24px;font-weight:700;margin-bottom:4px;">Delivery Notes</h1>
+      <p style="font-size:13px;color:#6b7280;">${coName} &nbsp;|&nbsp; Printed: ${today}</p>
+    </div>
+    <div style="text-align:right;">
+      <p style="font-size:13px;margin-bottom:4px;"><strong>Customer:</strong> ${selectedCustomer}</p>
+      <p style="font-size:13px;"><strong>Invoice Ref:</strong> ${referenceNo || 'Draft'}</p>
+    </div>
+  </div>
+  ${soRows}
+</div>
+<script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>`
+    const win = window.open('', '_blank', 'width=900,height=700')
+    win.document.write(html)
+    win.document.close()
   }
 
   const handleAddNewCustomer = () => {
@@ -421,7 +700,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       tax_rate: taxRate,
       discount_amount: calculateDiscount(),
       notes: notes || undefined,
-      ...(linkedDeliveryNoteId && !editingInvoice ? { delivery_note_id: linkedDeliveryNoteId } : {}),
+      // Pass delivery_note_id when using DN flow (mandatory mode)
+      delivery_note_id: linkedDnData?.id || undefined,
+
       line_items: validItems.map(item => ({
         sku: item.sku || undefined,
         description: item.description,
@@ -431,6 +712,8 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
         tax_id: selectedTax?.id || null,
         tax_rate: taxRate,
         tax_amount: selectedTax ? Number((item.amount * taxRate / 100).toFixed(4)) : 0,
+        sales_order_line_item_id: item.sales_order_line_item_id || undefined,
+        dn_line_item_id: item.dn_line_item_id || undefined,
       })),
     }
     try {
@@ -828,6 +1111,27 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
 
             {/* Scrollable Content */}
             <div className={styles.popupContent}>
+
+              {/* DN Mode Banner */}
+              {dnRequirement === 'mandatory' && !editingInvoice && (
+                <div style={{
+                  margin: '0 0 12px', padding: '10px 16px', borderRadius: 6,
+                  background: linkedDnData ? '#faf5ff' : '#fef3c7',
+                  border: `1px solid ${linkedDnData ? '#c4b5fd' : '#fcd34d'}`,
+                  display: 'flex', alignItems: 'center', gap: 10, fontSize: 13
+                }}>
+                  <i className={`fas ${linkedDnData ? 'fa-check-circle' : 'fa-info-circle'}`} style={{ color: linkedDnData ? '#7c3aed' : '#d97706' }}></i>
+                  {linkedDnData ? (
+                    <span>
+                      Invoicing from <strong style={{ color: '#7c3aed' }}>{linkedDnData.delivery_note_no}</strong>
+                      {linkedDnData.customer_name && <span> - {linkedDnData.customer_name}</span>}
+                      <span style={{ marginLeft: 8, fontSize: 11, color: '#6b7280' }}>({linkedDnData.total_shipped_qty || 0} items shipped)</span>
+                    </span>
+                  ) : (
+                    <span>Mandatory DN mode: Select a customer to choose a shipped Delivery Note for invoicing.</span>
+                  )}
+                </div>
+              )}
 
               {/* Upper Section */}
               <div className={styles.invoiceUpperSection}>
@@ -1228,6 +1532,17 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
               <div className={styles.footerLeft}>
                 {!viewMode && error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
                 <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
+                {user?.role === 'admin' && linkedSoData.length > 0 && (
+                  <button
+                    onClick={handlePrintDeliveryNotes}
+                    style={{ marginLeft: 8, padding: '8px 18px', background: '#7c3aed', color: '#fff',
+                             border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600,
+                             display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    title="Print Delivery Notes"
+                  >
+                    <i className="fas fa-truck"></i> Print DN
+                  </button>
+                )}
               </div>
               {!viewMode && (
                 <div className={styles.footerRight}>
@@ -1268,35 +1583,226 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
         </div>
       )}
 
-      {/* ── Delivery Note Picker Modal ─────────────────────────────────────── */}
+      {/* ── Sales Order Picker Modal ──────────────────────────────────────── */}
+      {showSoPicker && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 480, maxWidth: 600, maxHeight: '75vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 16, color: '#111' }}>Select Sales Orders</h3>
+            <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b7280' }}>Select one or more confirmed sales orders to invoice, or skip to enter manually.</p>
+            {soPickerLoading ? (
+              <p style={{ color: '#6b7280', fontSize: 13 }}>Loading…</p>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1, marginBottom: 14 }}>
+                {soPickerItems.map(so => {
+                  const isSelected = selectedSoIds.includes(so.id)
+                  return (
+                    <div
+                      key={so.id}
+                      onClick={() => toggleSoSelection(so.id)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 6, marginBottom: 8, cursor: 'pointer',
+                        border: `2px solid ${isSelected ? '#2CA01C' : '#e5e7eb'}`,
+                        background: isSelected ? '#f0fdf4' : '#fff',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <input type="checkbox" checked={isSelected} onChange={() => {}} style={{ width: 16, height: 16, accentColor: '#2CA01C' }} />
+                        <div>
+                          <span style={{ fontWeight: 600, color: '#2CA01C' }}>{so.sales_order_no}</span>
+                          <span style={{ marginLeft: 10, fontSize: 12, color: '#6b7280' }}>{so.customer_name}</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 12, color: '#374151', display: 'block' }}>{so.order_date ? new Date(so.order_date).toLocaleDateString() : ''}</span>
+                        <span style={{ fontSize: 12, color: '#6b7280', textTransform: 'capitalize' }}>{so.status}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleSoPickerProceed}
+                disabled={selectedSoIds.length === 0 || soPickerLoading}
+                style={{ flex: 1, padding: '9px 0', background: selectedSoIds.length > 0 ? '#2CA01C' : '#d1d5db', color: '#fff', border: 'none', borderRadius: 6, cursor: selectedSoIds.length > 0 ? 'pointer' : 'not-allowed', fontSize: 14, fontWeight: 600 }}
+              >
+                {soPickerLoading ? 'Loading…' : `Proceed with ${selectedSoIds.length} Order${selectedSoIds.length !== 1 ? 's' : ''}`}
+              </button>
+              <button
+                onClick={() => setShowSoPicker(false)}
+                style={{ padding: '9px 18px', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Invoice Type Modal ────────────────────────────────────────────── */}
+      {showInvoiceTypeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 32, minWidth: 380, maxWidth: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.22)', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: '#111' }}>Invoice Type</h3>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: '#6b7280' }}>How would you like to invoice the selected {linkedSoData.length} sales order{linkedSoData.length !== 1 ? 's' : ''}?</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={handleFullInvoice}
+                style={{ flex: 1, padding: '14px 0', background: '#2CA01C', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
+              >
+                <i className="fas fa-file-invoice" style={{ marginRight: 8 }}></i>
+                Full Invoice
+              </button>
+              <button
+                onClick={handlePartialInvoice}
+                style={{ flex: 1, padding: '14px 0', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 15, fontWeight: 700 }}
+              >
+                <i className="fas fa-file-alt" style={{ marginRight: 8 }}></i>
+                Partial Invoice
+              </button>
+            </div>
+            <button
+              onClick={() => setShowInvoiceTypeModal(false)}
+              style={{ marginTop: 14, width: '100%', padding: '8px 0', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Partial Invoice Modal ─────────────────────────────────────────── */}
+      {showPartialModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 640, maxWidth: 820, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 16, color: '#111' }}>Partial Invoice — Set Quantities</h3>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>Enter the quantity to invoice for each item. Backlog is the remaining undelivered quantity.</p>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th style={{ padding: '9px 10px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb' }}>SO #</th>
+                    <th style={{ padding: '9px 10px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Description</th>
+                    <th style={{ padding: '9px 10px', textAlign: 'center', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb' }}>Ordered</th>
+                    <th style={{ padding: '9px 10px', textAlign: 'center', fontWeight: 600, color: '#7c3aed', borderBottom: '2px solid #e5e7eb' }}>Invoiced</th>
+                    <th style={{ padding: '9px 10px', textAlign: 'center', fontWeight: 600, color: '#dc2626', borderBottom: '2px solid #e5e7eb' }}>Backlog</th>
+                    <th style={{ padding: '9px 10px', textAlign: 'center', fontWeight: 600, color: '#2563eb', borderBottom: '2px solid #e5e7eb' }}>Invoice Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partialItems.map((pi) => (
+                    <tr key={pi.key}>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', fontSize: 12, color: '#6b7280' }}>{pi.soNo}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9' }}>
+                        <div style={{ fontWeight: 500 }}>{pi.description}</div>
+                        {pi.sku && <div style={{ fontSize: 11, color: '#94a3b8' }}>SKU: {pi.sku}</div>}
+                      </td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>{pi.orderedQty}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 600, color: '#7c3aed' }}>{pi.invoicedQty || 0}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', textAlign: 'center', fontWeight: 600, color: '#dc2626' }}>{pi.backlog}</td>
+                      <td style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', textAlign: 'center' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max={pi.backlog}
+                          value={pi.invoiceQty}
+                          onChange={(e) => {
+                            const val = Math.min(parseFloat(e.target.value) || 0, pi.backlog)
+                            setPartialItems(prev => prev.map(p => p.key === pi.key ? { ...p, invoiceQty: val } : p))
+                          }}
+                          style={{ width: 80, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 4, textAlign: 'center', fontSize: 13, fontWeight: 600, color: '#2563eb' }}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button
+                onClick={handleApplyPartial}
+                style={{ flex: 1, padding: '10px 0', background: '#2CA01C', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}
+              >
+                Apply to Invoice
+              </button>
+              <button
+                onClick={() => { setShowPartialModal(false); setShowInvoiceTypeModal(true) }}
+                style={{ padding: '10px 18px', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delivery Note Picker Modal (mandatory DN mode) ─────────────────── */}
       {showDnPicker && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 420, maxWidth: 560, maxHeight: '70vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
-            <h3 style={{ margin: '0 0 6px', fontSize: 16, color: '#111' }}>Link a Delivery Note</h3>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>Select a shipped delivery note to auto-fill this invoice, or skip to enter manually.</p>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 480, maxWidth: 600, maxHeight: '75vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 16, color: '#111' }}>
+              <i className="fas fa-truck" style={{ marginRight: 8, color: '#7c3aed' }}></i>
+              Select Delivery Note
+            </h3>
+            <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b7280' }}>Your company requires invoices to be created from shipped Delivery Notes. Select one below.</p>
             {dnPickerLoading ? (
-              <p style={{ color: '#6b7280', fontSize: 13 }}>Loading…</p>
-            ) : dnPickerNotes.map(n => (
-              <div
-                key={n.id}
-                onClick={() => handleDnSelect(n)}
-                style={{ padding: '10px 14px', borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: 8, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f9ff'}
-                onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-              >
-                <div>
-                  <span style={{ fontWeight: 600, color: '#0891b2' }}>{n.delivery_note_no}</span>
-                  {n.source_so_no && <span style={{ marginLeft: 8, fontSize: 12, color: '#6b7280' }}>SO: {n.source_so_no}</span>}
-                </div>
-                <span style={{ fontSize: 12, color: '#6b7280', textTransform: 'capitalize' }}>{n.status}</span>
+              <p style={{ color: '#6b7280', fontSize: 13 }}><i className="fas fa-spinner fa-spin"></i> Loading...</p>
+            ) : dnPickerItems.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '24px 0', color: '#6b7280' }}>
+                <i className="fas fa-inbox" style={{ fontSize: 32, color: '#e2e8f0', marginBottom: 8, display: 'block' }}></i>
+                <p style={{ margin: 0, fontSize: 13 }}>No eligible Delivery Notes found for this customer.</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12 }}>Create and ship a Delivery Note first.</p>
               </div>
-            ))}
-            <button
-              onClick={() => setShowDnPicker(false)}
-              style={{ marginTop: 8, width: '100%', padding: '8px 0', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
-            >
-              Skip — Manual Entry
-            </button>
+            ) : (
+              <div style={{ overflowY: 'auto', flex: 1, marginBottom: 14 }}>
+                {dnPickerItems.map(dn => {
+                  const isSelected = selectedDnId === dn.id
+                  return (
+                    <div
+                      key={dn.id}
+                      onClick={() => handleDnSelect(dn.id)}
+                      style={{
+                        padding: '10px 14px', borderRadius: 6, marginBottom: 8, cursor: 'pointer',
+                        border: `2px solid ${isSelected ? '#7c3aed' : '#e5e7eb'}`,
+                        background: isSelected ? '#faf5ff' : '#fff',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <input type="radio" checked={isSelected} onChange={() => {}} style={{ width: 16, height: 16, accentColor: '#7c3aed' }} />
+                        <div>
+                          <span style={{ fontWeight: 600, color: '#7c3aed' }}>{dn.delivery_note_no}</span>
+                          <span style={{ marginLeft: 10, fontSize: 12, color: '#6b7280' }}>{dn.customer_name}</span>
+                          {dn.source_so_no && <span style={{ marginLeft: 8, fontSize: 11, color: '#94a3b8' }}>SO: {dn.source_so_no}</span>}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 12, color: '#374151', display: 'block' }}>{dn.delivery_date ? new Date(dn.delivery_date).toLocaleDateString() : ''}</span>
+                        <span style={{ fontSize: 12, color: dn.status === 'partially_invoiced' ? '#d97706' : '#16a34a', textTransform: 'capitalize', fontWeight: 600 }}>{dn.status.replace(/_/g, ' ')}</span>
+                        <span style={{ fontSize: 11, color: '#6b7280', display: 'block' }}>Shipped: {dn.total_shipped_qty || 0} items</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={handleDnPickerProceed}
+                disabled={!selectedDnId || dnPickerLoading}
+                style={{ flex: 1, padding: '9px 0', background: selectedDnId ? '#7c3aed' : '#d1d5db', color: '#fff', border: 'none', borderRadius: 6, cursor: selectedDnId ? 'pointer' : 'not-allowed', fontSize: 14, fontWeight: 600 }}
+              >
+                {dnPickerLoading ? 'Loading...' : 'Create Invoice from DN'}
+              </button>
+              <button
+                onClick={() => setShowDnPicker(false)}
+                style={{ padding: '9px 18px', background: '#f3f4f6', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}

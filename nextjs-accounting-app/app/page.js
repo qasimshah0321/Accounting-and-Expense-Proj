@@ -31,6 +31,7 @@ import CompanySettings from '@/components/CompanySettings'
 import ERPFlowDiagram from '@/components/ERPFlowDiagram'
 import UserManagement from '@/components/UserManagement'
 import RolePermissions from '@/components/RolePermissions'
+import RequestForQuotation from '@/components/RequestForQuotation'
 import QuickOrder from '@/components/QuickOrder'
 import Login from '@/components/Login'
 import ToastContainer from '../components/Toast'
@@ -44,8 +45,9 @@ const MENU_PANEL_MAP = {
   'Sales Order': 'SalesOrder', 'Sale Order': 'SalesOrder',
   'Estimate': 'Estimate', 'Estimates/Quotations': 'Estimate',
   'Delivery Note': 'DeliveryNote', 'Delivery Notes': 'DeliveryNote',
-  'Customer Payments': 'CustomerPayments', 'Receive Payment': 'CustomerPayments',
+  'Customer Payments': 'CustomerPayments', 'Receive Payment': 'CustomerPayments', 'Sales Receipt': 'CustomerPayments',
   'Purchase Order': 'PurchaseOrder', 'Purchase Orders': 'PurchaseOrder',
+  'Request for Quotation': 'RequestForQuotation',
   'Bills': 'BillCenter',
   'Expenses': 'ExpenseCenter',
   'Bill Payments': 'VendorPayments', 'Make Payment': 'VendorPayments',
@@ -329,6 +331,14 @@ export default function Home() {
           />
 
           {/* Purchases */}
+          <RequestForQuotation
+            isOpen={activePanel === 'RequestForQuotation'}
+            onClose={closePanel}
+            taxes={taxes}
+            onDirtyChange={setIsDirty}
+            user={user}
+            currencySymbol={currencySymbol}
+          />
           <PurchaseOrder
             isOpen={activePanel === 'PurchaseOrder'}
             onClose={closePanel}

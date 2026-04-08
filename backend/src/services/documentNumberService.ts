@@ -15,7 +15,8 @@ export type DocumentType =
   | 'vendor_payment'
   | 'inventory_transaction'
   | 'journal_entry'
-  | 'bank_transaction';
+  | 'bank_transaction'
+  | 'rfq';
 
 const DEFAULT_PREFIXES: Record<DocumentType, string> = {
   invoice: 'INV',
@@ -31,6 +32,7 @@ const DEFAULT_PREFIXES: Record<DocumentType, string> = {
   inventory_transaction: 'INVT',
   journal_entry: 'JE',
   bank_transaction: 'BT',
+  rfq: 'RFQ',
 };
 
 export const generateDocumentNumber = async (

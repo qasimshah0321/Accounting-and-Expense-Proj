@@ -18,6 +18,7 @@ const emptyProfile = {
   currency: 'USD',
   website: '',
   tax_number: '',
+  dn_requirement: 'optional',
 }
 
 export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
@@ -45,6 +46,7 @@ export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
         currency: data.currency || 'USD',
         website: data.website || '',
         tax_number: data.tax_number || '',
+        dn_requirement: data.dn_requirement || 'optional',
       })
     } catch (err) {
       setError(err.message)
@@ -204,6 +206,25 @@ export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
                     <label>Tax ID / Registration No.</label>
                     <input value={form.tax_number || ''} onChange={e => handleChange('tax_number', e.target.value)} placeholder="12-3456789" />
                   </div>
+                </div>
+              </div>
+
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <i className="fas fa-route" />
+                  <span className={styles.sectionTitle}>Sales Workflow Configuration</span>
+                </div>
+                <div className={styles.fieldFull}>
+                  <label>Delivery Note Requirement</label>
+                  <select value={form.dn_requirement || 'optional'} onChange={e => handleChange('dn_requirement', e.target.value)}>
+                    <option value="optional">Optional - Invoice directly from Sales Orders or manually</option>
+                    <option value="mandatory">Mandatory - Invoice only from approved Delivery Notes</option>
+                  </select>
+                  <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#6b7280', lineHeight: 1.5 }}>
+                    {form.dn_requirement === 'mandatory'
+                      ? 'Mandatory mode: Invoices can only be created from shipped/delivered Delivery Notes. Inventory is deducted when Delivery Notes are shipped (not at invoice approval).'
+                      : 'Optional mode: Invoices can be created directly from Sales Orders or entered manually. Inventory is deducted at invoice approval if no Delivery Note was used.'}
+                  </p>
                 </div>
               </div>
             </>

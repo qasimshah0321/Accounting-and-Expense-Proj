@@ -48,9 +48,9 @@ const CUSTOMER_FLOW = [
   {
     step: 5,
     icon: 'fa-money-bill-wave',
-    title: 'Customer Payment',
+    title: 'Sales Receipt',
     desc: 'Receive & record payment from the customer',
-    menu: 'Customer Payments',
+    menu: 'Sales Receipt',
     color: '#16a34a',
     bg: '#f0fdf4',
     border: '#bbf7d0',
@@ -60,6 +60,16 @@ const CUSTOMER_FLOW = [
 const VENDOR_FLOW = [
   {
     step: 1,
+    icon: 'fa-envelope-open-text',
+    title: 'Request for Quotation',
+    desc: 'Request price quotes from suppliers before ordering',
+    menu: 'Request for Quotation',
+    color: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+  },
+  {
+    step: 2,
     icon: 'fa-shopping-basket',
     title: 'Purchase Order',
     desc: 'Place an official order with your supplier',
@@ -69,7 +79,7 @@ const VENDOR_FLOW = [
     border: '#fecaca',
   },
   {
-    step: 2,
+    step: 3,
     icon: 'fa-file-invoice-dollar',
     title: 'Bill (Vendor Invoice)',
     desc: "Record the supplier's invoice when goods are received",
@@ -79,7 +89,7 @@ const VENDOR_FLOW = [
     border: '#fed7aa',
   },
   {
-    step: 3,
+    step: 4,
     icon: 'fa-hand-holding-usd',
     title: 'Vendor Payment',
     desc: 'Pay the supplier and record the transaction',
@@ -225,8 +235,8 @@ export default function ERPFlowDiagram({ isOpen, onClose, onNavigate }) {
   if (!isOpen) return null
 
   const go = (menuName) => {
-    onNavigate(menuName)
     onClose()
+    onNavigate(menuName)
   }
 
   return (

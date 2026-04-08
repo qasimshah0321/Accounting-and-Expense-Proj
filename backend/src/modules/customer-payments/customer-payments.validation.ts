@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const createCustomerPaymentSchema = z.object({
   customer_id: z.string().uuid('Invalid customer ID'),
   invoice_id: z.string().uuid().optional().nullable(),
+  invoice_ids: z.array(z.string().uuid()).optional(),
   payment_date: z.string().min(1, 'Payment date required'),
   amount: z.number().positive('Amount must be > 0'),
   payment_method: z.enum(['cash', 'check', 'card', 'bank_transfer', 'other']),

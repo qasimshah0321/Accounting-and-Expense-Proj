@@ -17,8 +17,10 @@ export const errorHandler = (
     return;
   }
 
-  // PostgreSQL unique violation
-  if ((err as any).code === '23505') {
+  // Unique constraint violation (PostgreSQL: 23505, MySQL: ER_DUP_ENTRY / sqlState 23000)
+  const errCode = (err as any).code;
+  const sqlState = (err as any).sqlState;
+  if (errCode === '23505' || errCode === 'ER_DUP_ENTRY') {
     res.status(409).json({
       success: false,
       error: { code: 'CONFLICT', message: 'Record already exists' },
@@ -27,11 +29,21 @@ export const errorHandler = (
     return;
   }
 
-  // PostgreSQL foreign key violation
-  if ((err as any).code === '23503') {
+  // Foreign key violation (PostgreSQL: 23503, MySQL: ER_NO_REFERENCED_ROW_2 / ER_ROW_IS_REFERENCED_2)
+  if (errCode === '23503' || errCode === 'ER_NO_REFERENCED_ROW_2' || errCode === 'ER_ROW_IS_REFERENCED_2') {
     res.status(400).json({
       success: false,
       error: { code: 'VALIDATION_ERROR', message: 'Referenced record does not exist' },
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  // MySQL generic integrity constraint (sqlState 23000 covers duplicates and FK violations)
+  if (sqlState === '23000') {
+    res.status(409).json({
+      success: false,
+      error: { code: 'CONFLICT', message: 'Database constraint violation' },
       timestamp: new Date().toISOString(),
     });
     return;

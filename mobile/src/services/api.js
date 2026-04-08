@@ -99,6 +99,8 @@ export const salesOrdersAPI = {
   getNextNumber: () => api.get('/sales-orders/next-number'),
   updateStatus: (id, status, reason) =>
     api.patch(`/sales-orders/${id}/status`, { status, reason }),
+  getByCustomer: (customerId) =>
+    api.get(`/sales-orders?customer_id=${customerId}&limit=200`),
 };
 
 // ─── Bills ─────────────────────────────────────────────────────────────────
@@ -227,6 +229,18 @@ export const bankTransactionsAPI = {
   create: (data) => api.post('/bank-transactions', data),
   update: (id, data) => api.put(`/bank-transactions/${id}`, data),
   delete: (id) => api.delete(`/bank-transactions/${id}`),
+};
+
+// ─── Notifications ────────────────────────────────────────────────────────
+export const notificationsAPI = {
+  getAll: (limit = 30) => api.get(`/notifications?limit=${limit}`),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+};
+
+// ─── Expo Push ────────────────────────────────────────────────────────────
+export const pushAPI = {
+  registerExpoToken: (data) => api.post('/push/expo-subscribe', data),
 };
 
 // ─── Reports / Dashboard ──────────────────────────────────────────────────

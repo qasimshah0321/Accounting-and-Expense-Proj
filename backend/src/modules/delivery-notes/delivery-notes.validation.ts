@@ -8,6 +8,7 @@ const lineItemSchema = z.object({
   shipped_qty: z.number().min(0),
   unit_of_measure: z.string().default('pcs'),
   stock_location: z.string().optional(),
+  sales_order_line_item_id: z.string().uuid().optional().nullable(),
 });
 
 export const createDeliveryNoteSchema = z.object({

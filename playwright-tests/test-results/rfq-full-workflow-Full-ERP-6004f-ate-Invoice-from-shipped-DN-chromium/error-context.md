@@ -1,0 +1,237 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e7]: 
+        - generic [ref=e8]: AccountPro
+      - generic [ref=e9]: RFQ Test Co 1775405448564
+    - generic [ref=e11]:
+      - generic [ref=e12]: 
+      - textbox "Navigate or search for transactions, contacts, reports, and more" [ref=e13]
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "" [ref=e16] [cursor=pointer]:
+          - generic [ref=e17]: 
+        - generic: "1"
+      - generic [ref=e19] [cursor=pointer]: RF
+    - text: 
+  - generic [ref=e20]:
+    - complementary [ref=e21]:
+      - generic [ref=e22]:
+        - button "" [ref=e23] [cursor=pointer]:
+          - generic [ref=e24]: 
+        - button " Create" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: 
+          - generic [ref=e27]: Create
+      - navigation [ref=e28]:
+        - list [ref=e29]:
+          - listitem [ref=e30]:
+            - generic [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]: 
+              - generic [ref=e33]: Dashboard
+          - listitem [ref=e34]:
+            - generic [ref=e35] [cursor=pointer]:
+              - generic [ref=e36]: 
+              - generic [ref=e37]: Quick Order
+          - listitem [ref=e38]:
+            - generic [ref=e40] [cursor=pointer]:
+              - generic [ref=e41]: 
+              - generic [ref=e42]: Sales
+              - generic [ref=e43]: 
+            - list:
+              - listitem [ref=e44] [cursor=pointer]: Invoices
+              - listitem [ref=e45] [cursor=pointer]: Delivery Notes
+              - listitem [ref=e46] [cursor=pointer]: Sales Order
+              - listitem [ref=e47] [cursor=pointer]: Estimates/Quotations
+              - listitem [ref=e48] [cursor=pointer]: Sales Receipt
+              - listitem [ref=e49] [cursor=pointer]: Refunds
+          - listitem [ref=e50]:
+            - generic [ref=e52] [cursor=pointer]:
+              - generic [ref=e53]: 
+              - generic [ref=e54]: Purchases
+              - generic [ref=e55]: 
+            - list [ref=e56]:
+              - listitem [ref=e57] [cursor=pointer]: Bills
+              - listitem [ref=e58] [cursor=pointer]: Expenses
+              - listitem [ref=e59] [cursor=pointer]: Request for Quotation
+              - listitem [ref=e60] [cursor=pointer]: Purchase Order
+              - listitem [ref=e61] [cursor=pointer]: Vendor Credits
+              - listitem [ref=e62] [cursor=pointer]: Bill Payments
+              - listitem [ref=e63] [cursor=pointer]: Refunds
+          - listitem [ref=e64]:
+            - generic [ref=e66] [cursor=pointer]:
+              - generic [ref=e67]: 
+              - generic [ref=e68]: Payments
+              - generic [ref=e69]: 
+            - list:
+              - listitem [ref=e70] [cursor=pointer]: Receive Payment
+              - listitem [ref=e71] [cursor=pointer]: Make Payment
+          - listitem [ref=e72]:
+            - generic [ref=e74] [cursor=pointer]:
+              - generic [ref=e75]: 
+              - generic [ref=e76]: Customers
+              - generic [ref=e77]: 
+            - list:
+              - listitem [ref=e78] [cursor=pointer]: Customer Center
+              - listitem [ref=e79] [cursor=pointer]: Customer Statements
+              - listitem [ref=e80] [cursor=pointer]: Aging (Account Receivables)
+              - listitem [ref=e81] [cursor=pointer]: Credit Limits and Terms
+              - listitem [ref=e82] [cursor=pointer]: Customer Groups/Segment
+              - listitem [ref=e83] [cursor=pointer]: Customer List
+              - listitem [ref=e84] [cursor=pointer]: Document & Attachments
+          - listitem [ref=e85]:
+            - generic [ref=e87] [cursor=pointer]:
+              - generic [ref=e88]: 
+              - generic [ref=e89]: Vendors
+              - generic [ref=e90]: 
+            - list:
+              - listitem [ref=e91] [cursor=pointer]: Vendor Center
+              - listitem [ref=e92] [cursor=pointer]: Contact List
+              - listitem [ref=e93] [cursor=pointer]: Vendor Group/Segments
+              - listitem [ref=e94] [cursor=pointer]: Payments Terms & Method
+              - listitem [ref=e95] [cursor=pointer]: Vendor Statements
+              - listitem [ref=e96] [cursor=pointer]: Aging (Accounts Payables)
+              - listitem [ref=e97] [cursor=pointer]: Documents & Attachments
+          - listitem [ref=e98]:
+            - generic [ref=e100] [cursor=pointer]:
+              - generic [ref=e101]: 
+              - generic [ref=e102]: Product & Services
+              - generic [ref=e103]: 
+            - list:
+              - listitem [ref=e104] [cursor=pointer]: Product Center
+              - listitem [ref=e105] [cursor=pointer]: Product List
+              - listitem [ref=e106] [cursor=pointer]: Products & Master Data
+              - listitem [ref=e107] [cursor=pointer]: Stock Locations
+              - listitem [ref=e108] [cursor=pointer]: Stock Mobility
+              - listitem [ref=e109] [cursor=pointer]: Stock Valuation
+              - listitem [ref=e110] [cursor=pointer]: Reorder Planning
+              - listitem [ref=e111] [cursor=pointer]: Documents & Attachments
+          - listitem [ref=e112]:
+            - generic [ref=e114] [cursor=pointer]:
+              - generic [ref=e115]: 
+              - generic [ref=e116]: Payroll
+              - generic [ref=e117]: 
+            - list:
+              - listitem [ref=e118] [cursor=pointer]: Payroll Center
+              - listitem [ref=e119] [cursor=pointer]: Employee List
+              - listitem [ref=e120] [cursor=pointer]: Pay Runs
+              - listitem [ref=e121] [cursor=pointer]: Earnings & Deductions
+              - listitem [ref=e122] [cursor=pointer]: Time & Attendance
+              - listitem [ref=e123] [cursor=pointer]: Payroll Payments
+              - listitem [ref=e124] [cursor=pointer]: Documents & Attachments
+          - listitem [ref=e125]:
+            - generic [ref=e127] [cursor=pointer]:
+              - generic [ref=e128]: 
+              - generic [ref=e129]: Banking
+              - generic [ref=e130]: 
+            - list:
+              - listitem [ref=e131] [cursor=pointer]: Banking Center
+              - listitem [ref=e132] [cursor=pointer]: Bank Accounts
+              - listitem [ref=e133] [cursor=pointer]: Bank Transactions
+              - listitem [ref=e134] [cursor=pointer]: Bank Reconciliation
+              - listitem [ref=e135] [cursor=pointer]: Transfers
+              - listitem [ref=e136] [cursor=pointer]: Cheque Management
+              - listitem [ref=e137] [cursor=pointer]: Documents & Attachments
+          - listitem [ref=e138]:
+            - generic [ref=e140] [cursor=pointer]:
+              - generic [ref=e141]: 
+              - generic [ref=e142]: Accounting
+              - generic [ref=e143]: 
+            - list:
+              - listitem [ref=e144] [cursor=pointer]: Accounting Center
+              - listitem [ref=e145] [cursor=pointer]: Chart of Accounts
+              - listitem [ref=e146] [cursor=pointer]: Journal Entries
+              - listitem [ref=e147] [cursor=pointer]: General Ledger
+              - listitem [ref=e148] [cursor=pointer]: Trial Balance
+              - listitem [ref=e149] [cursor=pointer]: Documents & Attachments
+          - listitem [ref=e150]:
+            - generic [ref=e152] [cursor=pointer]:
+              - generic [ref=e153]: 
+              - generic [ref=e154]: Reports
+              - generic [ref=e155]: 
+            - list:
+              - listitem [ref=e156] [cursor=pointer]: Financial Statements
+              - listitem [ref=e157] [cursor=pointer]: Planning & Performance Analysis
+              - listitem [ref=e158] [cursor=pointer]: Revenue & Sales Analysis
+              - listitem [ref=e159] [cursor=pointer]: Cost & Expense Analytics
+              - listitem [ref=e160] [cursor=pointer]: Receivables & Payables
+              - listitem [ref=e161] [cursor=pointer]: Inventory Analytics
+              - listitem [ref=e162] [cursor=pointer]: Payroll & Workforce Costs
+              - listitem [ref=e163] [cursor=pointer]: Cash & Banking
+              - listitem [ref=e164] [cursor=pointer]: Tax & Compliances
+              - listitem [ref=e165] [cursor=pointer]: Management & Performance
+              - listitem [ref=e166] [cursor=pointer]: Audit & Risk
+          - listitem [ref=e167]:
+            - generic [ref=e169] [cursor=pointer]:
+              - generic [ref=e170]: 
+              - generic [ref=e171]: Settings
+              - generic [ref=e172]: 
+            - list:
+              - listitem [ref=e173] [cursor=pointer]: Tax
+              - listitem [ref=e174] [cursor=pointer]: Ship Via
+              - listitem [ref=e175] [cursor=pointer]: Recurring Documents
+              - listitem [ref=e176] [cursor=pointer]: Company Settings
+              - listitem [ref=e177] [cursor=pointer]: ERP Flow Guide
+              - listitem [ref=e178] [cursor=pointer]: Users & Roles
+              - listitem [ref=e179] [cursor=pointer]: Role Permissions
+      - generic [ref=e181] [cursor=pointer]:
+        - generic [ref=e182]: 
+        - generic [ref=e183]: Bookmarks
+    - main [ref=e184]:
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - heading "Delivery Notes" [level=2] [ref=e189]
+          - generic [ref=e190]:
+            - button "+ New Delivery Note" [ref=e191] [cursor=pointer]:
+              - generic [ref=e192]: +
+              - text: New Delivery Note
+            - button "" [ref=e193] [cursor=pointer]:
+              - generic [ref=e194]: 
+        - generic [ref=e195]:
+          - generic [ref=e196]:
+            - generic [ref=e197]: 
+            - 'textbox "Search by DN # or customer..." [ref=e198]'
+          - button "" [ref=e199] [cursor=pointer]:
+            - generic [ref=e200]: 
+        - table [ref=e202]:
+          - rowgroup [ref=e203]:
+            - 'row "DN # Source SO Customer Date Shipment Date Ship Via Ordered Shipped Backordered Status Actions" [ref=e204]':
+              - 'columnheader "DN #" [ref=e205]'
+              - columnheader "Source SO" [ref=e206]
+              - columnheader "Customer" [ref=e207]
+              - columnheader "Date" [ref=e208]
+              - columnheader "Shipment Date" [ref=e209]
+              - columnheader "Ship Via" [ref=e210]
+              - columnheader "Ordered" [ref=e211]
+              - columnheader "Shipped" [ref=e212]
+              - columnheader "Backordered" [ref=e213]
+              - columnheader "Status" [ref=e214]
+              - columnheader "Actions" [ref=e215]
+          - rowgroup [ref=e216]:
+            - row "DN-001 - RFQ Customer 1775405448564 4/5/2026 4/5/2026 - 2 2 0 shipped   Accept 0" [ref=e217]:
+              - cell "DN-001" [ref=e218]:
+                - strong [ref=e219]: DN-001
+              - cell "-" [ref=e220]
+              - cell "RFQ Customer 1775405448564" [ref=e221]
+              - cell "4/5/2026" [ref=e222]
+              - cell "4/5/2026" [ref=e223]
+              - cell "-" [ref=e224]
+              - cell "2" [ref=e225]
+              - cell "2" [ref=e226]
+              - cell "0" [ref=e227]
+              - cell "shipped" [ref=e228]:
+                - generic [ref=e229]: shipped
+              - cell "  Accept 0" [ref=e230]:
+                - generic [ref=e231]:
+                  - button "" [ref=e232] [cursor=pointer]:
+                    - generic [ref=e233]: 
+                  - button " Accept" [ref=e234] [cursor=pointer]:
+                    - generic [ref=e235]: 
+                    - text: Accept
+                  - text: "0"
+  - generic [ref=e236]: $0.00
+```

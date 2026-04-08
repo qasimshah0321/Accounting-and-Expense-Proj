@@ -8,6 +8,7 @@ import TaxFormScreen from '../screens/settings/TaxFormScreen';
 import ShipViaListScreen from '../screens/settings/ShipViaListScreen';
 import ShipViaFormScreen from '../screens/settings/ShipViaFormScreen';
 import CompanySettingsScreen from '../screens/settings/CompanySettingsScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Stack = createStackNavigator();
 const opts = {
@@ -27,6 +28,7 @@ const MoreNavigator = () => (
     <Stack.Screen name="ShipViaList" component={ShipViaListScreen} options={{ title: 'Ship Via' }} />
     <Stack.Screen name="ShipViaForm" component={ShipViaFormScreen} />
     <Stack.Screen name="CompanySettings" component={CompanySettingsScreen} options={{ title: 'Company Settings' }} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
   </Stack.Navigator>
 );
 

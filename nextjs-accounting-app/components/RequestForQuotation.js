@@ -208,7 +208,7 @@ export default function RequestForQuotation({ isOpen, onClose, taxes, onDirtyCha
   }
 
   const handleProductSelect = (product, itemId) => {
-    const price = parseFloat(product.selling_price) || parseFloat(product.unit_price) || 0
+    const price = parseFloat(product.cost_price) || parseFloat(product.unit_cost) || 0
     setLineItems(prev => prev.map(item => {
       if (item.id !== itemId) return item
       return { ...item, sku: product.sku || '', description: product.description || product.name || '', rate: price, amount: (item.quantity || 1) * price }
@@ -225,7 +225,6 @@ export default function RequestForQuotation({ isOpen, onClose, taxes, onDirtyCha
     if (!rfqDate) { setError('RFQ date is required'); return }
     setSaving(true)
     const payload = {
-      ...(rfqNo && !editingRFQ ? { rfq_no: rfqNo } : {}),
       vendor_id: selectedVendorId,
       rfq_date: rfqDate,
       required_by_date: requiredByDate || undefined,
@@ -444,7 +443,7 @@ export default function RequestForQuotation({ isOpen, onClose, taxes, onDirtyCha
                     <div className={styles.invoiceDetailsColumn}>
                       <div className={styles.formGroup}>
                         <label>RFQ No.</label>
-                        <input type="text" className={styles.formControlStandard} value={rfqNo} onChange={e => setRfqNo(e.target.value)} readOnly={!!editingRFQ} style={editingRFQ ? { backgroundColor: '#f5f5f5', cursor: 'not-allowed' } : {}} />
+                        <input type="text" className={styles.formControlStandard} value={rfqNo || 'Auto-generated'} readOnly style={{ backgroundColor: '#f5f5f5', cursor: 'default' }} />
                       </div>
                       <div className={styles.formGroup}>
                         <label>RFQ Date</label>

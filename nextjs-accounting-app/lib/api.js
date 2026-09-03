@@ -83,6 +83,12 @@ export const deleteCustomer = (id) =>
     headers: buildHeaders(),
   }).then(handle)
 
+export const getCustomerStatement = (id, startDate, endDate) =>
+  fetch(
+    `${API_BASE}/customers/${id}/statement?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`,
+    { headers: buildHeaders() }
+  ).then(handle)
+
 // ─── Vendors ─────────────────────────────────────────────────────────────────
 export const getVendors = (search = '') =>
   fetch(`${API_BASE}/vendors?limit=200${search ? `&search=${encodeURIComponent(search)}` : ''}`, {
@@ -108,6 +114,12 @@ export const deleteVendor = (id) =>
     method: 'DELETE',
     headers: buildHeaders(),
   }).then(handle)
+
+export const getVendorStatement = (id, startDate, endDate) =>
+  fetch(
+    `${API_BASE}/vendors/${id}/statement?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`,
+    { headers: buildHeaders() }
+  ).then(handle)
 
 // ─── Products ────────────────────────────────────────────────────────────────
 export const getProducts = (search = '') =>
@@ -205,6 +217,17 @@ export const toggleShipViaActive = (id) =>
 export const getNextInvoiceNumber = () =>
   fetch(`${API_BASE}/invoices/next-number`, { headers: buildHeaders() }).then(handle)
 
+export const parseInvoiceImage = (file) => {
+  const token = getToken()
+  const formData = new FormData()
+  formData.append('invoice_file', file)
+  return fetch(`${API_BASE}/invoices/parse-image`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  }).then(handle)
+}
+
 export const getInvoices = () =>
   fetch(`${API_BASE}/invoices?limit=200`, { headers: buildHeaders() }).then(handle)
 
@@ -273,6 +296,70 @@ export const updatePurchaseOrderStatus = (id, status, reason) =>
     method: 'PATCH',
     headers: buildHeaders(),
     body: JSON.stringify({ status, reason }),
+  }).then(handle)
+
+export const getPurchaseOrdersForVendor = (vendorId) =>
+  fetch(`${API_BASE}/purchase-orders?vendor_id=${encodeURIComponent(vendorId)}&limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getGrnRequirement = () =>
+  fetch(`${API_BASE}/purchase-orders/grn-requirement`, { headers: buildHeaders() }).then(handle)
+
+export const convertPOToBill = (poId, data) =>
+  fetch(`${API_BASE}/purchase-orders/${poId}/convert-to-bill`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+// ─── Goods Received Notes (GRN) ──────────────────────────────────────────────
+export const getNextGRNNumber = () =>
+  fetch(`${API_BASE}/goods-received-notes/next-number`, { headers: buildHeaders() }).then(handle)
+
+export const getGRNs = () =>
+  fetch(`${API_BASE}/goods-received-notes?limit=200`, { headers: buildHeaders() }).then(handle)
+
+export const getGRN = (id) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createGRN = (data) =>
+  fetch(`${API_BASE}/goods-received-notes`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateGRN = (id, data) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteGRN = (id) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const updateGRNStatus = (id, status, reason) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}/status`, {
+    method: 'PATCH',
+    headers: buildHeaders(),
+    body: JSON.stringify({ status, reason }),
+  }).then(handle)
+
+export const receiveGRNGoods = (id, data) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}/receive`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const convertGRNToBill = (id, data) =>
+  fetch(`${API_BASE}/goods-received-notes/${id}/convert-to-bill`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
   }).then(handle)
 
 // ─── Sales Orders ────────────────────────────────────────────────────────────
@@ -586,6 +673,12 @@ export const getProfitLossReport = (startDate, endDate) =>
     headers: buildHeaders(),
   }).then(handle)
 
+// Full P&L / Income Statement — sectioned report (Revenue / COGS / Operating Expenses / Net Income)
+export const getProfitAndLossReport = (startDate, endDate) =>
+  fetch(`${API_BASE}/reports/profit-and-loss?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
 export const getSalesSummaryReport = (startDate, endDate) =>
   fetch(`${API_BASE}/reports/sales-summary?date_from=${startDate}&date_to=${endDate}`, {
     headers: buildHeaders(),
@@ -596,14 +689,64 @@ export const getExpenseSummaryReport = (startDate, endDate) =>
     headers: buildHeaders(),
   }).then(handle)
 
-export const getReceivablesAgingReport = () =>
-  fetch(`${API_BASE}/reports/receivables-ageing`, { headers: buildHeaders() }).then(handle)
+export const getReceivablesAgingReport = (asOf) =>
+  fetch(`${API_BASE}/reports/receivables-ageing${asOf ? `?as_of=${encodeURIComponent(asOf)}` : ''}`, { headers: buildHeaders() }).then(handle)
 
-export const getPayablesAgingReport = () =>
-  fetch(`${API_BASE}/reports/payables-ageing`, { headers: buildHeaders() }).then(handle)
+export const getPayablesAgingReport = (asOf) =>
+  fetch(`${API_BASE}/reports/payables-ageing${asOf ? `?as_of=${encodeURIComponent(asOf)}` : ''}`, { headers: buildHeaders() }).then(handle)
 
 export const getInventoryValuationReport = () =>
   fetch(`${API_BASE}/reports/inventory-valuation`, { headers: buildHeaders() }).then(handle)
+
+export const getTaxSummaryReport = (from, to) =>
+  fetch(`${API_BASE}/reports/tax-summary?date_from=${from}&date_to=${to}`, { headers: buildHeaders() }).then(handle)
+
+export const getBalanceSheetReport = (asOf) =>
+  fetch(`${API_BASE}/reports/balance-sheet${asOf ? `?as_of=${asOf}` : ''}`, { headers: buildHeaders() }).then(handle)
+
+export const getCashFlowReport = (from, to) =>
+  fetch(`${API_BASE}/reports/cash-flow?date_from=${from}&date_to=${to}`, { headers: buildHeaders() }).then(handle)
+
+// ─── Enhanced Financial Statement Reports (Section 2.1) ─────────────────────
+export const getPLComparisonReport = (start, end, compareMode = 'prior_period') =>
+  fetch(`${API_BASE}/reports/profit-loss-comparison?startDate=${start}&endDate=${end}&compareMode=${compareMode}`, { headers: buildHeaders() }).then(handle)
+
+export const getBSComparisonReport = (date1, date2) =>
+  fetch(`${API_BASE}/reports/balance-sheet-comparison?date1=${date1}&date2=${date2}`, { headers: buildHeaders() }).then(handle)
+
+export const getEquityChangesReport = (from, to) =>
+  fetch(`${API_BASE}/reports/equity-changes?date_from=${from}&date_to=${to}`, { headers: buildHeaders() }).then(handle)
+
+export const getCashFlowForecastReport = () =>
+  fetch(`${API_BASE}/reports/cash-flow-forecast`, { headers: buildHeaders() }).then(handle)
+
+export const getPLByDepartmentReport = (start, end) =>
+  fetch(`${API_BASE}/reports/profit-loss-by-department?startDate=${start}&endDate=${end}`, { headers: buildHeaders() }).then(handle)
+
+export const getBudgetVsActualReport = (start, end, budgetPeriodId) =>
+  fetch(`${API_BASE}/reports/budget-vs-actual?startDate=${start}&endDate=${end}${budgetPeriodId ? `&budget_period_id=${budgetPeriodId}` : ''}`, { headers: buildHeaders() }).then(handle)
+
+// ─── Budget CRUD ────────────────────────────────────────────────────────────
+export const getBudgetPeriods = () =>
+  fetch(`${API_BASE}/budgets`, { headers: buildHeaders() }).then(handle)
+
+export const getBudgetPeriod = (id) =>
+  fetch(`${API_BASE}/budgets/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createBudgetPeriod = (data) =>
+  fetch(`${API_BASE}/budgets`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const updateBudgetPeriod = (id, data) =>
+  fetch(`${API_BASE}/budgets/${id}`, { method: 'PUT', headers: buildHeaders(), body: JSON.stringify(data) }).then(handle)
+
+export const deleteBudgetPeriod = (id) =>
+  fetch(`${API_BASE}/budgets/${id}`, { method: 'DELETE', headers: buildHeaders() }).then(handle)
+
+export const getBudgetLines = (periodId) =>
+  fetch(`${API_BASE}/budgets/${periodId}/lines`, { headers: buildHeaders() }).then(handle)
+
+export const saveBudgetLines = (periodId, lines) =>
+  fetch(`${API_BASE}/budgets/${periodId}/lines`, { method: 'POST', headers: buildHeaders(), body: JSON.stringify({ lines }) }).then(handle)
 
 // ─── Inventory ──────────────────────────────────────────────────────────────
 export const getLowStock = () =>
@@ -669,7 +812,7 @@ export const getOutstandingBills = (vendorId) =>
   }).then(handle)
 
 export const getPartiallyPaidBills = (vendorId) =>
-  fetch(`${API_BASE}/bills?vendor_id=${vendorId}&payment_status=partial&limit=200`, {
+  fetch(`${API_BASE}/bills?vendor_id=${vendorId}&payment_status=partially_paid&limit=200`, {
     headers: buildHeaders(),
   }).then(handle)
 
@@ -726,10 +869,37 @@ export const createJournalEntry = (data) =>
     body: JSON.stringify(data),
   }).then(handle)
 
+export const updateJournalEntry = (id, data) =>
+  fetch(`${API_BASE}/accounting/journal-entries/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
 export const reverseJournalEntry = (id) =>
   fetch(`${API_BASE}/accounting/journal-entries/${id}/reverse`, {
     method: 'POST',
     headers: buildHeaders(),
+  }).then(handle)
+
+export const getOpeningBalance = () =>
+  fetch(`${API_BASE}/accounting/opening-balance`, { headers: buildHeaders() }).then(handle)
+
+export const postOpeningBalance = (data) =>
+  fetch(`${API_BASE}/accounting/opening-balance`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const getYearEndCloses = () =>
+  fetch(`${API_BASE}/accounting/year-end-close`, { headers: buildHeaders() }).then(handle)
+
+export const performYearEndClose = (data) =>
+  fetch(`${API_BASE}/accounting/year-end-close`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
   }).then(handle)
 
 export const getGeneralLedger = (accountId, startDate, endDate) =>
@@ -891,6 +1061,84 @@ export const unlinkCustomer = (userId) =>
     headers: buildHeaders(),
   }).then(handle)
 
+export const getUserPermissions = (userId) =>
+  fetch(`${API_BASE}/users/${userId}/permissions`, { headers: buildHeaders() }).then(handle)
+
+export const updateUserPermissions = (userId, updates) =>
+  fetch(`${API_BASE}/users/${userId}/permissions`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(updates),
+  }).then(handle)
+
+// ─── Departments ──────────────────────────────────────────────────────────────
+export const getDepartments = () =>
+  fetch(`${API_BASE}/departments`, { headers: buildHeaders() }).then(handle)
+
+export const getDepartment = (id) =>
+  fetch(`${API_BASE}/departments/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const createDepartment = (data) =>
+  fetch(`${API_BASE}/departments`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateDepartment = (id, data) =>
+  fetch(`${API_BASE}/departments/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteDepartment = (id) =>
+  fetch(`${API_BASE}/departments/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const updateDepartmentPermissions = (id, updates) =>
+  fetch(`${API_BASE}/departments/${id}/permissions`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(updates),
+  }).then(handle)
+
+export const assignUserToDepartment = (userId, departmentId) =>
+  fetch(`${API_BASE}/departments/assign-user`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ user_id: userId, department_id: departmentId }),
+  }).then(handle)
+
+export const getUnassignedUsers = () =>
+  fetch(`${API_BASE}/departments/unassigned-users`, { headers: buildHeaders() }).then(handle)
+
+// ─── Roles ────────────────────────────────────────────────────────────────────
+export const getRoles = () =>
+  fetch(`${API_BASE}/roles`, { headers: buildHeaders() }).then(handle)
+
+export const createRole = (data) =>
+  fetch(`${API_BASE}/roles`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateRole = (id, data) =>
+  fetch(`${API_BASE}/roles/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteRole = (id) =>
+  fetch(`${API_BASE}/roles/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export const paymentTermsToNumber = (terms) => {
   const map = { 'Net 15': 15, 'Net 30': 30, 'Net 60': 60, 'Due on Receipt': 0 }
@@ -913,3 +1161,125 @@ export const productTypeToFrontend = (type) => {
   const map = { 'service': 'Services', 'inventory': 'Inventory item', 'non-inventory': 'Non-Inventory' }
   return map[type] || 'Services'
 }
+
+// ─── FBR (Pakistan Federal Board of Revenue) ─────────────────────────────────
+export const getFBRConfig = () =>
+  fetch(`${API_BASE}/fbr/config`, { headers: buildHeaders() }).then(handle)
+
+export const saveFBRConfig = (data) =>
+  fetch(`${API_BASE}/fbr/config`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const testFBRConnection = () =>
+  fetch(`${API_BASE}/fbr/test-connection`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const submitInvoiceToFBR = (invoiceId) =>
+  fetch(`${API_BASE}/fbr/invoices/${invoiceId}/submit`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getInvoiceFBRStatus = (invoiceId) =>
+  fetch(`${API_BASE}/fbr/invoices/${invoiceId}/status`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const validateInvoiceWithFBR = (invoiceId) =>
+  fetch(`${API_BASE}/fbr/invoices/${invoiceId}/validate`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+// Sync FBR reference data (provinces / hscodes / uom / doctypes / ...). Optional type.
+export const syncFBRReference = (type = '') =>
+  fetch(`${API_BASE}/fbr/reference/sync${type ? `?type=${encodeURIComponent(type)}` : ''}`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getFBRReference = (type) =>
+  fetch(`${API_BASE}/fbr/reference/${encodeURIComponent(type)}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const lookupFBRRegistration = (regno) =>
+  fetch(`${API_BASE}/fbr/lookup/registration?regno=${encodeURIComponent(regno)}`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+// ─── PRA (Punjab Revenue Authority) ──────────────────────────────────────────
+export const getPRAConfig = () =>
+  fetch(`${API_BASE}/pra/config`, { headers: buildHeaders() }).then(handle)
+
+export const savePRAConfig = (data) =>
+  fetch(`${API_BASE}/pra/config`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const testPRAConnection = () =>
+  fetch(`${API_BASE}/pra/test-connection`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const submitInvoiceToPRA = (invoiceId) =>
+  fetch(`${API_BASE}/pra/invoices/${invoiceId}/submit`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getInvoicePRAStatus = (invoiceId) =>
+  fetch(`${API_BASE}/pra/invoices/${invoiceId}/status`, {
+    headers: buildHeaders(),
+  }).then(handle)
+
+// ─── Approval Workflows ──────────────────────────────────────────────────────
+export const getApprovalRules = () =>
+  fetch(`${API_BASE}/approvals/rules`, { headers: buildHeaders() }).then(handle)
+
+export const createApprovalRule = (data) =>
+  fetch(`${API_BASE}/approvals/rules`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const updateApprovalRule = (id, data) =>
+  fetch(`${API_BASE}/approvals/rules/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(),
+    body: JSON.stringify(data),
+  }).then(handle)
+
+export const deleteApprovalRule = (id) =>
+  fetch(`${API_BASE}/approvals/rules/${id}`, {
+    method: 'DELETE',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const getMyPendingApprovals = () =>
+  fetch(`${API_BASE}/approvals/pending`, { headers: buildHeaders() }).then(handle)
+
+export const getDocumentApprovals = (type, id) =>
+  fetch(`${API_BASE}/approvals/document/${type}/${id}`, { headers: buildHeaders() }).then(handle)
+
+export const approveRequest = (id) =>
+  fetch(`${API_BASE}/approvals/${id}/approve`, {
+    method: 'POST',
+    headers: buildHeaders(),
+  }).then(handle)
+
+export const rejectRequest = (id, reason) =>
+  fetch(`${API_BASE}/approvals/${id}/reject`, {
+    method: 'POST',
+    headers: buildHeaders(),
+    body: JSON.stringify({ rejection_reason: reason }),
+  }).then(handle)

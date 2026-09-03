@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from './CustomerCenter.module.css'
 import CustomerPopup from './CustomerPopup'
+import CustomerStatement from './CustomerStatement'
 import * as api from '@/lib/api'
 
 export default function CustomerCenter({ isOpen, onClose }) {
@@ -12,6 +13,7 @@ export default function CustomerCenter({ isOpen, onClose }) {
   const [isCustomerPopupOpen, setIsCustomerPopupOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [statementCustomer, setStatementCustomer] = useState(null)
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true)
@@ -75,6 +77,7 @@ export default function CustomerCenter({ isOpen, onClose }) {
   )
 
   return (
+    <>
     <div className={styles.customerCenterOverlay}>
       <div className={styles.customerCenterContainer}>
         {/* Header */}
@@ -155,6 +158,13 @@ export default function CustomerCenter({ isOpen, onClose }) {
                     <td>
                       <div className={styles.actionButtons}>
                         <button
+                          className={styles.btnView}
+                          title="Customer Statement"
+                          onClick={() => setStatementCustomer(customer)}
+                        >
+                          <i className="fas fa-file-alt"></i>
+                        </button>
+                        <button
                           className={styles.btnEdit}
                           title="Edit"
                           onClick={() => handleEditCustomer(customer)}
@@ -192,5 +202,13 @@ export default function CustomerCenter({ isOpen, onClose }) {
         editCustomer={editingCustomer}
       />
     </div>
+
+    {/* Customer Statement — outside overlay to avoid stacking context */}
+    <CustomerStatement
+      isOpen={!!statementCustomer}
+      onClose={() => setStatementCustomer(null)}
+      customer={statementCustomer}
+    />
+    </>
   )
 }

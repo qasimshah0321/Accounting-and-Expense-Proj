@@ -40,4 +40,23 @@ export const config = {
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'AccountPro <noreply@candydada.com>',
   },
+  // Pakistan FBR Digital Invoicing (DI) API — PRAL Technical Spec v1.12.
+  // Endpoints are identical for sandbox and production (routing is by token +
+  // the `_sb` suffix on submit endpoints); overridable only for testing/mocking.
+  fbr: {
+    diBase: process.env.FBR_DI_BASE || 'https://gw.fbr.gov.pk/di_data/v1/di',   // postinvoicedata[_sb], validateinvoicedata[_sb]
+    pdiBase: process.env.FBR_PDI_BASE || 'https://gw.fbr.gov.pk/pdi',           // /v1/* and /v2/* reference APIs
+    distBase: process.env.FBR_DIST_BASE || 'https://gw.fbr.gov.pk/dist/v1',     // statl, Get_Reg_Type
+    timeoutMs: parseInt(process.env.FBR_TIMEOUT_MS || '20000', 10),
+  },
+  // Punjab Revenue Authority (PRA) Software Fiscal Device — PRAL Technical Spec v1.2.
+  // Unlike FBR, sandbox and production are different hosts/paths (not a suffix),
+  // and each has its own POS ID + Bearer token pair.
+  pra: {
+    sandboxUrl: process.env.PRA_SANDBOX_URL || 'https://ims.pral.com.pk/ims/sandbox/api/Live/PostData',
+    productionUrl: process.env.PRA_PRODUCTION_URL || 'https://ims.pral.com.pk/ims/production/api/Live/PostData',
+    // Invoice-verification page — the printed QR encodes `${verifyBase}?PRAInvNo=<InvoiceNumber>`.
+    verifyBase: process.env.PRA_VERIFY_BASE || 'https://reg.pra.punjab.gov.pk/IMSFiscalReport/SearchPOSInvoice_Report.aspx',
+    timeoutMs: parseInt(process.env.PRA_TIMEOUT_MS || '20000', 10),
+  },
 };

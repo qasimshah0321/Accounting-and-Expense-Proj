@@ -51,3 +51,17 @@ export const updateStatus = async (req: AuthRequest, res: Response, next: NextFu
     sendSuccess(res, await service.updateStatus(getCompanyId(req), req.params.id, req.user!.id, getUserName(req), parsed.data.status, parsed.data.reason), 'Status updated');
   } catch (err) { next(err); }
 };
+
+
+export const convertToBill = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    sendSuccess(res, await service.convertPOToBill(getCompanyId(req), req.params.id, req.user!.id, getUserName(req), req.body), 'Purchase Order converted to Bill');
+  } catch (err) { next(err); }
+};
+
+export const getGrnRequirement = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const req_ = req as any;
+    sendSuccess(res, { grn_requirement: await service.getGrnRequirement(getCompanyId(req)) }, 'GRN requirement retrieved');
+  } catch (err) { next(err); }
+};

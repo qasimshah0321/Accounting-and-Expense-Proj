@@ -5,6 +5,41 @@ import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createAuditLog, createStatusHistory } from '../../services/auditService';
 import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 import { recalcDNInvoicedQty } from '../delivery-notes/delivery-notes.service';
+import { createRequestIfRuleMatches } from '../approvals/approvals.service';
+
+/**
+ * Resolves FBR per-line fields for a line item, defaulting hs_code / uom /
+ * sale_type from the linked product where the line item doesn't override them.
+ * Returns the values in invoice_line_items column order (see INSERTs below).
+ */
+const resolveLineFBRValues = async (li: any, client: any): Promise<{
+  hs_code: string | null; uom: string | null; sale_type: string | null; rate_desc: string | null;
+  sro_schedule_no: string | null; sro_item_serial_no: string | null;
+  fixed_notified_value: number; sales_tax_withheld: number; extra_tax: number; further_tax: number; fed_payable: number;
+}> => {
+  let prodHs: string | null = null, prodSaleType: string | null = null, prodUom: string | null = null;
+  if ((!li.hs_code || !li.sale_type || !li.uom) && li.product_id) {
+    const [pr] = await client.query('SELECT hs_code, fbr_sale_type, fbr_uom FROM products WHERE id=?', [li.product_id]);
+    if ((pr as any[]).length) {
+      prodHs = (pr as any[])[0].hs_code || null;
+      prodSaleType = (pr as any[])[0].fbr_sale_type || null;
+      prodUom = (pr as any[])[0].fbr_uom || null;
+    }
+  }
+  return {
+    hs_code: li.hs_code || prodHs || null,
+    uom: li.uom || prodUom || li.unit_of_measure || null,
+    sale_type: li.sale_type || prodSaleType || null,
+    rate_desc: li.rate_desc || (li.tax_rate != null ? `${li.tax_rate}%` : null),
+    sro_schedule_no: li.sro_schedule_no || null,
+    sro_item_serial_no: li.sro_item_serial_no || null,
+    fixed_notified_value: li.fixed_notified_value || 0,
+    sales_tax_withheld: li.sales_tax_withheld || 0,
+    extra_tax: li.extra_tax || 0,
+    further_tax: li.further_tax || 0,
+    fed_payable: li.fed_payable || 0,
+  };
+};
 
 /** Returns the company-level delivery-note requirement setting */
 export const getDnRequirement = async (companyId: string, client?: any): Promise<'mandatory' | 'optional'> => {
@@ -46,7 +81,10 @@ export const listInvoices = async (companyId: string, filters: any) => {
   const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM invoices WHERE ${where}`, params);
   const total = parseInt((countRows as any[])[0].count, 10);
   const [rows] = await pool.query(
-    `SELECT id,invoice_no,customer_id,customer_name,invoice_date,due_date,status,payment_status,grand_total,amount_paid,amount_due,created_at FROM invoices WHERE ${where} ORDER BY invoice_date DESC LIMIT ? OFFSET ?`,
+    `SELECT id,invoice_no,customer_id,customer_name,invoice_date,due_date,status,payment_status,grand_total,amount_paid,amount_due,created_at,
+            fbr_usin,fbr_qr_url,fbr_submission_status,fbr_submitted_at,
+            pra_invoice_number,pra_qr_url,pra_submission_status,pra_submitted_at
+     FROM invoices WHERE ${where} ORDER BY invoice_date DESC LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
   return { invoices: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };
@@ -61,9 +99,16 @@ export const getInvoiceById = async (companyId: string, invoiceId: string) => {
 
 export const createInvoice = async (companyId: string, userId: string, _userName: string, data: any) => {
   return withTransaction(async (client) => {
-    const [custRows] = await client.query('SELECT name,billing_address,shipping_address FROM customers WHERE id=? AND company_id=? AND deleted_at IS NULL', [data.customer_id, companyId]);
+    const [custRows] = await client.query('SELECT name,billing_address,shipping_address,ntn,cnic,province,registration_type FROM customers WHERE id=? AND company_id=? AND deleted_at IS NULL', [data.customer_id, companyId]);
     if (!(custRows as any[]).length) throw new ValidationError('Customer not found');
     const cust = (custRows as any[])[0];
+
+    // FBR buyer fields — default from the customer record where not explicitly provided
+    const buyerNtn = data.buyer_ntn ?? cust.ntn ?? null;
+    const buyerCnic = data.buyer_cnic ?? cust.cnic ?? null;
+    const buyerBusinessName = data.buyer_business_name ?? cust.name ?? null;
+    const buyerProvince = data.buyer_province ?? cust.province ?? null;
+    const buyerRegistrationType = data.buyer_registration_type ?? cust.registration_type ?? 'Unregistered';
 
     // Enforce mandatory DN flow: invoice must reference a shipped/delivered Delivery Note
     const dnReq = await getDnRequirement(companyId, client);
@@ -90,9 +135,9 @@ export const createInvoice = async (companyId: string, userId: string, _userName
     const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);
 
     await client.query(
-      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,po_number,reference_no,invoice_date,due_date,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,amount_due,terms_and_conditions,notes,internal_notes,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'draft','unpaid',?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
-      [companyId, invNo, data.customer_id, cust.name, data.bill_to || cust.billing_address, data.ship_to || cust.shipping_address, data.sales_order_id || null, data.delivery_note_id || null, data.po_number || null, data.reference_no || null, data.invoice_date, data.due_date, subtotal, data.tax_id || null, data.tax_rate || 0, taxAmount, data.discount_amount || 0, data.shipping_charges || 0, grandTotal, grandTotal, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, userId, userId]
+      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,po_number,reference_no,invoice_date,due_date,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,amount_due,terms_and_conditions,notes,internal_notes,buyer_ntn,buyer_cnic,buyer_business_name,buyer_province,buyer_registration_type,fbr_scenario_id,fbr_invoice_type,pra_invoice_type,pra_ref_usin,pra_payment_mode,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'draft','unpaid',?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [companyId, invNo, data.customer_id, cust.name, data.bill_to || cust.billing_address, data.ship_to || cust.shipping_address, data.sales_order_id || null, data.delivery_note_id || null, data.po_number || null, data.reference_no || null, data.invoice_date, data.due_date, subtotal, data.tax_id || null, data.tax_rate || 0, taxAmount, data.discount_amount || 0, data.shipping_charges || 0, grandTotal, grandTotal, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, buyerNtn, buyerCnic, buyerBusinessName, buyerProvince, buyerRegistrationType, data.fbr_scenario_id || null, data.fbr_invoice_type || 'Sale Invoice', data.pra_invoice_type || 'New', data.pra_ref_usin || null, data.pra_payment_mode || 1, userId, userId]
     );
 
     const [invRows] = await client.query('SELECT * FROM invoices WHERE company_id=? AND invoice_no=? ORDER BY created_at DESC LIMIT 1', [companyId, invNo]);
@@ -115,9 +160,10 @@ export const createInvoice = async (companyId: string, userId: string, _userName
         }
       }
 
+      const fbr = await resolveLineFBRValues(li, client);
       await client.query(
-        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount,sales_order_line_item_id,dn_line_item_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.discount_per_item || 0, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, soLineItemId, li.dn_line_item_id || null]
+        `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount,sales_order_line_item_id,dn_line_item_id,hs_code,uom,sale_type,rate_desc,sro_schedule_no,sro_item_serial_no,fixed_notified_value,sales_tax_withheld,extra_tax,further_tax,fed_payable) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [inv.id, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.discount_per_item || 0, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, soLineItemId, li.dn_line_item_id || null, fbr.hs_code, fbr.uom, fbr.sale_type, fbr.rate_desc, fbr.sro_schedule_no, fbr.sro_item_serial_no, fbr.fixed_notified_value, fbr.sales_tax_withheld, fbr.extra_tax, fbr.further_tax, fbr.fed_payable]
       );
 
       // Track invoiced qty back on the sales order line item
@@ -202,9 +248,10 @@ export const updateInvoice = async (companyId: string, invoiceId: string, userId
       await client.query('UPDATE invoices SET subtotal=?,tax_amount=?,grand_total=?,amount_due=GREATEST(0,?-amount_paid),updated_by=?,updated_at=NOW() WHERE id=?', [subtotal, taxAmount, grandTotal, grandTotal, userId, invoiceId]);
       for (let i = 0; i < data.line_items.length; i++) {
         const li = data.line_items[i];
+        const fbr = await resolveLineFBRValues(li, client);
         await client.query(
-          `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount,sales_order_line_item_id,dn_line_item_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          [invoiceId, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.discount_per_item || 0, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, li.sales_order_line_item_id || null, li.dn_line_item_id || null]
+          `INSERT INTO invoice_line_items (invoice_id,line_number,product_id,sku,description,quantity,unit_of_measure,rate,discount_per_item,tax_id,tax_rate,tax_amount,sales_order_line_item_id,dn_line_item_id,hs_code,uom,sale_type,rate_desc,sro_schedule_no,sro_item_serial_no,fixed_notified_value,sales_tax_withheld,extra_tax,further_tax,fed_payable) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          [invoiceId, i + 1, li.product_id || null, li.sku || null, li.description, li.quantity, li.unit_of_measure || 'pcs', li.rate, li.discount_per_item || 0, li.tax_id || null, li.tax_rate || 0, li.tax_amount || 0, li.sales_order_line_item_id || null, li.dn_line_item_id || null, fbr.hs_code, fbr.uom, fbr.sale_type, fbr.rate_desc, fbr.sro_schedule_no, fbr.sro_item_serial_no, fbr.fixed_notified_value, fbr.sales_tax_withheld, fbr.extra_tax, fbr.further_tax, fbr.fed_payable]
         );
       }
       // Recalc DN invoiced qty if invoice is linked to a DN
@@ -213,6 +260,28 @@ export const updateInvoice = async (companyId: string, invoiceId: string, userId
         await recalcDNInvoicedQty(dnId, client);
       }
     }
+
+    // Update FBR buyer/header fields when provided
+    const fbrSet: string[] = [];
+    const fbrParams: unknown[] = [];
+    const setIf = (key: string, col: string) => {
+      if (data[key] !== undefined) { fbrSet.push(`${col}=?`); fbrParams.push(data[key] || null); }
+    };
+    setIf('buyer_ntn', 'buyer_ntn');
+    setIf('buyer_cnic', 'buyer_cnic');
+    setIf('buyer_business_name', 'buyer_business_name');
+    setIf('buyer_province', 'buyer_province');
+    setIf('buyer_registration_type', 'buyer_registration_type');
+    setIf('fbr_scenario_id', 'fbr_scenario_id');
+    setIf('fbr_invoice_type', 'fbr_invoice_type');
+    setIf('pra_invoice_type', 'pra_invoice_type');
+    setIf('pra_ref_usin', 'pra_ref_usin');
+    setIf('pra_payment_mode', 'pra_payment_mode');
+    if (fbrSet.length) {
+      fbrParams.push(invoiceId);
+      await client.query(`UPDATE invoices SET ${fbrSet.join(',')},updated_at=NOW() WHERE id=?`, fbrParams);
+    }
+
     return getInvoiceById(companyId, invoiceId);
   });
 };
@@ -232,15 +301,38 @@ export const deleteInvoice = async (companyId: string, invoiceId: string) => {
   }
 };
 
+// Conservative transition guard: only restrict moves OUT of pending_approval
+// to keep existing draft/sent/paid/overdue flows untouched.
+const INVOICE_PENDING_APPROVAL_NEXT: string[] = ['draft', 'sent', 'approved', 'cancelled'];
+
 export const updateStatus = async (companyId: string, invoiceId: string, userId: string, userName: string, newStatus: string, reason?: string) => {
   return withTransaction(async (client) => {
     const [invRows] = await client.query('SELECT * FROM invoices WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [invoiceId, companyId]);
     if (!(invRows as any[]).length) throw new NotFoundError('Invoice');
     const inv = (invRows as any[])[0];
+    if (inv.status === 'pending_approval' && !INVOICE_PENDING_APPROVAL_NEXT.includes(newStatus)) {
+      throw new ConflictError(`Cannot transition invoice from pending_approval to ${newStatus}`);
+    }
     await client.query('UPDATE invoices SET status=?,updated_by=?,updated_at=NOW() WHERE id=?', [newStatus, userId, invoiceId]);
     await createStatusHistory({ company_id: companyId, document_type: 'invoice', document_id: invoiceId, document_no: inv.invoice_no, from_status: inv.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
 
-    if (inv.status === 'draft' && (newStatus === 'sent' || newStatus === 'approved')) {
+    if (newStatus === 'pending_approval') {
+      try {
+        await createRequestIfRuleMatches(
+          companyId,
+          'invoice',
+          invoiceId,
+          inv.invoice_no,
+          parseFloat(inv.grand_total) || 0,
+          userId,
+          client
+        );
+      } catch (err) {
+        console.error('Approval rule lookup failed for Invoice:', err);
+      }
+    }
+
+    if ((inv.status === 'draft' || inv.status === 'pending_approval') && (newStatus === 'sent' || newStatus === 'approved')) {
       try {
         const arAccountId = await getSystemAccount(companyId, '1100', client);
         const revenueAccountId = await getSystemAccount(companyId, '4000', client);
@@ -273,7 +365,8 @@ export const updateStatus = async (companyId: string, invoiceId: string, userId:
         const inventoryAccountId = await getSystemAccount(companyId, '1200', client);
         if (cogsAccountId && inventoryAccountId) {
           const [lineRows] = await client.query(
-            `SELECT ili.quantity, p.cost_price, p.product_type
+            `SELECT ili.quantity, p.product_type,
+                    COALESCE(NULLIF(p.avg_cost,0), p.cost_price, 0) AS unit_cost
              FROM invoice_line_items ili
              LEFT JOIN products p ON p.id = ili.product_id
              WHERE ili.invoice_id = ?`,
@@ -282,7 +375,7 @@ export const updateStatus = async (companyId: string, invoiceId: string, userId:
           let cogsTotal = 0;
           for (const item of lineRows as any[]) {
             if ((item.product_type || '') !== 'inventory') continue;
-            const costPrice = parseFloat(item.cost_price) || 0;
+            const costPrice = parseFloat(item.unit_cost) || 0;
             const qty = parseFloat(item.quantity) || 0;
             cogsTotal += qty * costPrice;
           }

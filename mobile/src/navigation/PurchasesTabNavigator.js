@@ -9,6 +9,9 @@ import ExpenseListScreen from '../screens/expenses/ExpenseListScreen';
 import ExpenseFormScreen from '../screens/expenses/ExpenseFormScreen';
 import VendorPaymentListScreen from '../screens/payments/VendorPaymentListScreen';
 import VendorPaymentFormScreen from '../screens/payments/VendorPaymentFormScreen';
+import GRNListScreen from '../screens/purchase-orders/GRNListScreen';
+import GRNFormScreen from '../screens/purchase-orders/GRNFormScreen';
+import GRNDetailScreen from '../screens/purchase-orders/GRNDetailScreen';
 
 const Stack = createStackNavigator();
 const opts = {
@@ -29,6 +32,9 @@ const PurchasesTabNavigator = () => (
     <Stack.Screen name="ExpenseForm" component={ExpenseFormScreen} options={({ route }) => ({ title: route.params?.expense ? 'Edit Expense' : 'New Expense' })} />
     <Stack.Screen name="VendorPaymentList" component={VendorPaymentListScreen} options={{ title: 'Vendor Payments' }} />
     <Stack.Screen name="VendorPaymentForm" component={VendorPaymentFormScreen} />
+    <Stack.Screen name="GRNList" component={GRNListScreen} options={{ title: 'Goods Received Notes' }} />
+    <Stack.Screen name="GRNForm" component={GRNFormScreen} options={({ route }) => ({ title: route.params?.grn ? 'Edit GRN' : 'New GRN' })} />
+    <Stack.Screen name="GRNDetail" component={GRNDetailScreen} options={{ title: 'GRN Details' }} />
   </Stack.Navigator>
 );
 

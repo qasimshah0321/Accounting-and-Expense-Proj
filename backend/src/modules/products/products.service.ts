@@ -44,15 +44,15 @@ export const createProduct = async (companyId: string, userId: string, data: Rec
   await pool.query(
     `INSERT INTO products (
       company_id, sku, barcode, name, description, product_type, category, subcategory, brand, manufacturer,
-      cost_price, selling_price, target_price, wholesale_price, currency, unit_of_measure, track_inventory,
+      cost_price, avg_cost, selling_price, target_price, wholesale_price, currency, unit_of_measure, track_inventory,
       current_stock, reorder_level, reorder_quantity, stock_location, tax_id, is_taxable,
       weight, weight_unit, dimensions, is_active, is_for_sale, is_for_purchase, image_url, notes,
       created_by, updated_by
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       companyId, data.sku, data.barcode || null, data.name, data.description || null,
       data.product_type, data.category || null, data.subcategory || null, data.brand || null, data.manufacturer || null,
-      data.cost_price ?? 0, data.selling_price ?? 0, data.target_price ?? 0, data.wholesale_price || null, data.currency || 'USD',
+      data.cost_price ?? 0, data.cost_price ?? 0, data.selling_price ?? 0, data.target_price ?? 0, data.wholesale_price || null, data.currency || 'USD',
       data.unit_of_measure || 'pcs', data.track_inventory ?? true,
       data.current_stock ?? 0, data.reorder_level ?? 0, data.reorder_quantity ?? 0,
       data.stock_location || null, data.tax_id || null, data.is_taxable ?? true,

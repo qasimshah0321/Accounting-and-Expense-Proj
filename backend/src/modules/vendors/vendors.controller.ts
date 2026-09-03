@@ -68,3 +68,15 @@ export const getOutstandingBalance = async (req: AuthRequest, res: Response, nex
     sendSuccess(res, balance, 'Outstanding balance retrieved');
   } catch (err) { next(err); }
 };
+
+export const getStatement = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { start_date, end_date } = req.query as Record<string, string>;
+    if (!start_date || !end_date) {
+      res.status(400).json({ success: false, message: 'start_date and end_date are required' });
+      return;
+    }
+    const statement = await service.getVendorStatement(getCompanyId(req), req.params.id, start_date, end_date);
+    sendSuccess(res, statement, 'Vendor statement retrieved');
+  } catch (err) { next(err); }
+};

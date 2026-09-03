@@ -59,8 +59,8 @@ export const createVendorPayment = async (companyId: string, userId: string, dat
         const amountDue = parseFloat(bill.amount_due);
         const allocate = Math.min(data.amount, amountDue);
         const newAmountPaid = parseFloat(bill.amount_paid || 0) + allocate;
-        const newAmountDue = amountDue - allocate;
-        const paymentStatus = newAmountDue <= 0 ? 'paid' : 'partially_paid';
+        const newAmountDue = Math.max(0, amountDue - allocate);
+        const paymentStatus = newAmountDue <= 0.01 ? 'paid' : 'partially_paid';
         await client.query(
           'UPDATE bills SET amount_paid=?, amount_due=?, payment_status=?, updated_at=NOW() WHERE id=?',
           [newAmountPaid, newAmountDue, paymentStatus, data.bill_id]
@@ -122,8 +122,8 @@ export const allocateVendorPayment = async (companyId: string, paymentId: string
     const amountDue = parseFloat(bill.amount_due);
     const allocate = Math.min(amount, amountDue);
     const newAmountPaid = parseFloat(bill.amount_paid || 0) + allocate;
-    const newAmountDue = amountDue - allocate;
-    const paymentStatus = newAmountDue <= 0 ? 'paid' : 'partially_paid';
+    const newAmountDue = Math.max(0, amountDue - allocate);
+    const paymentStatus = newAmountDue <= 0.01 ? 'paid' : 'partially_paid';
 
     await client.query(
       'UPDATE bills SET amount_paid=?, amount_due=?, payment_status=?, updated_at=NOW() WHERE id=?',

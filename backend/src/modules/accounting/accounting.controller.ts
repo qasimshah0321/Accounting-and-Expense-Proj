@@ -77,6 +77,14 @@ export const createJournalEntry = async (req: AuthRequest, res: Response, next: 
   } catch (err) { next(err); }
 };
 
+export const updateJournalEntry = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const parsed = createJournalEntrySchema.safeParse(req.body);
+    if (!parsed.success) throw new ValidationError('Validation failed', parsed.error.errors);
+    sendSuccess(res, await service.updateJournalEntry(getCompanyId(req), req.params.id, req.user!.id, getUserName(req), parsed.data), 'Journal entry updated');
+  } catch (err) { next(err); }
+};
+
 export const reverseJournalEntry = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     sendSuccess(res, await service.reverseJournalEntry(getCompanyId(req), req.params.id, req.user!.id, getUserName(req)), 'Journal entry reversed');
@@ -90,7 +98,11 @@ export const getGeneralLedger = async (req: AuthRequest, res: Response, next: Ne
     const { account_id, start_date, end_date } = req.query as Record<string, string>;
     if (!account_id) throw new ValidationError('account_id is required');
     if (!start_date || !end_date) throw new ValidationError('start_date and end_date are required');
-    sendSuccess(res, await service.getGeneralLedger(getCompanyId(req), account_id, start_date, end_date), 'General ledger retrieved');
+    if (account_id === 'all') {
+      sendSuccess(res, await service.getGeneralLedgerAll(getCompanyId(req), start_date, end_date), 'General ledger retrieved');
+    } else {
+      sendSuccess(res, await service.getGeneralLedger(getCompanyId(req), account_id, start_date, end_date), 'General ledger retrieved');
+    }
   } catch (err) { next(err); }
 };
 
@@ -98,5 +110,38 @@ export const getTrialBalance = async (req: AuthRequest, res: Response, next: Nex
   try {
     const { as_of_date } = req.query as Record<string, string>;
     sendSuccess(res, await service.getTrialBalance(getCompanyId(req), as_of_date), 'Trial balance retrieved');
+  } catch (err) { next(err); }
+};
+
+// ─── Opening Balance ──────────────────────────────────────────────────────────
+
+export const getOpeningBalance = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    sendSuccess(res, await service.getOpeningBalance(getCompanyId(req)), 'Opening balance retrieved');
+  } catch (err) { next(err); }
+};
+
+export const postOpeningBalance = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { opening_date, balances } = req.body;
+    if (!opening_date) throw new ValidationError('opening_date is required');
+    if (!Array.isArray(balances) || !balances.length) throw new ValidationError('balances array is required');
+    sendSuccess(res, await service.postOpeningBalance(getCompanyId(req), req.user!.id, getUserName(req), { opening_date, balances }), 'Opening balance posted', 201);
+  } catch (err) { next(err); }
+};
+
+// ─── Year-End Close ───────────────────────────────────────────────────────────
+
+export const getYearEndCloses = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    sendSuccess(res, await service.getYearEndCloses(getCompanyId(req)), 'Year-end closes retrieved');
+  } catch (err) { next(err); }
+};
+
+export const performYearEndClose = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { fiscal_year_end_date } = req.body;
+    if (!fiscal_year_end_date) throw new ValidationError('fiscal_year_end_date is required');
+    sendSuccess(res, await service.yearEndClose(getCompanyId(req), req.user!.id, getUserName(req), { fiscal_year_end_date }), 'Year-end close posted', 201);
   } catch (err) { next(err); }
 };

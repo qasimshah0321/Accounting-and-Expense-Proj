@@ -7,11 +7,13 @@ const router = Router();
 router.use(authenticate, tenantIsolation);
 
 router.get('/next-number', ctrl.getNextNumber);
+router.get('/grn-requirement', ctrl.getGrnRequirement);
 router.get('/', ctrl.list);
 router.post('/', ctrl.create);
 router.get('/:id', ctrl.getById);
 router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.deletePurchaseOrder);
 router.patch('/:id/status', ctrl.updateStatus);
+router.post('/:id/convert-to-bill', ctrl.convertToBill);
 
 export default router;

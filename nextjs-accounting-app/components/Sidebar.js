@@ -5,7 +5,6 @@ import styles from './Sidebar.module.css'
 
 const menuItems = [
   { id: 'dashboard', name: 'Dashboard', icon: 'fa-th-large' },
-  { id: 'quick-order', name: 'Quick Order', icon: 'fa-bolt' },
   {
     id: 'sales',
     name: 'Sales',
@@ -28,6 +27,7 @@ const menuItems = [
       { id: 'expenses', name: 'Expenses' },
       { id: 'request-for-quotation', name: 'Request for Quotation' },
       { id: 'purchase-order', name: 'Purchase Order' },
+      { id: 'goods-received-note', name: 'Goods Received Note' },
       { id: 'vendor-credits', name: 'Vendor Credits' },
       { id: 'bill-payments', name: 'Bill Payments' },
       { id: 'refunds-purchases', name: 'Refunds' },
@@ -48,11 +48,9 @@ const menuItems = [
     icon: 'fa-users',
     submenus: [
       { id: 'customer-center', name: 'Customer Center' },
-      { id: 'customer-statements', name: 'Customer Statements' },
       { id: 'aging-account-receivables', name: 'Aging (Account Receivables)' },
       { id: 'credit-limits-terms', name: 'Credit Limits and Terms' },
       { id: 'customer-groups-segment', name: 'Customer Groups/Segment' },
-      { id: 'customer-list', name: 'Customer List' },
       { id: 'document-attachments', name: 'Document & Attachments' },
     ]
   },
@@ -151,11 +149,11 @@ const menuItems = [
     submenus: [
       { id: 'tax', name: 'Tax' },
       { id: 'ship-via', name: 'Ship Via' },
+      { id: 'approval-workflows', name: 'Approval Workflows' },
       { id: 'recurring', name: 'Recurring Documents' },
       { id: 'company-settings', name: 'Company Settings' },
       { id: 'erp-flow', name: 'ERP Flow Guide' },
       { id: 'users-roles', name: 'Users & Roles' },
-      { id: 'role-perms', name: 'Role Permissions' },
     ]
   },
 ]
@@ -188,25 +186,21 @@ export default function Sidebar({ isOpen, isCollapsed, activeMenu, onMenuClick, 
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.active : ''} ${isCollapsed ? styles.collapsed : ''}`}>
       <div className={styles.sidebarHeader}>
-        {userRole !== 'customer' && (
-          <button
-            className={styles.toggleBtn}
-            onClick={onToggleCollapse}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
-          </button>
-        )}
-        {userRole !== 'customer' && (
-          <button
-            className={styles.createBtn}
-            onClick={onCreateClick}
-            title={isCollapsed ? "Create New" : ""}
-          >
-            <i className="fas fa-plus-circle"></i>
-            {!isCollapsed && <span>Create</span>}
-          </button>
-        )}
+        <button
+          className={styles.toggleBtn}
+          onClick={onToggleCollapse}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+        </button>
+        <button
+          className={styles.createBtn}
+          onClick={onCreateClick}
+          title={isCollapsed ? "Create New" : ""}
+        >
+          <i className="fas fa-plus-circle"></i>
+          {!isCollapsed && <span>Create</span>}
+        </button>
       </div>
 
       <nav className={styles.sidebarNav}>

@@ -14,5 +14,6 @@ router.delete('/:id', ctrl.deleteCustomer);
 router.get('/:id/invoices', ctrl.getInvoices);
 router.get('/:id/sales-orders', ctrl.getSalesOrders);
 router.get('/:id/outstanding-balance', ctrl.getOutstandingBalance);
+router.get('/:id/statement', ctrl.getStatement);
 
 export default router;

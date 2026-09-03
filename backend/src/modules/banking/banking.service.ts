@@ -608,12 +608,16 @@ export const completeReconciliation = async (
     [bankAccountId, companyId]
   );
   const allReconciledTotal = parseFloat((allReconciledRows as any[])[0].total);
-  const calculatedBalance = openingBalance + allReconciledTotal;
-  const difference = Math.abs(statementEnd - calculatedBalance);
+  const calculatedBalance  = openingBalance + allReconciledTotal;
+  const signedDifference   = statementEnd - calculatedBalance; // positive = bank > books
+  const absDifference      = Math.abs(signedDifference);
 
-  if (difference > 0.01) {
+  // Hard stop for large variances — must be investigated manually
+  if (absDifference > 1.00) {
     throw new ValidationError(
-      `Reconciliation difference of ${difference.toFixed(2)} exists. Statement ending balance (${statementEnd.toFixed(2)}) does not match opening balance + reconciled transactions (${calculatedBalance.toFixed(2)}).`
+      `Reconciliation difference of ${signedDifference.toFixed(2)} is too large to auto-adjust. ` +
+      `Statement ending balance (${statementEnd.toFixed(2)}) does not match opening balance + ` +
+      `reconciled transactions (${calculatedBalance.toFixed(2)}). Please add missing transactions.`
     );
   }
 
@@ -622,6 +626,47 @@ export const completeReconciliation = async (
      WHERE id = ?`,
     [userId, reconciledTotal, reconciliationId]
   );
+
+  // Auto-post small variance ($0.01–$1.00) to Bank Charges or Other Income
+  if (absDifference > 0.01) {
+    try {
+      const glAccountId = bankAccount.gl_account_id || await getSystemAccount(companyId, '1000');
+      if (glAccountId) {
+        if (signedDifference < 0) {
+          // Books > bank statement → unrecorded bank charge
+          const bankChargesId = await getSystemAccount(companyId, '5800');
+          if (bankChargesId) {
+            await createAutoJournalEntry(
+              companyId, userId, userId, 'bank_reconciliation', reconciliationId,
+              `REC-${bankAccountId.slice(-6)}`, rec.statement_date,
+              [
+                { account_id: bankChargesId, debit: absDifference, credit: 0,            description: 'Bank reconciliation variance — charges' },
+                { account_id: glAccountId,   debit: 0,            credit: absDifference, description: 'Bank account adjustment' },
+              ],
+              `Bank reconciliation variance — ${bankAccount.account_name}`
+            );
+          }
+        } else {
+          // Bank > books → unrecorded interest or income
+          const otherIncomeId = await getSystemAccount(companyId, '4900');
+          if (otherIncomeId) {
+            await createAutoJournalEntry(
+              companyId, userId, userId, 'bank_reconciliation', reconciliationId,
+              `REC-${bankAccountId.slice(-6)}`, rec.statement_date,
+              [
+                { account_id: glAccountId,   debit: absDifference, credit: 0,            description: 'Bank account adjustment' },
+                { account_id: otherIncomeId, debit: 0,            credit: absDifference, description: 'Bank reconciliation variance — income' },
+              ],
+              `Bank reconciliation variance — ${bankAccount.account_name}`
+            );
+          }
+        }
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for reconciliation variance:', glErr);
+    }
+  }
+
   const [completedRows] = await pool.query('SELECT * FROM bank_reconciliations WHERE id=?', [reconciliationId]);
   return (completedRows as any[])[0];
 };

@@ -6,7 +6,7 @@ import { getCompanyId } from '../../middleware/multiTenant';
 
 export const getMyMenus = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result = await service.getMyMenus(getCompanyId(req), req.user!.role);
+    const result = await service.getMyMenus(getCompanyId(req), req.user!.role, req.user!.id);
     sendSuccess(res, result, 'Menus retrieved');
   } catch (err) { next(err); }
 };

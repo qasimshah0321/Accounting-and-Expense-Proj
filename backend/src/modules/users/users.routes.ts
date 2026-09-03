@@ -12,5 +12,7 @@ router.put('/:id', ctrl.update);
 router.delete('/:id', ctrl.deleteUser);
 router.put('/:id/link-customer', ctrl.linkCustomer);
 router.delete('/:id/link-customer', ctrl.unlinkCustomer);
+router.get('/:id/permissions', ctrl.getPermissions);
+router.put('/:id/permissions', ctrl.updatePermissions);
 
 export default router;

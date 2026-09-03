@@ -1051,7 +1051,7 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 {!viewMode && error && <span style={{ color: '#ef4444', fontSize: '14px' }}>{error}</span>}
                 <button className={styles.btnCancel} onClick={handleFormClose}>{viewMode ? 'Close' : 'Cancel'}</button>
               </div>
-              {!viewMode && (
+              {!viewMode ? (
               <div className={styles.footerRight}>
                 {user?.role === 'admin' && (
                   <button
@@ -1067,6 +1067,12 @@ export default function DeliveryNote({ isOpen, onClose, shipVias, onShipViaUpdat
                 <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
                   <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
                   {saving ? 'Saving...' : editingNote ? 'Update' : 'Save'}
+                </button>
+              </div>
+              ) : (
+              <div className={styles.footerRight}>
+                <button onClick={handlePrint} style={{ padding: '8px 18px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Print / Save as PDF">
+                  <i className="fas fa-print"></i> Print
                 </button>
               </div>
               )}

@@ -27,6 +27,11 @@ export const createCustomerSchema = z.object({
   customer_segment: z.string().optional(),
   is_active: z.boolean().default(true),
   notes: z.string().optional(),
+  // FBR (Pakistan) buyer defaults
+  ntn: z.string().optional().nullable(),
+  cnic: z.string().optional().nullable(),
+  province: z.string().optional().nullable(),
+  registration_type: z.enum(['Registered', 'Unregistered']).optional(),
 });
 
 export const updateCustomerSchema = createCustomerSchema.partial();

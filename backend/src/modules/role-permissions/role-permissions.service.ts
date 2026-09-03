@@ -37,25 +37,60 @@ export const ALL_MENUS = [
   { name: 'Role Permissions', category: 'Settings' },
 ];
 
-export const getMyMenus = async (companyId: string, role: string) => {
+export const getMyMenus = async (companyId: string, role: string, userId?: string) => {
   if (role === 'admin') {
     return { role, menus: null };
   }
 
-  const [rows] = await pool.query(
-    `SELECT menu_name, can_access, display_name FROM role_menu_permissions
-     WHERE company_id = ? AND role = ?`,
-    [companyId, role]
-  );
-
-  if (!(rows as any[]).length) {
-    return { role, menus: null };
+  if (!userId) {
+    // No userId — return empty array (no access without dept/user permissions)
+    return { role, menus: [] };
   }
 
-  const menus = (rows as any[])
-    .filter((r: any) => r.can_access)
-    .map((r: any) => ({ name: r.menu_name, display_name: r.display_name || r.menu_name }));
+  // Load user's department_id
+  const [userRows] = await pool.query(
+    'SELECT department_id FROM users WHERE id = ? AND company_id = ?',
+    [userId, companyId]
+  );
+  const departmentId = (userRows as any[])[0]?.department_id || null;
 
+  // Build dept-level permission map
+  const deptPerm: Record<string, any> = {};
+  if (departmentId) {
+    const [deptRows] = await pool.query(
+      'SELECT menu_name, can_access, display_name FROM department_menu_permissions WHERE department_id = ?',
+      [departmentId]
+    );
+    for (const r of deptRows as any[]) deptPerm[r.menu_name] = r;
+  }
+
+  // Build user-level permission map (additional grants on top of dept)
+  const [userPermRows] = await pool.query(
+    'SELECT menu_name, can_access, display_name FROM user_menu_permissions WHERE user_id = ? AND company_id = ?',
+    [userId, companyId]
+  );
+  const userPerm: Record<string, any> = {};
+  for (const r of userPermRows as any[]) userPerm[r.menu_name] = r;
+
+  // Resolve: UNION of dept + user permissions (additive).
+  // A user gets ALL dept permissions PLUS any additional user-level permissions.
+  // Role-based permissions are no longer used — access is controlled entirely
+  // via departments and per-user grants.
+  const menus: Array<{ name: string; display_name: string }> = [];
+  for (const m of ALL_MENUS) {
+    const fromDept = deptPerm[m.name];
+    const fromUser = userPerm[m.name];
+
+    const canAccess = Boolean(fromUser?.can_access) || Boolean(fromDept?.can_access);
+
+    if (canAccess) {
+      const display = fromUser?.display_name || fromDept?.display_name || m.name;
+      menus.push({ name: m.name, display_name: display });
+    }
+  }
+
+  // Always return the array for non-admin users (even if empty).
+  // null means "admin — unrestricted". [] means "no permissions granted".
   return { role, menus };
 };
 

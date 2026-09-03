@@ -9,6 +9,8 @@ import ShipViaListScreen from '../screens/settings/ShipViaListScreen';
 import ShipViaFormScreen from '../screens/settings/ShipViaFormScreen';
 import CompanySettingsScreen from '../screens/settings/CompanySettingsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import AgingReceivablesScreen from '../screens/reports/AgingReceivablesScreen';
+import AgingPayablesScreen from '../screens/reports/AgingPayablesScreen';
 
 const Stack = createStackNavigator();
 const opts = {
@@ -29,6 +31,8 @@ const MoreNavigator = () => (
     <Stack.Screen name="ShipViaForm" component={ShipViaFormScreen} />
     <Stack.Screen name="CompanySettings" component={CompanySettingsScreen} options={{ title: 'Company Settings' }} />
     <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+    <Stack.Screen name="AgingReceivables" component={AgingReceivablesScreen} options={{ title: 'Aging Receivables' }} />
+    <Stack.Screen name="AgingPayables" component={AgingPayablesScreen} options={{ title: 'Aging Payables' }} />
   </Stack.Navigator>
 );
 

@@ -1,0 +1,44 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e3]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: 
+        - heading "ZeroPoint" [level=1] [ref=e8]
+        - paragraph [ref=e9]: Professional Accounting for Modern Business
+      - list [ref=e10]:
+        - listitem [ref=e11]:
+          - generic [ref=e12]: 
+          - text: Smart Invoicing & Billing
+        - listitem [ref=e13]:
+          - generic [ref=e14]: 
+          - text: Real-time Financial Reports
+        - listitem [ref=e15]:
+          - generic [ref=e16]: 
+          - text: Vendor & Customer Management
+        - listitem [ref=e17]:
+          - generic [ref=e18]: 
+          - text: Purchase Orders & Estimates
+    - generic [ref=e20]:
+      - heading "Welcome Back" [level=2] [ref=e21]
+      - generic [ref=e22]:
+        - button "Sign In" [ref=e23] [cursor=pointer]
+        - button "Register" [ref=e24] [cursor=pointer]
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: Email
+          - generic [ref=e28]:
+            - generic: 
+            - textbox "you@company.com" [ref=e29]
+        - generic [ref=e30]:
+          - generic [ref=e31]: Password
+          - generic [ref=e32]:
+            - generic: 
+            - textbox "••••••••" [ref=e33]
+            - button "" [ref=e34] [cursor=pointer]:
+              - generic [ref=e35]: 
+        - button "Sign In" [ref=e36] [cursor=pointer]
+```

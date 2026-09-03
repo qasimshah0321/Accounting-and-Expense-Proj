@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZeroPoint ERP — Complete User Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #1e293b; background: #fff; line-height: 1.6; }
+
+  @media print {
+    body { font-size: 11px; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    .page-break-avoid { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .cover { page-break-after: always; }
+    .toc-page { page-break-after: always; }
+  }
+
+  .cover { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: white; text-align: center; padding: 60px; min-height: 800px; }
+  .cover-logo { font-size: 52px; font-weight: 900; letter-spacing: -2px; margin-bottom: 8px; }
+  .cover-logo span { color: #60a5fa; }
+  .cover-tagline { font-size: 16px; color: #93c5fd; margin-bottom: 60px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+  .cover-title { font-size: 38px; font-weight: 700; margin-bottom: 12px; }
+  .cover-subtitle { font-size: 18px; color: #bfdbfe; margin-bottom: 60px; font-weight: 300; }
+  .cover-divider { width: 80px; height: 3px; background: #60a5fa; margin: 0 auto 40px; border-radius: 2px; }
+  .cover-meta { font-size: 13px; color: #93c5fd; line-height: 2; }
+  .cover-version { display: inline-block; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 6px 20px; font-size: 13px; margin-top: 30px; }
+
+  .toc-page { padding: 60px 80px; min-height: 100vh; }
+  .toc-page h1 { font-size: 28px; color: #1e3a5f; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 3px solid #2563eb; }
+  .toc-desc { color: #64748b; font-size: 13px; margin-bottom: 36px; }
+  .toc-chapter { display: flex; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px dotted #e2e8f0; }
+  .toc-num { font-weight: 700; color: #2563eb; min-width: 28px; font-size: 14px; }
+  .toc-name { font-weight: 600; color: #1e293b; font-size: 14px; flex: 1; }
+  .toc-sub { display: flex; align-items: baseline; gap: 8px; padding: 4px 0 4px 28px; }
+  .toc-sub-name { color: #475569; font-size: 13px; flex: 1; }
+
+  .chapter { padding: 50px 80px; max-width: 960px; margin: 0 auto; }
+  .chapter-header { margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+  .chapter-num { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 6px; }
+  .chapter-title { font-size: 28px; font-weight: 800; color: #1e3a5f; margin-bottom: 8px; }
+  .chapter-desc { font-size: 14px; color: #64748b; line-height: 1.7; }
+
+  h2 { font-size: 20px; font-weight: 700; color: #1e293b; margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #f1f5f9; }
+  h2::before { content: ''; display: inline-block; width: 4px; height: 20px; background: #2563eb; border-radius: 2px; margin-right: 10px; vertical-align: middle; }
+  h3 { font-size: 15px; font-weight: 700; color: #1e3a5f; margin: 24px 0 10px; }
+  h4 { font-size: 13px; font-weight: 700; color: #374151; margin: 18px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  p { margin-bottom: 12px; color: #374151; line-height: 1.7; }
+  strong { color: #1e293b; }
+  ul, ol { margin: 8px 0 14px 22px; }
+  li { margin-bottom: 5px; color: #374151; line-height: 1.6; }
+
+  .steps { margin: 16px 0; }
+  .step { display: flex; gap: 16px; margin-bottom: 16px; page-break-inside: avoid; }
+  .step-num { min-width: 32px; height: 32px; background: #2563eb; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+  .step-body { flex: 1; }
+  .step-title { font-weight: 700; color: #1e293b; margin-bottom: 4px; font-size: 14px; }
+  .step-desc { color: #475569; font-size: 13px; line-height: 1.6; }
+  .step-desc ul { margin-top: 6px; }
+
+  .screenshot { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; margin: 18px 0 24px; page-break-inside: avoid; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .screenshot img { width: 100%; display: block; }
+  .screenshot-caption { font-size: 12px; color: #64748b; background: #f8fafc; padding: 8px 14px; border-top: 1px solid #e2e8f0; font-style: italic; }
+
+  .callout { border-radius: 8px; padding: 14px 18px; margin: 16px 0; display: flex; gap: 12px; page-break-inside: avoid; }
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  .callout-text { font-size: 12.5px; line-height: 1.6; }
+  .callout.tip { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .callout.tip .callout-icon, .callout.tip .callout-title { color: #1d4ed8; }
+  .callout.tip .callout-text { color: #1e40af; }
+  .callout.warn { background: #fef3c7; border: 1px solid #fcd34d; }
+  .callout.warn .callout-icon, .callout.warn .callout-title { color: #92400e; }
+  .callout.warn .callout-text { color: #78350f; }
+  .callout.note { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .callout.note .callout-icon, .callout.note .callout-title { color: #166534; }
+  .callout.note .callout-text { color: #14532d; }
+  .callout.info { background: #fdf4ff; border: 1px solid #e9d5ff; }
+  .callout.info .callout-icon, .callout.info .callout-title { color: #7e22ce; }
+  .callout.info .callout-text { color: #6b21a8; }
+
+  .field-table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 12.5px; page-break-inside: avoid; }
+  .field-table th { background: #f1f5f9; padding: 9px 12px; text-align: left; font-weight: 700; color: #374151; border: 1px solid #e2e8f0; }
+  .field-table td { padding: 8px 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #475569; }
+  .field-table tr:nth-child(even) td { background: #f8fafc; }
+  .req { color: #dc2626; font-weight: 700; }
+
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 0; margin: 20px 0; padding: 20px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
+  .flow-step { background: #2563eb; color: white; border-radius: 8px; padding: 10px 16px; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; }
+  .flow-arrow { color: #94a3b8; font-size: 18px; padding: 0 8px; }
+  .flow-step.optional { background: #64748b; }
+  .flow-step.payment { background: #15803d; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge.draft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .badge.pending { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+  .badge.approved { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .badge.sent { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .badge.paid { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+  .badge.overdue { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .badge.posted { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 18px 0; }
+  .summary-box h4 { margin-top: 0; margin-bottom: 10px; }
+
+  .gl-box { background: #1e293b; border-radius: 8px; padding: 14px 18px; margin: 14px 0; font-family: 'Courier New', monospace; font-size: 12px; color: #e2e8f0; }
+  .gl-dr { color: #86efac; }
+  .gl-cr { color: #fca5a5; }
+  .gl-label { color: #94a3b8; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Side-by-side screenshot pair ── */
+  .screenshot-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0 24px; page-break-inside: avoid; }
+  .screenshot-pair .screenshot { margin: 0; }
+  @media print { .screenshot-pair { grid-template-columns: 1fr 1fr; } }
+
+  /* ── Step inline screenshot ── */
+  .step-screenshot { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin: 10px 0 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .step-screenshot img { width: 100%; display: block; }
+
+  /* ── Feature card (used for field reference in Settings) ── */
+  .feature-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px; margin: 12px 0; }
+  .feature-card-title { font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .feature-card-title i { color: #2563eb; }
+  .feature-card-body { font-size: 12.5px; color: #475569; line-height: 1.6; }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-logo">Zero<span>Point</span></div>
+  <div class="cover-tagline">Enterprise Resource Planning</div>
+  <div class="cover-divider"></div>
+  <div class="cover-title">Complete User Guide</div>
+  <div class="cover-subtitle">Step-by-step instructions for every workflow</div>
+  <div class="cover-meta">Accounting · Purchases · Sales · Inventory · Banking · Reports<br>Full Procure-to-Pay &amp; Order-to-Cash Cycles</div>
+  <div class="cover-version">Version 1.0 &nbsp;|&nbsp; May 2026</div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc-page page-break">
+  <h1>Table of Contents</h1>
+  <p class="toc-desc">This guide covers every module of ZeroPoint ERP from initial setup through daily operations and period-end accounting.</p>
+  <div class="toc-chapter"><span class="toc-num">1</span><span class="toc-name">Getting Started — Login &amp; Registration</span></div>
+  <div class="toc-chapter"><span class="toc-num">2</span><span class="toc-name">Dashboard Overview</span></div>
+  <div class="toc-chapter"><span class="toc-num">3</span><span class="toc-name">Initial Setup</span></div>
+  <div class="toc-sub"><span class="toc-sub-name">3.1 Company Settings &nbsp; 3.2 Chart of Accounts &nbsp; 3.3 Opening Balances &nbsp; 3.4 Tax &nbsp; 3.5 Ship Via</span></div>
+  <div class="toc-chapter"><span class="toc-num">4</span><span class="toc-name">Master Data — Customers, Vendors, Products</span></div>
+  <div class="toc-chapter"><span class="toc-num">5</span><span class="toc-name">Purchase Flow (Procure-to-Pay)</span></div>
+  <div class="toc-sub"><span class="toc-sub-name">5.1 RFQ &nbsp; 5.2 Purchase Order &nbsp; 5.3 GRN &nbsp; 5.4 Bill &nbsp; 5.5 Bill Payment</span></div>
+  <div class="toc-chapter"><span class="toc-num">6</span><span class="toc-name">Sales Flow (Order-to-Cash)</span></div>
+  <div class="toc-sub"><span class="toc-sub-name">6.1 Estimate &nbsp; 6.2 Sales Order &nbsp; 6.3 Delivery Note &nbsp; 6.4 Invoice &nbsp; 6.5 Customer Payment</span></div>
+  <div class="toc-chapter"><span class="toc-num">7</span><span class="toc-name">Expenses</span></div>
+  <div class="toc-chapter"><span class="toc-num">8</span><span class="toc-name">Accounting — Journal Entries, GL, Trial Balance</span></div>
+  <div class="toc-chapter"><span class="toc-num">9</span><span class="toc-name">Settings &amp; Administration</span></div>
+  <div class="toc-chapter"><span class="toc-num">10</span><span class="toc-name">Year-End Close</span></div>
+  
+  
+  </div>
+
+<!-- CH 1 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 1</div>
+    <div class="chapter-title">Getting Started — Login &amp; Registration</div>
+    <div class="chapter-desc">How to create your company account and log in to ZeroPoint ERP for the first time.</div>
+  </div>
+
+  <h2>1.1 Logging In</h2>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch01_01_login_page.png" alt="Login screen" />
+    <div class="screenshot-caption">Login screen — enter your registered email address and password, then click Login</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Open the application URL</div><div class="step-desc">Navigate to the ZeroPoint ERP URL in your web browser. The Login screen appears by default.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Enter your email and password</div><div class="step-desc">Type your registered email address and password in the fields shown.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Click Login</div><div class="step-desc">You are taken to the Dashboard. Your session remains active until you click Logout in the top-right of the header.</div></div></div>
+  </div>
+
+  <h2>1.2 Registering a New Company</h2>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch01_02_register_form_filled.png" alt="Registration form" />
+    <div class="screenshot-caption">Registration form — fill in Company Name, your Full Name, Email, and Password to create your account</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "Register" on the login screen</div><div class="step-desc">The registration form appears.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Fill in all fields</div><div class="step-desc"><strong>Company Name</strong> — your legal business name<br><strong>Full Name</strong> — your name as the primary administrator<br><strong>Email</strong> — used for login<br><strong>Password</strong> — minimum 8 characters</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Click Register</div><div class="step-desc">The system creates your company, seeds a complete chart of accounts, and logs you in automatically.</div></div></div>
+  </div>
+</div>
+
+<!-- CH 2 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 2</div>
+    <div class="chapter-title">Dashboard Overview</div>
+    <div class="chapter-desc">The Dashboard is the home screen after login. It shows real-time business KPIs and the main navigation sidebar.</div>
+  </div>
+
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch02_01_dashboard_kpi_cards.png" alt="Dashboard KPI cards" />
+    <div class="screenshot-caption">Main Dashboard — KPI cards showing this month's sales, expenses, total receivables, payables, invoice count, and overdue counts</div>
+  </div>
+
+  <h2>2.1 Navigation Layout</h2>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch02_02_sidebar_expanded.png" alt="Sidebar navigation expanded" />
+    <div class="screenshot-caption">Left sidebar with a Sales group expanded — click any top-level item to expand its sub-menu, click a sub-item to open that module</div>
+  </div>
+  <div class="two-col">
+    <div class="summary-box"><h4>Left Sidebar</h4><p>Main navigation. Click any group (Sales, Purchases, etc.) to expand. Click a sub-item to open that module.</p></div>
+    <div class="summary-box"><h4>Header Bar</h4><p>Contains the <strong>+ Create</strong> button, pending approvals badge, company name, and logout.</p></div>
+  </div>
+
+  <h2>2.2 KPI Cards</h2>
+  <table class="field-table">
+    <thead><tr><th>Card</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Sales This Month</strong></td><td>Total invoice value for the current calendar month</td></tr>
+      <tr><td><strong>Expenses This Month</strong></td><td>Total approved expenses for the current month</td></tr>
+      <tr><td><strong>Total Receivables</strong></td><td>Outstanding AR balance (unpaid invoices)</td></tr>
+      <tr><td><strong>Total Payables</strong></td><td>Outstanding AP balance (unpaid bills)</td></tr>
+      <tr><td><strong>Overdue Invoices</strong></td><td>Invoices past due date — shown in red if &gt; 0</td></tr>
+      <tr><td><strong>Overdue Bills</strong></td><td>Bills past due date — shown in red if &gt; 0</td></tr>
+    </tbody>
+  </table>
+  <div class="callout note"><i class="fas fa-check-circle callout-icon"></i><div class="callout-body"><div class="callout-title">Automatic Overdue Updates</div><div class="callout-text">The background scheduler marks invoices and bills as overdue every morning at 06:00 UTC. No manual action required.</div></div></div>
+</div>
+
+<!-- CH 3 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 3</div>
+    <div class="chapter-title">Initial Setup</div>
+    <div class="chapter-desc">Complete these steps once before entering any transactions. Proper setup ensures correct GL posting, tax calculations, and document numbering.</div>
+  </div>
+
+  <h2>3.1 Company Settings</h2>
+  <p>Go to <strong>Settings → Company Settings</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch03_01_company_settings.png" alt="Company Settings" />
+    <div class="screenshot-caption">Company Settings — enter your company name, address, logo, currency symbol, and document number prefixes</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Enter company details</div><div class="step-desc">Company Name, Address, Phone, Email, Tax Registration Number, and Currency Symbol.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Set document prefixes</div><div class="step-desc">Configure number prefixes for each document type (e.g. INV-, PO-, BILL-) and the starting sequence number.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Save Settings</div><div class="step-desc">Changes take effect immediately on new documents.</div></div></div>
+  </div>
+
+  <h2>3.2 Chart of Accounts</h2>
+  <p>Go to <strong>Accounting → Chart of Accounts</strong>. A full standard chart of accounts is seeded automatically on registration.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch03_02_chart_of_accounts.png" alt="Chart of Accounts" />
+    <div class="screenshot-caption">Chart of Accounts — standard double-entry account tree with account number, name, type, and current balance. Use the Opening Balance and Year-End Close buttons in the toolbar.</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Review seeded accounts</div><div class="step-desc">Assets (1000–1999), Liabilities (2000–2999), Equity (3000–3999), Revenue (4000–4999), Expenses (5000–5999).</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Add custom accounts if needed</div><div class="step-desc">Click <strong>+ New Account</strong>. Enter Account Number, Name, Type, and Sub-Type. Click Save.</div></div></div>
+  </div>
+
+  <h2>3.3 Opening Balances</h2>
+  <p>If migrating from another system, click the <strong>Opening Balance</strong> button in the Chart of Accounts toolbar to enter your trial balance as of the migration date.</p>
+  <div class="callout warn"><i class="fas fa-exclamation-triangle callout-icon"></i><div class="callout-body"><div class="callout-title">Post Before Any Transactions</div><div class="callout-text">Enter opening balances before creating any invoices or bills. The entry auto-balances via account 3050 Opening Balance Equity.</div></div></div>
+
+  <h2>3.4 Tax Configuration</h2>
+  <p>Go to <strong>Settings → Tax</strong>. Define all tax rates your business charges on sales and pays on purchases. These rates appear in every invoice, bill, and expense form.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Open Tax Settings</div>
+        <div class="step-desc">Navigate to <strong>Settings → Tax</strong>. The panel shows all existing tax rates with their name, rate %, active status, and default flag.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Click "+ Add Tax"</div>
+        <div class="step-desc">The Add Tax form slides open. Fill in:
+          <ul>
+            <li><strong>Tax Name</strong> — e.g. "Standard VAT", "Zero Rate", "Reduced Rate"</li>
+            <li><strong>Rate (%)</strong> — numeric percentage, e.g. <code>17</code> for 17%</li>
+            <li><strong>Default</strong> — tick to pre-select this rate on new documents</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Save</div>
+        <div class="step-desc">The rate appears instantly in all document line-item tax dropdowns. You can add multiple rates — only one can be marked as default.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screenshot-pair">
+    <div class="screenshot">
+      <img src="user-guide-screenshots/ch03_04_tax_configuration.png" alt="Tax Configuration list" />
+      <div class="screenshot-caption"><strong>Tax list</strong> — existing rates with active toggle and default badge</div>
+    </div>
+    <div class="screenshot">
+      <img src="user-guide-screenshots/ch03_05_tax_form_filled.png" alt="Add Tax form" />
+      <div class="screenshot-caption"><strong>Add Tax form</strong> — enter name and rate percentage</div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <i class="fas fa-lightbulb callout-icon"></i>
+    <div class="callout-body">
+      <div class="callout-title">Input Tax Recovery</div>
+      <div class="callout-text">When a tax rate is applied to a bill or expense, the system automatically splits the tax into account <strong>1250 Input Tax Recoverable</strong> — the amount you can reclaim on your VAT return. The Tax Summary report shows the full Output vs. Input tax calculation.</div>
+    </div>
+  </div>
+
+<h2>3.5 Shipping Methods (Ship Via)</h2>
+  <p>Go to <strong>Settings → Ship Via</strong>. Define the carriers and delivery methods your company uses. These appear in the <em>Ship Via</em> dropdown on Sales Orders, Invoices, and Purchase Orders.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Click "+ Add Ship Via"</div>
+        <div class="step-desc">Enter the carrier or method name — e.g. <em>DHL Express</em>, <em>Own Truck</em>, <em>TCS Courier</em>, <em>Walk-in Pickup</em>.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Save and activate</div>
+        <div class="step-desc">The method is active by default and immediately available on all sales and purchase documents. Use the toggle on each row to deactivate without deleting.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch03_06_ship_via_configuration.png" alt="Ship Via configuration" />
+    <div class="screenshot-caption">Ship Via Configuration — carriers and delivery methods with active/inactive toggle. Active methods appear in the Ship Via dropdown on every sales and purchase document.</div>
+  </div>
+</div>
+
+<!-- CH 4 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 4</div>
+    <div class="chapter-title">Master Data</div>
+    <div class="chapter-desc">Set up customers, vendors, and products before creating any transactions. These records are referenced on every document.</div>
+  </div>
+
+  <h2>4.1 Customer Center</h2>
+  <p>Go to <strong>Customers → Customer Center</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_01_customer_center_list.png" alt="Customer Center list" />
+    <div class="screenshot-caption">Customer Center — searchable customer list with contact details, outstanding balance, and Add Customer button</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ Add Customer"</div><div class="step-desc">The Customer form opens.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body">
+      <div class="step-title">Fill in customer details</div>
+      <div class="step-desc">
+        <table class="field-table">
+          <thead><tr><th>Field</th><th>Description</th><th>Required</th></tr></thead>
+          <tbody>
+            <tr><td>Customer Name</td><td>Company or individual name</td><td class="req">Yes</td></tr>
+            <tr><td>Email / Phone</td><td>Primary contact details</td><td></td></tr>
+            <tr><td>Address</td><td>Billing address</td><td></td></tr>
+            <tr><td>Payment Terms</td><td>Default days to pay (e.g. 30 for Net 30)</td><td></td></tr>
+            <tr><td>Credit Limit</td><td>Maximum outstanding balance allowed</td><td></td></tr>
+            <tr><td>Currency</td><td>Customer's billing currency</td><td></td></tr>
+            <tr><td>Tax Number</td><td>Customer's VAT/Tax registration number</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Save</div><div class="step-desc">The customer is available in all sales documents and the Customer Statement shows their full transaction history.</div></div></div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_02_customer_form_filled.png" alt="Customer form filled" />
+    <div class="screenshot-caption">Customer form — filled with name, email, phone, address, and payment terms</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_03_customer_saved.png" alt="Customer saved in list" />
+    <div class="screenshot-caption">Customer saved and visible in the Customer Center list</div>
+  </div>
+
+  <h2>4.2 Vendor Center</h2>
+  <p>Go to <strong>Vendors → Vendor Center</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_04_vendor_center_list.png" alt="Vendor Center list" />
+    <div class="screenshot-caption">Vendor Center — list of all vendors with outstanding payables balance and Add Vendor button</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_05_vendor_form_filled.png" alt="Vendor form filled" />
+    <div class="screenshot-caption">Vendor form — filled with name, email, phone, and address details</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_06_vendor_saved.png" alt="Vendor saved" />
+    <div class="screenshot-caption">Vendor saved and visible in the Vendor Center list — ready to be selected on RFQs, POs, and Bills</div>
+  </div>
+
+  <h2>4.3 Product Center</h2>
+  <p>Go to <strong>Product &amp; Services → Product Center</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_07_product_center_list.png" alt="Product Center list" />
+    <div class="screenshot-caption">Product Center — products and services with type badges (Inventory / Service / Non-Inventory), SKU, price, and current stock level</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ Add Product" and choose type</div><div class="step-desc"><strong>Inventory Item</strong> — physical goods tracked in stock<br><strong>Service</strong> — labour, no stock tracking<br><strong>Non-Inventory</strong> — items not tracked in stock</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Fill in product details</div><div class="step-desc">Name, SKU, Description, Selling Price, Cost Price, Unit of Measure, Reorder Level, Opening Stock.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Save</div><div class="step-desc">Product is available in all sales and purchase line items.</div></div></div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_08_product_form_filled.png" alt="Product form filled" />
+    <div class="screenshot-caption">Product form — filled with name, SKU, selling price ($25,000), cost price ($18,000), and product type</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch04_09_product_saved.png" alt="Product saved" />
+    <div class="screenshot-caption">Product saved and visible in the Product Center — ready for use on invoices, purchase orders, and delivery notes</div>
+  </div>
+</div>
+
+<!-- CH 5 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 5</div>
+    <div class="chapter-title">Purchase Flow — Procure-to-Pay</div>
+    <div class="chapter-desc">The complete purchase cycle from requesting quotes through to paying the vendor. Each step is optional — you can start at any point.</div>
+  </div>
+  <div class="flow">
+    <div class="flow-step optional">RFQ</div><div class="flow-arrow">→</div>
+    <div class="flow-step">Purchase Order</div><div class="flow-arrow">→</div>
+    <div class="flow-step">GRN</div><div class="flow-arrow">→</div>
+    <div class="flow-step">Bill</div><div class="flow-arrow">→</div>
+    <div class="flow-step payment">Payment</div>
+  </div>
+  <div class="callout info"><i class="fas fa-info-circle callout-icon"></i><div class="callout-body"><div class="callout-title">GL Auto-Posting</div><div class="callout-text">The system posts double-entry journal entries automatically at GRN (inventory), Bill approval (AP), and Payment (AP cleared to Cash). No manual journals needed.</div></div></div>
+
+  <h2>5.1 Request for Quotation (RFQ)</h2>
+  <p>Go to <strong>Purchases → Request for Quotation</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_01_rfq_list.png" alt="RFQ list" />
+    <div class="screenshot-caption">RFQ list — all requests with status (Draft / Sent / Converted) and the New RFQ button</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_02_rfq_form.png" alt="RFQ form" />
+    <div class="screenshot-caption">RFQ form — select vendor(s), add line items with required quantities, and set the request date</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ New RFQ"</div><div class="step-desc">Select the vendor(s) and add line items with the products and quantities you need quoted.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Send to vendor</div><div class="step-desc">Change status to <span class="badge sent">Sent</span> when the RFQ is dispatched.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Convert to Purchase Order</div><div class="step-desc">Click <strong>Convert to PO</strong> once the vendor responds. A Purchase Order is created with all RFQ details pre-filled.</div></div></div>
+  </div>
+
+  <h2>5.2 Purchase Order (PO)</h2>
+  <p>Go to <strong>Purchases → Purchase Order</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_03_purchase_order_list.png" alt="Purchase Order list" />
+    <div class="screenshot-caption">Purchase Order list — all POs with vendor, total amount, status, and GRN/Bill action buttons</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_04_purchase_order_form.png" alt="Purchase Order form" />
+    <div class="screenshot-caption">Purchase Order form — vendor selection, order date, expected delivery, line items with quantities and unit prices, tax, and totals</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Fill in header and line items</div><div class="step-desc">Select vendor, enter order date, expected delivery date, Ship Via. Add products with quantities and unit prices.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Approve the PO</div><div class="step-desc">Change status to <span class="badge approved">Approved</span>. If an Approval Workflow rule applies (e.g. PO &gt; $5,000 requires CFO approval), it moves to <span class="badge pending">Pending Approval</span> first.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Create GRN when goods arrive</div><div class="step-desc">Click <strong>Create GRN</strong> on the approved PO.</div></div></div>
+  </div>
+
+  <h2>5.3 Goods Received Note (GRN)</h2>
+  <p>Go to <strong>Purchases → Goods Received Note</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_05_grn_list.png" alt="GRN list" />
+    <div class="screenshot-caption">GRN list — all goods receipts with status (Draft / Received) and linked PO reference</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Enter received quantities</div><div class="step-desc">Adjust quantities to the actual amount received. Partial receipts are allowed.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Set status to "Received"</div><div class="step-desc">Stock on hand is updated immediately. The system posts:</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — GRN Received</div>
+    <div class="gl-dr">DR  1200  Inventory                    [qty × unit cost]</div>
+    <div class="gl-cr">CR  2000  Accounts Payable (Accrued)   [same amount]</div>
+  </div>
+
+  <h2>5.4 Vendor Bill</h2>
+  <p>Go to <strong>Purchases → Bills</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_06_bills_list.png" alt="Bills list" />
+    <div class="screenshot-caption">Bills list — all vendor invoices with payment status badges (Unpaid / Partially Paid / Paid / Overdue)</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_07_bill_form.png" alt="Bill form" />
+    <div class="screenshot-caption">Bill form — enter vendor invoice number, bill date, due date, and line items matching the vendor's paper invoice</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Create or link from GRN</div><div class="step-desc">Click <strong>Create Bill</strong> on a GRN to pre-fill all line items, or click <strong>+ New Bill</strong> from the Bills list.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Enter vendor invoice details</div><div class="step-desc">Vendor Invoice No, Bill Date, Due Date, line items and tax. Verify totals match the vendor's paper invoice exactly.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Approve the Bill</div><div class="step-desc">Change status to <span class="badge approved">Approved</span>. GL posts AP and Input Tax Recoverable automatically.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Bill Approved (no linked GRN)</div>
+    <div class="gl-dr">DR  1200/5900  Inventory / Expense      [net amount]</div>
+    <div class="gl-dr">DR  1250        Input Tax Recoverable    [tax amount]</div>
+    <div class="gl-cr">CR  2000        Accounts Payable         [gross total]</div>
+  </div>
+
+  <h2>5.5 Bill Payment</h2>
+  <p>Go to <strong>Purchases → Bill Payments</strong> or <strong>Payments → Make Payment</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch05_08_bill_payments_list.png" alt="Bill Payments list" />
+    <div class="screenshot-caption">Bill Payments list — all vendor payments with date, amount, bank account, and linked bills</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Select vendor and outstanding bills</div><div class="step-desc">Choose the vendor — all outstanding approved bills appear. Tick the bills to pay. Enter a partial amount for partial payment.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Select bank account and date</div><div class="step-desc">Choose which bank account funds come from. Enter payment date and reference (cheque number, bank transfer ref).</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Save Payment</div><div class="step-desc">Bill status updates to <span class="badge paid">Paid</span> or <span class="badge pending">Partially Paid</span>. GL posts automatically.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Bill Payment</div>
+    <div class="gl-dr">DR  2000  Accounts Payable   [amount paid]</div>
+    <div class="gl-cr">CR  1000  Cash / Bank        [amount paid]</div>
+  </div>
+</div>
+
+<!-- CH 6 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 6</div>
+    <div class="chapter-title">Sales Flow — Order-to-Cash</div>
+    <div class="chapter-desc">The complete sales cycle from creating a quotation through to receiving customer payment.</div>
+  </div>
+  <div class="flow">
+    <div class="flow-step optional">Estimate</div><div class="flow-arrow">→</div>
+    <div class="flow-step optional">Sales Order</div><div class="flow-arrow">→</div>
+    <div class="flow-step optional">Delivery Note</div><div class="flow-arrow">→</div>
+    <div class="flow-step">Invoice</div><div class="flow-arrow">→</div>
+    <div class="flow-step payment">Payment</div>
+  </div>
+
+  <h2>6.1 Estimate / Quotation</h2>
+  <p>Go to <strong>Sales → Estimates/Quotations</strong>. A non-binding price quote sent to a customer before they confirm an order.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_01_estimates_list.png" alt="Estimates list" />
+    <div class="screenshot-caption">Estimates list — all quotations with status (Draft / Sent / Accepted / Expired) and conversion buttons</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_02_estimate_form.png" alt="Estimate form" />
+    <div class="screenshot-caption">Estimate form — select customer, add line items with products, quantities and unit prices, apply tax and discount</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Create and send to customer</div><div class="step-desc">Select customer, add line items, set tax and discount. Change status to <span class="badge sent">Sent</span>. Print or export as PDF.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Convert when customer accepts</div><div class="step-desc">Click <strong>Convert to Sales Order</strong>. All fields carry over automatically.</div></div></div>
+  </div>
+
+  <h2>6.2 Sales Order</h2>
+  <p>Go to <strong>Sales → Sales Order</strong>. Confirms the customer's purchase commitment.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_03_sales_order_list.png" alt="Sales Order list" />
+    <div class="screenshot-caption">Sales Order list — all orders with customer, total, status, and Delivery Note / Invoice action buttons</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_04_sales_order_form.png" alt="Sales Order form" />
+    <div class="screenshot-caption">Sales Order form — customer details, delivery date, Ship Via, shipping address, and line items</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Confirm the order</div><div class="step-desc">Change status from <span class="badge draft">Draft</span> to <span class="badge approved">Confirmed</span>.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Create Delivery Note</div><div class="step-desc">Click <strong>Create Delivery Note</strong> to generate a DN for warehouse dispatch.</div></div></div>
+  </div>
+
+  <h2>6.3 Delivery Note</h2>
+  <p>Go to <strong>Sales → Delivery Notes</strong>. Accompanies goods when they leave the warehouse — triggers stock deduction.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_05_delivery_note_list.png" alt="Delivery Note list" />
+    <div class="screenshot-caption">Delivery Note list — all DNs with dispatch status, linked sales order, and Create Invoice button</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Confirm shipped quantities</div><div class="step-desc">Adjust to actual dispatched quantities if making a partial shipment.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Set status to "Dispatched"</div><div class="step-desc">Stock on hand for inventory products is reduced immediately.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Create Invoice from DN</div><div class="step-desc">Click <strong>Create Invoice</strong> to generate the billing document.</div></div></div>
+  </div>
+
+  <h2>6.4 Invoice</h2>
+  <p>Go to <strong>Sales → Invoices</strong>. The billing document sent to the customer — creates an Accounts Receivable entry.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_06_invoice_list.png" alt="Invoice list" />
+    <div class="screenshot-caption">Invoice list — all invoices with customer, amount, payment status, due date, and quick-action buttons</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_07_invoice_form.png" alt="Invoice form" />
+    <div class="screenshot-caption">Invoice form — customer header, line items with product/quantity/price, tax and discount, shipping charges, and status action buttons (Approve / Send)</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Complete invoice details</div><div class="step-desc">Customer, Invoice Date, Due Date, PO Reference (customer's PO number), Tax, Discount, Shipping Charges, Notes.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Approve or Send</div><div class="step-desc">Change status to <span class="badge approved">Approved</span> or <span class="badge sent">Sent</span>. GL entries post automatically.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Invoice Approved/Sent</div>
+    <div class="gl-dr">DR  1100  Accounts Receivable     [gross total]</div>
+    <div class="gl-cr">CR  4000  Revenue                 [net amount]</div>
+    <div class="gl-cr">CR  2200  Output Tax Payable       [tax amount]</div>
+    <div style="margin-top:8px;border-top:1px solid #334155;padding-top:8px">
+    <div class="gl-label">For inventory line items also:</div>
+    <div class="gl-dr">DR  5000  Cost of Goods Sold       [cost of items sold]</div>
+    <div class="gl-cr">CR  1200  Inventory               [cost of items sold]</div>
+    </div>
+  </div>
+
+  <h2>6.5 Customer Payment</h2>
+  <p>Go to <strong>Sales → Sales Receipt</strong> or <strong>Payments → Receive Payment</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch06_08_customer_payments_list.png" alt="Customer Payments list" />
+    <div class="screenshot-caption">Customer Payments list — all receipts with customer name, amount, date, and linked invoices</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Select customer and invoices</div><div class="step-desc">Choose the customer — all outstanding invoices appear. Tick the ones being paid. Enter partial amount for partial payment.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Select bank account and save</div><div class="step-desc">Choose the deposit account. Enter payment date and reference. Click Save — invoice status updates to <span class="badge paid">Paid</span>.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Customer Payment</div>
+    <div class="gl-dr">DR  1000  Cash / Bank             [amount received]</div>
+    <div class="gl-cr">CR  1100  Accounts Receivable     [amount received]</div>
+  </div>
+</div>
+
+<!-- CH 7 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 7</div>
+    <div class="chapter-title">Expenses</div>
+    <div class="chapter-desc">Record business expenses such as travel, meals, utilities, and other out-of-pocket costs paid directly from cash or a company card.</div>
+  </div>
+  <p>Go to <strong>Purchases → Expenses</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch07_01_expenses_list.png" alt="Expenses list" />
+    <div class="screenshot-caption">Expense Center — list of all expenses with category, amount, payment status (Paid / Unpaid / Approved), and New Expense button</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch07_02_expense_form.png" alt="Expense form" />
+    <div class="screenshot-caption">Expense form — enter date, category, amount, tax rate, payment account, and description. Input tax is split out automatically on approval.</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ New Expense"</div><div class="step-desc">Fill in: Expense Date, Category (Travel/Meals/Utilities etc.), Vendor/Payee, Amount, Tax, Payment Account, Description.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Approve the expense</div><div class="step-desc">Change status to <span class="badge approved">Approved</span>. GL posts automatically — Input Tax splits into account 1250 for VAT recovery.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Expense Approved</div>
+    <div class="gl-dr">DR  5XXX  Expense Account (net)    [amount excl. tax]</div>
+    <div class="gl-dr">DR  1250  Input Tax Recoverable    [tax amount]</div>
+    <div class="gl-cr">CR  1000  Cash / Bank             [gross total]</div>
+  </div>
+</div>
+
+<!-- CH 9 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 8</div>
+    <div class="chapter-title">Accounting</div>
+    <div class="chapter-desc">Manual journal entries, General Ledger, and Trial Balance for full double-entry bookkeeping control.</div>
+  </div>
+
+  <h2>9.1 Journal Entries</h2>
+  <p>Go to <strong>Accounting → Journal Entries</strong>. Use for adjustments, accruals, and corrections not covered by automated documents.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch09_01_journal_entries_list.png" alt="Journal Entries list" />
+    <div class="screenshot-caption">Journal Entries list — all manual journals with entry number, date, description, and posted/draft status</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch09_02_journal_entry_form.png" alt="Journal Entry form" />
+    <div class="screenshot-caption">Journal Entry form — debit and credit lines with account selector, amounts, and live balance validation (Debits must equal Credits to post)</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ New Journal Entry"</div><div class="step-desc">Enter Entry Date, Reference Number, and Description.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Add debit and credit lines</div><div class="step-desc">Select GL account, enter Debit or Credit amount and description per line. Total Debits must equal Total Credits.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Post</div><div class="step-desc">Click <strong>Post</strong>. Posted entries affect the GL immediately. To correct: click <strong>Reverse</strong> to create an equal opposite entry, then post the corrected one.</div></div></div>
+  </div>
+
+  <h2>9.2 General Ledger</h2>
+  <p>Go to <strong>Accounting → General Ledger</strong>. Shows every transaction posted to a specific account with running balances.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch09_03_general_ledger.png" alt="General Ledger" />
+    <div class="screenshot-caption">General Ledger — select an account and date range to see opening balance, all transactions (date, entry no, description, debit, credit), and closing balance</div>
+  </div>
+
+  <h2>9.3 Trial Balance</h2>
+  <p>Go to <strong>Accounting → Trial Balance</strong>. Lists all GL accounts with their balance. Total Debits must equal Total Credits.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch09_04_trial_balance.png" alt="Trial Balance" />
+    <div class="screenshot-caption">Trial Balance — all accounts listed with debit or credit balance as of the selected date. Grand total row shows Debits = Credits when balanced.</div>
+  </div>
+</div>
+
+<!-- CH 10 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 9</div>
+    <div class="chapter-title">Settings &amp; Administration</div>
+    <div class="chapter-desc">Manage users and roles, configure approval workflows, and set up recurring documents.</div>
+  </div>
+
+  <h2>9.1 Users &amp; Roles</h2>
+  <p>Go to <strong>Settings → Users &amp; Roles</strong>.</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch11_01_user_management.png" alt="User Management" />
+    <div class="screenshot-caption">User Management — list of all users with role badges, active status, and Add User button</div>
+  </div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch11_02_add_user_form.png" alt="Add User form" />
+    <div class="screenshot-caption">Add User form — enter Full Name, Email, Password, and assign a Role (Admin / Accountant / Sales / Purchasing / Warehouse or custom)</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Click "+ Add User"</div><div class="step-desc">Fill in Full Name, Email, Password, and select a Role.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Save</div><div class="step-desc">The user can log in immediately. Roles control which menus are visible — configure permissions in <strong>Settings → Role Permissions</strong>.</div></div></div>
+  </div>
+
+  <h2>9.2 Approval Workflows</h2>
+  <p>Go to <strong>Settings → Approval Workflows</strong>. Configure rules that automatically route documents to a designated approver based on document type and amount threshold — preventing unauthorised spending without any manual process.</p>
+
+  <h3>Setting Up a Rule</h3>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Click "+ Add Rule"</div>
+        <div class="step-desc">The rule form opens on the right side of the panel.</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Configure the rule fields</div>
+        <div class="step-desc">
+          <table class="field-table" style="margin-top:8px">
+            <thead><tr><th>Field</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Document Type</strong></td><td>Purchase Order, Bill, Invoice, or Expense</td></tr>
+              <tr><td><strong>Min Amount</strong></td><td>Rule applies when document total is ≥ this value (0 = always applies)</td></tr>
+              <tr><td><strong>Max Amount</strong></td><td>Upper limit — leave blank for no upper limit</td></tr>
+              <tr><td><strong>Approver Role</strong></td><td>The role whose members must approve (e.g. CFO, Manager)</td></tr>
+              <tr><td><strong>Step Order</strong></td><td>For multi-step approval chains — lower numbers run first</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">Save the rule</div>
+        <div class="step-desc">The rule activates immediately. Any document matching the criteria will automatically move to <span class="badge pending">Pending Approval</span> when submitted.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screenshot-pair">
+    <div class="screenshot">
+      <img src="user-guide-screenshots/ch11_03_approval_workflows.png" alt="Approval Workflows list" />
+      <div class="screenshot-caption"><strong>Rules list</strong> — all active rules showing document type, amount range, and approver role</div>
+    </div>
+    <div class="screenshot">
+      <img src="user-guide-screenshots/ch11_04_approval_rule_form.png" alt="Add Approval Rule form" />
+      <div class="screenshot-caption"><strong>Add Rule form</strong> — example: Purchase Orders over $5,000 require CFO approval</div>
+    </div>
+  </div>
+
+  <h3>Acting on Pending Approvals</h3>
+  <p>Users with the approver role see a red badge on the <strong><i class="fas fa-clipboard-check"></i> Approvals</strong> button in the header. Click it to open the Pending Approvals inbox.</p>
+
+  <div class="two-col" style="margin-top:12px">
+    <div class="feature-card">
+      <div class="feature-card-title"><i class="fas fa-check-circle"></i> Approve</div>
+      <div class="feature-card-body">Click <strong>Approve</strong> on any request. The document moves to its next status and is processed normally. The action is logged in the audit trail.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-title"><i class="fas fa-times-circle" style="color:#dc2626"></i> Reject</div>
+      <div class="feature-card-body">Click <strong>Reject</strong> and enter a reason. The document is held and the requester can see the rejection reason. They can revise and resubmit.</div>
+    </div>
+  </div>
+
+  <h2>9.3 Recurring Documents</h2>
+  <p>Go to <strong>Settings → Recurring Documents</strong>. Automate documents that repeat on a schedule (e.g. monthly rent invoice).</p>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch11_05_recurring_documents.png" alt="Recurring Documents" />
+    <div class="screenshot-caption">Recurring Documents — list of active templates with document type, frequency, next run date, and enable/disable toggle</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Create a template</div><div class="step-desc">Select document type (Invoice / Bill / Expense), set the schedule (Daily / Weekly / Monthly / Quarterly / Annually), Start Date, End Date.</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Fill in template details</div><div class="step-desc">Set customer / vendor, line items, amounts, and tax — exactly as they should appear on each generated document.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Activate</div><div class="step-desc">The background scheduler generates the document automatically at 06:05 UTC each day when it falls due. No manual action needed.</div></div></div>
+  </div>
+</div>
+
+<!-- CH 11 -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Chapter 10</div>
+    <div class="chapter-title">Year-End Close</div>
+    <div class="chapter-desc">At the end of each financial year, transfer all revenue and expense balances to Retained Earnings and reset P&amp;L accounts to zero for the new year.</div>
+  </div>
+  <p>Go to <strong>Accounting → Chart of Accounts</strong> and click the amber <strong>Year-End Close</strong> button in the toolbar.</p>
+  <div class="callout warn"><i class="fas fa-exclamation-triangle callout-icon"></i><div class="callout-body"><div class="callout-title">Run Only After All Transactions Are Posted</div><div class="callout-text">Perform year-end close after all invoices, bills, and expenses for the financial year are fully approved and posted.</div></div></div>
+  <div class="screenshot">
+    <img src="user-guide-screenshots/ch12_01_year_end_close_panel.png" alt="Year-End Close panel" />
+    <div class="screenshot-caption">Year-End Close panel — fiscal year end date picker, Preview Close button, and history of all previous year-end closes</div>
+  </div>
+  <div class="steps">
+    <div class="step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Set Fiscal Year End Date</div><div class="step-desc">Enter the last day of your financial year (e.g. 2025-12-31 for calendar year, 2025-06-30 for June year-end).</div></div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Click "Preview Close"</div><div class="step-desc">Every Revenue and Expense account appears with current balance → 0.00 after close, and the net amount flowing to Retained Earnings.</div></div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Tick confirmation and Post</div><div class="step-desc">Read and tick the confirmation checkbox, then click <strong>Post Year-End Close</strong>. All P&amp;L accounts reset to zero. Retained Earnings increases by the net income.</div></div></div>
+  </div>
+  <div class="gl-box">
+    <div class="gl-label">GL Posting — Year-End Close (Profitable Year)</div>
+    <div class="gl-dr">DR  4XXX  All Revenue Accounts     [total revenue]</div>
+    <div class="gl-cr">CR  5XXX  All Expense Accounts     [total expenses]</div>
+    <div class="gl-cr">CR  3100  Retained Earnings        [net income]</div>
+  </div>
+  <div class="callout info"><i class="fas fa-info-circle callout-icon"></i><div class="callout-body"><div class="callout-title">One Close Per Year</div><div class="callout-text">The system blocks duplicate closes for the same fiscal year. To redo: reverse the YEC journal entry, then re-run the close.</div></div></div>
+</div>
+
+<!-- APPENDIX -->
+<div class="chapter page-break">
+  <div class="chapter-header">
+    <div class="chapter-num">Appendix</div>
+    <div class="chapter-title">Quick Reference</div>
+    <div class="chapter-desc">Document statuses, key GL accounts, and full workflow flows at a glance.</div>
+  </div>
+
+  <h2>Document Status Reference</h2>
+  <table class="field-table">
+    <thead><tr><th>Status</th><th>Meaning</th><th>GL Posted?</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge draft">Draft</span></td><td>Work in progress — not committed</td><td>No</td></tr>
+      <tr><td><span class="badge pending">Pending Approval</span></td><td>Submitted — waiting for approver action</td><td>No</td></tr>
+      <tr><td><span class="badge sent">Sent</span></td><td>Invoice sent to customer / RFQ sent to vendor</td><td>Yes (invoice)</td></tr>
+      <tr><td><span class="badge approved">Approved / Confirmed</span></td><td>Document approved and active</td><td>Yes</td></tr>
+      <tr><td><span class="badge posted">Posted</span></td><td>Bill/Journal fully posted to ledger</td><td>Yes</td></tr>
+      <tr><td><span class="badge paid">Paid</span></td><td>Fully paid — no outstanding balance</td><td>Yes (payment)</td></tr>
+      <tr><td><span class="badge overdue">Overdue</span></td><td>Past due date with outstanding balance</td><td>Yes (original)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Key GL Accounts</h2>
+  <table class="field-table">
+    <thead><tr><th>Account No</th><th>Name</th><th>Used For</th></tr></thead>
+    <tbody>
+      <tr><td>1000</td><td>Cash</td><td>Cash payments and receipts</td></tr>
+      <tr><td>1100</td><td>Accounts Receivable</td><td>Customer invoices outstanding</td></tr>
+      <tr><td>1200</td><td>Inventory</td><td>Stock on hand valuation</td></tr>
+      <tr><td>1250</td><td>Input Tax Recoverable</td><td>Tax paid on purchases (claimable on VAT return)</td></tr>
+      <tr><td>2000</td><td>Accounts Payable</td><td>Vendor bills outstanding</td></tr>
+      <tr><td>2200</td><td>Output Tax / Tax Payable</td><td>Tax collected on sales (payable to authority)</td></tr>
+      <tr><td>3050</td><td>Opening Balance Equity</td><td>Balancing entry for opening balances</td></tr>
+      <tr><td>3100</td><td>Retained Earnings</td><td>Accumulated profits from prior years</td></tr>
+      <tr><td>4000</td><td>Sales Revenue</td><td>Revenue from product/service sales</td></tr>
+      <tr><td>5000</td><td>Cost of Goods Sold</td><td>Cost of inventory items sold</td></tr>
+      <tr><td>5800</td><td>Bank Charges</td><td>Bank fees and reconciliation variances</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Complete Workflow Summary</h2>
+  <div class="summary-box">
+    <h4>Purchase (Procure-to-Pay) — GL entries marked ⚡</h4>
+    <div class="flow" style="margin:0">
+      <div class="flow-step optional" style="font-size:11px">RFQ</div><div class="flow-arrow">→</div>
+      <div class="flow-step" style="font-size:11px">Purchase Order</div><div class="flow-arrow">→</div>
+      <div class="flow-step" style="font-size:11px">GRN ⚡</div><div class="flow-arrow">→</div>
+      <div class="flow-step" style="font-size:11px">Bill ⚡</div><div class="flow-arrow">→</div>
+      <div class="flow-step payment" style="font-size:11px">Payment ⚡</div>
+    </div>
+  </div>
+  <div class="summary-box" style="margin-top:16px">
+    <h4>Sales (Order-to-Cash) — GL entries marked ⚡</h4>
+    <div class="flow" style="margin:0">
+      <div class="flow-step optional" style="font-size:11px">Estimate</div><div class="flow-arrow">→</div>
+      <div class="flow-step optional" style="font-size:11px">Sales Order</div><div class="flow-arrow">→</div>
+      <div class="flow-step optional" style="font-size:11px">Delivery Note</div><div class="flow-arrow">→</div>
+      <div class="flow-step" style="font-size:11px">Invoice ⚡</div><div class="flow-arrow">→</div>
+      <div class="flow-step payment" style="font-size:11px">Payment ⚡</div>
+    </div>
+  </div>
+
+  <div style="margin-top:50px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;color:#94a3b8;font-size:12px;">
+    <strong style="color:#2563eb">ZeroPoint ERP</strong> &nbsp;|&nbsp; Complete User Guide &nbsp;|&nbsp; Version 1.0 — May 2026
+  </div>
+</div>
+
+</body>
+</html>

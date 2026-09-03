@@ -12,8 +12,11 @@ export const listUsers = async (companyId: string, page: number, limit: number, 
 
   const [rows] = await pool.query(
     `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.role, u.is_active, u.last_login, u.created_at,
+            u.department_id,
+            d.name as department_name,
             c.name as linked_customer_name, ucm.customer_id as linked_customer_id
      FROM users u
+     LEFT JOIN departments d ON d.id = u.department_id
      LEFT JOIN user_customer_map ucm ON ucm.user_id = u.id
      LEFT JOIN customers c ON c.id = ucm.customer_id AND c.deleted_at IS NULL
      WHERE u.company_id = ? AND u.deleted_at IS NULL
@@ -32,8 +35,13 @@ export const createUser = async (
   const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [data.email]);
   if ((existing as any[]).length) throw new ValidationError('Email already in use');
 
-  const allowedRoles = ['customer', 'salesperson'];
-  if (!allowedRoles.includes(data.role)) throw new ValidationError('Role must be customer or salesperson');
+  // Validate role against company's custom roles table
+  if (data.role === 'admin') throw new ValidationError('Cannot create admin users');
+  const [roleCheck] = await pool.query(
+    'SELECT id FROM roles WHERE company_id = ? AND role_code = ? AND is_active = true',
+    [companyId, data.role]
+  );
+  if (!(roleCheck as any[]).length) throw new ValidationError(`Invalid role: "${data.role}"`);
 
   const passwordHash = await bcrypt.hash(data.password, 12);
 
@@ -72,6 +80,15 @@ export const updateUser = async (
   if (!(rows as any[]).length) throw new NotFoundError('User');
   if ((rows as any[])[0].role === 'admin' && data.role && data.role !== 'admin') {
     throw new ForbiddenError('Cannot change role of admin user');
+  }
+
+  // Validate new role against roles table (skip for admin)
+  if (data.role && data.role !== 'admin') {
+    const [roleCheck] = await pool.query(
+      'SELECT id FROM roles WHERE company_id = ? AND role_code = ? AND is_active = true',
+      [companyId, data.role]
+    );
+    if (!(roleCheck as any[]).length) throw new ValidationError(`Invalid role: "${data.role}"`);
   }
 
   const sets: string[] = [];
@@ -129,4 +146,41 @@ export const unlinkCustomer = async (companyId: string, userId: string) => {
   if (!(userRes as any[]).length) throw new NotFoundError('User');
 
   await pool.query('DELETE FROM user_customer_map WHERE user_id = ?', [userId]);
+};
+
+export const getUserPermissions = async (companyId: string, userId: string) => {
+  const [userRows] = await pool.query(
+    'SELECT id, role, department_id FROM users WHERE id = ? AND company_id = ? AND deleted_at IS NULL',
+    [userId, companyId]
+  );
+  if (!(userRows as any[]).length) throw new NotFoundError('User');
+  const user = (userRows as any[])[0];
+
+  const [perms] = await pool.query(
+    'SELECT menu_name, can_access, display_name FROM user_menu_permissions WHERE user_id = ? AND company_id = ?',
+    [userId, companyId]
+  );
+
+  return { user_id: userId, role: user.role, department_id: user.department_id, permissions: perms as any[] };
+};
+
+export const updateUserPermissions = async (
+  companyId: string,
+  userId: string,
+  updates: Array<{ menu_name: string; can_access: boolean; display_name?: string }>
+) => {
+  const [userRows] = await pool.query(
+    'SELECT id FROM users WHERE id = ? AND company_id = ? AND deleted_at IS NULL',
+    [userId, companyId]
+  );
+  if (!(userRows as any[]).length) throw new NotFoundError('User');
+
+  for (const upd of updates) {
+    await pool.query(
+      `INSERT INTO user_menu_permissions (company_id, user_id, menu_name, can_access, display_name, updated_at)
+       VALUES (?, ?, ?, ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE can_access = VALUES(can_access), display_name = VALUES(display_name), updated_at = NOW()`,
+      [companyId, userId, upd.menu_name, upd.can_access, upd.display_name || upd.menu_name]
+    );
+  }
 };

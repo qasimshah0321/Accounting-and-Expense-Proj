@@ -88,7 +88,18 @@ const VendorListScreen = ({ navigation }) => {
         <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.detail} numberOfLines={1}>{item.email || 'No email'}</Text>
         {item.phone && <Text style={styles.detail}>{item.phone}</Text>}
+        {item.outstanding_balance != null && parseFloat(item.outstanding_balance) !== 0 && (
+          <Text style={styles.balance}>
+            Outstanding: ${parseFloat(item.outstanding_balance).toFixed(2)}
+          </Text>
+        )}
       </View>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('VendorStatement', { vendorId: item.id, vendorName: item.name })}
+        style={styles.stmtBtn}
+      >
+        <Text style={styles.stmtText}>Stmt</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={styles.deleteBtn}>
         <Text style={styles.deleteText}>X</Text>
       </TouchableOpacity>
@@ -156,6 +167,9 @@ const styles = StyleSheet.create({
   detail: { fontSize: 12, color: '#888', marginTop: 2 },
   deleteBtn: { padding: 8 },
   deleteText: { color: '#d32f2f', fontSize: 16, fontWeight: '700' },
+  stmtBtn: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#fff3e0', borderRadius: 6, marginRight: 4 },
+  stmtText: { color: '#e65100', fontSize: 11, fontWeight: '700' },
+  balance: { fontSize: 12, color: '#c62828', marginTop: 2, fontWeight: '600' },
   emptyText: { color: '#999', fontSize: 14 },
   fab: {
     position: 'absolute', right: 20, bottom: 20, width: 56, height: 56,

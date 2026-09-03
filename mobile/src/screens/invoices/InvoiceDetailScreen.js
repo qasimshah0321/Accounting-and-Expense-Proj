@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert,
+  Image, TouchableOpacity,
 } from 'react-native';
-import { invoicesAPI } from '../../services/api';
+import { invoicesAPI, fbrAPI } from '../../services/api';
 
 const STATUS_COLORS = {
   draft: '#9e9e9e', sent: '#1565c0', approved: '#2e7d32',
@@ -13,19 +14,48 @@ const InvoiceDetailScreen = ({ route }) => {
   const { invoiceId } = route.params;
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submittingFbr, setSubmittingFbr] = useState(false);
+
+  const loadInvoice = async () => {
+    try {
+      const res = await invoicesAPI.getById(invoiceId);
+      setInvoice(res.data?.invoice || res.data);
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await invoicesAPI.getById(invoiceId);
-        setInvoice(res.data?.invoice || res.data);
-      } catch (err) {
-        Alert.alert('Error', err.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
+    setLoading(true);
+    loadInvoice();
   }, [invoiceId]);
+
+  const handleSubmitFbr = async () => {
+    Alert.alert(
+      'Submit to FBR?',
+      'This invoice will be sent to the FBR POS system. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Submit',
+          onPress: async () => {
+            try {
+              setSubmittingFbr(true);
+              await fbrAPI.submitInvoice(invoiceId);
+              Alert.alert('Success', 'Invoice submitted to FBR');
+              await loadInvoice();
+            } catch (err) {
+              Alert.alert('FBR Error', err.message);
+            } finally {
+              setSubmittingFbr(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const fmt = (v) => parseFloat(v || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
@@ -100,6 +130,52 @@ const InvoiceDetailScreen = ({ route }) => {
         </View>
       ) : null}
 
+      {/* FBR Verified Invoice */}
+      {invoice.fbr_submission_status === 'submitted' && invoice.fbr_qr_url ? (
+        <View style={styles.section}>
+          <View style={styles.fbrHeader}>
+            <View style={styles.fbrBadge}>
+              <Text style={styles.fbrBadgeText}>FBR VERIFIED</Text>
+            </View>
+          </View>
+          <Text style={styles.fbrUsin}>FBR Invoice No: {invoice.fbr_usin || '-'}</Text>
+          {invoice.fbr_submitted_at ? (
+            <Text style={styles.fbrMeta}>
+              Submitted: {new Date(invoice.fbr_submitted_at).toLocaleString()}
+            </Text>
+          ) : null}
+          <View style={styles.qrWrap}>
+            <Image
+              source={{
+                uri: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(invoice.fbr_qr_url)}`,
+              }}
+              style={styles.qrImage}
+            />
+          </View>
+          <Text style={styles.fbrUrl} numberOfLines={2}>{invoice.fbr_qr_url}</Text>
+        </View>
+      ) : null}
+
+      {/* Submit to FBR (sent/approved invoices that haven't been submitted) */}
+      {['sent', 'approved', 'paid', 'partially_paid'].includes(status)
+        && invoice.fbr_submission_status !== 'submitted' ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>FBR Submission</Text>
+          {invoice.fbr_error ? (
+            <Text style={styles.fbrError}>Last error: {invoice.fbr_error}</Text>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.submitBtn, submittingFbr && { opacity: 0.6 }]}
+            onPress={handleSubmitFbr}
+            disabled={submittingFbr}
+          >
+            {submittingFbr
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.submitBtnText}>Submit to FBR</Text>}
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <View style={{ height: 30 }} />
     </ScrollView>
   );
@@ -144,6 +220,18 @@ const styles = StyleSheet.create({
   lineDetail: { fontSize: 11, color: '#888', marginTop: 2 },
   lineTotal: { fontSize: 14, fontWeight: '700', color: '#1a237e' },
   notes: { fontSize: 13, color: '#666', lineHeight: 20 },
+  // FBR styles
+  fbrHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  fbrBadge: { backgroundColor: '#059669', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  fbrBadgeText: { color: '#fff', fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  fbrUsin: { fontSize: 14, fontWeight: '700', color: '#1a237e', marginBottom: 4 },
+  fbrMeta: { fontSize: 12, color: '#666', marginBottom: 12 },
+  qrWrap: { alignItems: 'center', marginVertical: 12 },
+  qrImage: { width: 150, height: 150, borderRadius: 4 },
+  fbrUrl: { fontSize: 11, color: '#6b7280', textAlign: 'center' },
+  fbrError: { fontSize: 12, color: '#dc2626', backgroundColor: '#fee2e2', padding: 8, borderRadius: 6, marginBottom: 10 },
+  submitBtn: { backgroundColor: '#0ea5e9', padding: 14, borderRadius: 10, alignItems: 'center', marginTop: 4 },
+  submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
 });
 
 export default InvoiceDetailScreen;

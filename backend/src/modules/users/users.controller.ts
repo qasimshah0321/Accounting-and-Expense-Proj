@@ -55,3 +55,22 @@ export const unlinkCustomer = async (req: AuthRequest, res: Response, next: Next
     sendSuccess(res, null, 'Customer unlinked successfully');
   } catch (err) { next(err); }
 };
+
+export const getPermissions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const result = await service.getUserPermissions(getCompanyId(req), req.params.id);
+    sendSuccess(res, result, 'User permissions retrieved');
+  } catch (err) { next(err); }
+};
+
+export const updatePermissions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const updates = req.body;
+    if (!Array.isArray(updates)) {
+      res.status(400).json({ error: { message: 'Body must be an array of permission updates' } });
+      return;
+    }
+    await service.updateUserPermissions(getCompanyId(req), req.params.id, updates);
+    sendSuccess(res, null, 'User permissions updated');
+  } catch (err) { next(err); }
+};

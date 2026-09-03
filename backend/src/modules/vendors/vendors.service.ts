@@ -31,7 +31,11 @@ export const listVendors = async (
   const [countRows] = await pool.query(`SELECT COUNT(*) as count FROM vendors WHERE ${where}`, params);
   const total = parseInt((countRows as any[])[0].count, 10);
   const [rows] = await pool.query(
-    `SELECT * FROM vendors WHERE ${where} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`,
+    `SELECT v.*,
+       COALESCE((SELECT SUM(amount_due) FROM bills
+                 WHERE vendor_id = v.id AND company_id = v.company_id
+                   AND deleted_at IS NULL AND payment_status != 'paid'), 0) AS outstanding_balance
+     FROM vendors v WHERE ${where} ORDER BY ${sortBy} ${sortOrder} LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
   return { vendors: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };
@@ -127,4 +131,100 @@ export const getVendorOutstandingBalance = async (companyId: string, vendorId: s
     [companyId, vendorId]
   );
   return (rows as any[])[0];
+};
+
+export const getVendorStatement = async (
+  companyId: string,
+  vendorId: string,
+  startDate: string,
+  endDate: string
+) => {
+  const vendor = await getVendorById(companyId, vendorId);
+
+  // Opening balance: bills total_amount minus amount_paid BEFORE start_date
+  const [openRows] = await pool.query(
+    `SELECT COALESCE(SUM(total_amount), 0) AS total_billed,
+            COALESCE(SUM(amount_paid),  0) AS total_paid
+     FROM bills
+     WHERE company_id=? AND vendor_id=? AND deleted_at IS NULL AND bill_date < ?`,
+    [companyId, vendorId, startDate]
+  );
+  const openBilled = parseFloat((openRows as any[])[0].total_billed) || 0;
+  const openPaid   = parseFloat((openRows as any[])[0].total_paid)   || 0;
+  const openingBalance = openBilled - openPaid;
+
+  // Bills in date range
+  const [billRows] = await pool.query(
+    `SELECT id, bill_no AS reference, bill_date AS date, due_date,
+            total_amount AS amount, amount_paid, amount_due, status, payment_status
+     FROM bills
+     WHERE company_id=? AND vendor_id=? AND deleted_at IS NULL
+       AND bill_date >= ? AND bill_date <= ?
+     ORDER BY bill_date ASC, bill_no ASC`,
+    [companyId, vendorId, startDate, endDate]
+  );
+
+  // Payments in date range
+  const [paymentRows] = await pool.query(
+    `SELECT id, payment_no AS reference, payment_date AS date,
+            amount, payment_method, reference_no, notes
+     FROM vendor_payments
+     WHERE company_id=? AND vendor_id=? AND deleted_at IS NULL
+       AND payment_date >= ? AND payment_date <= ?
+     ORDER BY payment_date ASC, payment_no ASC`,
+    [companyId, vendorId, startDate, endDate]
+  );
+
+  // Merge and compute running balance
+  const transactions: any[] = [
+    ...(billRows as any[]).map(r => ({
+      id: r.id, reference: r.reference, date: r.date, due_date: r.due_date,
+      type: 'Bill', debit: parseFloat(r.amount) || 0, credit: 0,
+      payment_status: r.payment_status, status: r.status,
+    })),
+    ...(paymentRows as any[]).map(r => ({
+      id: r.id, reference: r.reference, date: r.date,
+      type: 'Payment', debit: 0, credit: parseFloat(r.amount) || 0,
+      payment_method: r.payment_method, notes: r.notes || r.reference_no || null,
+    })),
+  ].sort((a, b) => {
+    const d = new Date(a.date).getTime() - new Date(b.date).getTime();
+    return d !== 0 ? d : String(a.reference).localeCompare(String(b.reference));
+  });
+
+  let runningBalance = openingBalance;
+  const transactionsWithBalance = transactions.map(t => {
+    runningBalance += t.debit - t.credit;
+    return { ...t, balance: Math.round(runningBalance * 100) / 100 };
+  });
+  const closingBalance = Math.round(runningBalance * 100) / 100;
+
+  // Aging (all unpaid bills regardless of period)
+  const today = new Date();
+  const [agingRows] = await pool.query(
+    `SELECT due_date, amount_due FROM bills
+     WHERE company_id=? AND vendor_id=? AND deleted_at IS NULL
+       AND payment_status != 'paid' AND amount_due > 0`,
+    [companyId, vendorId]
+  );
+  const aging = { current: 0, days_1_30: 0, days_31_60: 0, days_61_90: 0, days_over_90: 0 };
+  for (const bill of agingRows as any[]) {
+    const daysPast = Math.floor((today.getTime() - new Date(bill.due_date).getTime()) / 86400000);
+    const amt = parseFloat(bill.amount_due) || 0;
+    if (daysPast <= 0)       aging.current     += amt;
+    else if (daysPast <= 30) aging.days_1_30   += amt;
+    else if (daysPast <= 60) aging.days_31_60  += amt;
+    else if (daysPast <= 90) aging.days_61_90  += amt;
+    else                     aging.days_over_90 += amt;
+  }
+  Object.keys(aging).forEach(k => { (aging as any)[k] = Math.round((aging as any)[k] * 100) / 100; });
+
+  return {
+    vendor,
+    period: { start_date: startDate, end_date: endDate },
+    opening_balance: Math.round(openingBalance * 100) / 100,
+    closing_balance: closingBalance,
+    transactions: transactionsWithBalance,
+    aging,
+  };
 };

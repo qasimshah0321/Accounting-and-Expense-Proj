@@ -18,7 +18,7 @@ function getDateRange(label) {
 
 const fmt = (d) => d.toISOString().slice(0,10);
 
-export default function ReportsScreen() {
+export default function ReportsScreen({ navigation }) {
   const [tab, setTab] = useState('P&L');
   const [range, setRange] = useState('This Month');
   const [loading, setLoading] = useState(false);
@@ -132,6 +132,23 @@ export default function ReportsScreen() {
             {tab === 'Sales' && renderSales()}
             {tab === 'Purchases' && renderPurchases()}
             {!data && !loading && <Text style={styles.empty}>No data available</Text>}
+
+            {/* Aging Reports */}
+            <Text style={[styles.periodLabel, { marginTop: 20 }]}>Aging Reports</Text>
+            <TouchableOpacity style={styles.agingBtn} onPress={() => navigation.navigate('AgingReceivables')}>
+              <View>
+                <Text style={styles.agingBtnTitle}>Aging Receivables</Text>
+                <Text style={styles.agingBtnSub}>Outstanding customer invoices by age</Text>
+              </View>
+              <Text style={styles.agingArrow}>›</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.agingBtn} onPress={() => navigation.navigate('AgingPayables')}>
+              <View>
+                <Text style={styles.agingBtnTitle}>Aging Payables</Text>
+                <Text style={styles.agingBtnSub}>Outstanding vendor bills by age</Text>
+              </View>
+              <Text style={styles.agingArrow}>›</Text>
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -159,4 +176,8 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 14, color: '#333', flex: 1 },
   rowValue: { fontSize: 14, fontWeight: '700', color: '#1a237e' },
   empty: { textAlign: 'center', marginTop: 60, color: '#999', fontSize: 15 },
+  agingBtn: { backgroundColor: '#fff', borderRadius: 10, padding: 16, marginBottom: 10, elevation: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  agingBtnTitle: { fontSize: 15, fontWeight: '700', color: '#1a237e' },
+  agingBtnSub: { fontSize: 12, color: '#666', marginTop: 2 },
+  agingArrow: { fontSize: 24, color: '#9e9e9e' },
 });

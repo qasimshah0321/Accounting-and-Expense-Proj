@@ -20,6 +20,7 @@ import salesOrderRoutes from './modules/sales-orders/sales-orders.routes';
 import deliveryNoteRoutes from './modules/delivery-notes/delivery-notes.routes';
 import invoiceRoutes from './modules/invoices/invoices.routes';
 import purchaseOrderRoutes from './modules/purchase-orders/purchase-orders.routes';
+import grnRoutes from './modules/goods-received-notes/goods-received-notes.routes';
 import billRoutes from './modules/bills/bills.routes';
 import expenseRoutes from './modules/expenses/expenses.routes';
 import customerPaymentRoutes from './modules/customer-payments/customer-payments.routes';
@@ -35,6 +36,12 @@ import utilsRoutes from './modules/utils/utils.routes';
 import pushRoutes from './modules/push/push.routes';
 import notificationRoutes from './modules/notifications/notifications.routes';
 import rfqRoutes from './modules/rfqs/rfqs.routes';
+import departmentRoutes from './modules/departments/departments.routes';
+import rolesRoutes from './modules/roles/roles.routes';
+import fbrRoutes from './modules/fbr/fbr.routes';
+import praRoutes from './modules/pra/pra.routes';
+import approvalRoutes from './modules/approvals/approvals.routes';
+import budgetRoutes from './modules/budgets/budgets.routes';
 
 const app = express();
 
@@ -43,6 +50,9 @@ const publicDir = path.join(__dirname, 'public');
 if (fs.existsSync(publicDir)) {
   app.use(express.static(publicDir));
 }
+
+// Trust LiteSpeed/Nginx reverse proxy — required for rate-limiter X-Forwarded-For handling
+app.set('trust proxy', 1);
 
 // Security & parsing middleware
 app.use(helmet());
@@ -78,6 +88,7 @@ app.use(`${API_PREFIX}/sales-orders`, salesOrderRoutes);
 app.use(`${API_PREFIX}/delivery-notes`, deliveryNoteRoutes);
 app.use(`${API_PREFIX}/invoices`, invoiceRoutes);
 app.use(`${API_PREFIX}/purchase-orders`, purchaseOrderRoutes);
+app.use(`${API_PREFIX}/goods-received-notes`, grnRoutes);
 app.use(`${API_PREFIX}/bills`, billRoutes);
 app.use(`${API_PREFIX}/expenses`, expenseRoutes);
 app.use(`${API_PREFIX}/customer-payments`, customerPaymentRoutes);
@@ -92,6 +103,12 @@ app.use(`${API_PREFIX}/role-permissions`, rolePermissionsRoutes);
 app.use(`${API_PREFIX}/push`, pushRoutes);
 app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}/rfqs`, rfqRoutes);
+app.use(`${API_PREFIX}/departments`, departmentRoutes);
+app.use(`${API_PREFIX}/roles`, rolesRoutes);
+app.use(`${API_PREFIX}/fbr`, fbrRoutes);
+app.use(`${API_PREFIX}/pra`, praRoutes);
+app.use(`${API_PREFIX}/approvals`, approvalRoutes);
+app.use(`${API_PREFIX}/budgets`,   budgetRoutes);
 app.use(`${API_PREFIX}`, utilsRoutes);
 
 // SPA fallback: serve index.html for any non-API route (client-side routing)

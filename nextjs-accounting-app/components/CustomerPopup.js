@@ -25,6 +25,11 @@ const emptyForm = {
   paymentTerms: 'Net 30',
   creditLimit: '',
   notes: '',
+  // FBR (Pakistan) buyer defaults
+  ntn: '',
+  cnic: '',
+  province: '',
+  registrationType: 'Unregistered',
 }
 
 export default function CustomerPopup({ isOpen, onClose, onSave, editCustomer }) {
@@ -56,6 +61,10 @@ export default function CustomerPopup({ isOpen, onClose, onSave, editCustomer })
         paymentTerms: api.numberToPaymentTerms(editCustomer.payment_terms),
         creditLimit: editCustomer.credit_limit ?? '',
         notes: editCustomer.notes || '',
+        ntn: editCustomer.ntn || '',
+        cnic: editCustomer.cnic || '',
+        province: editCustomer.province || '',
+        registrationType: editCustomer.registration_type || 'Unregistered',
       })
     } else {
       setFormData(emptyForm)
@@ -111,6 +120,10 @@ export default function CustomerPopup({ isOpen, onClose, onSave, editCustomer })
       payment_terms: api.paymentTermsToNumber(formData.paymentTerms),
       credit_limit: formData.creditLimit ? parseFloat(formData.creditLimit) : 0,
       notes: formData.notes,
+      ntn: formData.ntn || null,
+      cnic: formData.cnic || null,
+      province: formData.province || null,
+      registration_type: formData.registrationType || 'Unregistered',
     }
     try {
       let res
@@ -272,6 +285,34 @@ export default function CustomerPopup({ isOpen, onClose, onSave, editCustomer })
                 <div className={styles.formGroup}>
                   <label>Notes</label>
                   <textarea name="notes" className={styles.formControl} value={formData.notes} onChange={handleChange} rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            {/* FBR (Pakistan) — buyer defaults applied to invoices */}
+            <div className={styles.section}>
+              <h3>FBR Details (Pakistan)</h3>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Buyer NTN</label>
+                  <input type="text" name="ntn" className={styles.formControl} value={formData.ntn} onChange={handleChange} placeholder="7 digits" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Buyer CNIC</label>
+                  <input type="text" name="cnic" className={styles.formControl} value={formData.cnic} onChange={handleChange} placeholder="13 digits" />
+                </div>
+              </div>
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label>Province</label>
+                  <input type="text" name="province" className={styles.formControl} value={formData.province} onChange={handleChange} placeholder="e.g. Sindh / Punjab" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Registration Type</label>
+                  <select name="registrationType" className={styles.formControl} value={formData.registrationType} onChange={handleChange}>
+                    <option value="Unregistered">Unregistered</option>
+                    <option value="Registered">Registered</option>
+                  </select>
                 </div>
               </div>
             </div>

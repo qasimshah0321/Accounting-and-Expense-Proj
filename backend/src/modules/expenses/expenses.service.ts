@@ -4,6 +4,7 @@ import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createStatusHistory } from '../../services/auditService';
 import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
+import { createRequestIfRuleMatches } from '../approvals/approvals.service';
 
 export const listExpenses = async (companyId: string, filters: any) => {
   const conditions = ['company_id=?', 'deleted_at IS NULL'];
@@ -62,27 +63,65 @@ export const deleteExpense = async (companyId: string, expenseId: string) => {
   await pool.query('UPDATE expenses SET deleted_at=NOW() WHERE id=? AND company_id=?', [expenseId, companyId]);
 };
 
+// Conservative transition guard: restrict moves OUT of pending_approval only.
+const EXPENSE_PENDING_APPROVAL_NEXT: string[] = ['draft', 'approved', 'cancelled'];
+
 export const updateStatus = async (companyId: string, expenseId: string, userId: string, userName: string, newStatus: string, reason?: string) => {
   const exp = await getExpenseById(companyId, expenseId);
+  if (exp.status === 'pending_approval' && !EXPENSE_PENDING_APPROVAL_NEXT.includes(newStatus)) {
+    throw new ConflictError(`Cannot transition expense from pending_approval to ${newStatus}`);
+  }
   await pool.query('UPDATE expenses SET status=?,updated_by=?,updated_at=NOW() WHERE id=?', [newStatus, userId, expenseId]);
   await createStatusHistory({ company_id: companyId, document_type: 'expense', document_id: expenseId, document_no: exp.expense_no, from_status: exp.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason });
+
+  if (newStatus === 'pending_approval') {
+    try {
+      const amt = (parseFloat(exp.amount) || 0) + (parseFloat(exp.tax_amount) || 0);
+      await createRequestIfRuleMatches(
+        companyId,
+        'expense',
+        expenseId,
+        exp.expense_no,
+        amt,
+        userId
+      );
+    } catch (err) {
+      console.error('Approval rule lookup failed for Expense:', err);
+    }
+  }
+
   return { ...exp, status: newStatus };
 };
 
 export const approveExpense = async (companyId: string, expenseId: string, userId: string, userName: string) => {
   const exp = await getExpenseById(companyId, expenseId);
-  if (exp.status !== 'draft') throw new ConflictError('Only draft expenses can be approved');
+  if (exp.status !== 'draft' && exp.status !== 'pending_approval') {
+    throw new ConflictError('Only draft or pending_approval expenses can be approved');
+  }
   const result = await updateStatus(companyId, expenseId, userId, userName, 'approved');
 
   try {
-    const expenseAccountId = await getSystemAccount(companyId, '5900');
-    const cashAccountId = await getSystemAccount(companyId, '1000');
+    // Use the specific expense_account if set, otherwise fall back to 5900 Other Expenses
+    const expenseAccountId  = exp.expense_account || await getSystemAccount(companyId, '5900');
+    const cashAccountId     = await getSystemAccount(companyId, '1000');
+    const inputTaxAccountId = await getSystemAccount(companyId, '1250');
+
     if (expenseAccountId && cashAccountId) {
-      const totalAmount = parseFloat(exp.total_amount || exp.amount) || 0;
-      await createAutoJournalEntry(companyId, userId, userName, 'expense', expenseId, exp.expense_no, exp.expense_date, [
-        { account_id: expenseAccountId, debit: totalAmount, credit: 0, description: `Expense: ${exp.expense_category || ''}` },
-        { account_id: cashAccountId, debit: 0, credit: totalAmount, description: 'Cash payment' },
-      ], `Expense ${exp.expense_no} approved`);
+      const netAmount  = parseFloat(exp.amount) || 0;
+      const taxAmount  = parseFloat(exp.tax_amount) || 0;
+      const grossTotal = netAmount + taxAmount;
+
+      const glLines: Array<{ account_id: string; debit: number; credit: number; description: string }> = [];
+      if (netAmount > 0) {
+        glLines.push({ account_id: expenseAccountId, debit: netAmount, credit: 0, description: `Expense: ${exp.expense_category || ''}` });
+      }
+      if (taxAmount > 0 && inputTaxAccountId) {
+        glLines.push({ account_id: inputTaxAccountId, debit: taxAmount, credit: 0, description: 'Input Tax Recoverable' });
+      }
+      if (glLines.length > 0) {
+        glLines.push({ account_id: cashAccountId, debit: 0, credit: grossTotal, description: 'Cash payment' });
+        await createAutoJournalEntry(companyId, userId, userName, 'expense', expenseId, exp.expense_no, exp.expense_date, glLines, `Expense ${exp.expense_no} approved`);
+      }
     }
   } catch (glErr) {
     console.error('GL auto-post failed for expense approval:', glErr);

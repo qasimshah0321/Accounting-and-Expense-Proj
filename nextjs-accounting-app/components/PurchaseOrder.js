@@ -44,6 +44,13 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
   const [activeItemId, setActiveItemId] = useState(null)
   const [activeField, setActiveField] = useState(null)
 
+  // ─── GRN requirement + direct PO→Bill ────────────────────────────────────
+  const [grnRequirement, setGrnRequirement] = useState('optional')
+  const [convertBillDialog, setConvertBillDialog] = useState(null) // { po }
+  const [convertingBill, setConvertingBill] = useState(false)
+  const [convertBillError, setConvertBillError] = useState('')
+  const [convertBillDate, setConvertBillDate] = useState(new Date().toISOString().split('T')[0])
+
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
 
@@ -73,6 +80,7 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
       loadOrders()
       loadVendors()
       api.getProducts().then(res => setProducts(res.data?.products || res.products || [])).catch(() => {})
+      api.getGrnRequirement().then(res => setGrnRequirement(res.data?.grn_requirement || 'optional')).catch(() => {})
     }
   }, [isOpen, loadOrders, loadVendors])
 
@@ -642,6 +650,12 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
                               Received
                             </button>
                           )}
+                          {grnRequirement === 'optional' && ['approved', 'partially_received', 'received'].includes(o.status) && (
+                            <button title="Create Bill (skip GRN)" onClick={() => { setConvertBillDialog({ po: o }); setConvertBillDate(new Date().toISOString().split('T')[0]); setConvertBillError('') }}
+                              style={{ fontSize: 11, padding: '2px 8px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+                              <i className="fas fa-file-invoice-dollar"></i> Create Bill
+                            </button>
+                          )}
                           {o.status === 'draft' && (
                             <button className={styles.btnEdit} title="Edit" onClick={() => handleEditOrder(o)}>
                               <i className="fas fa-edit"></i>
@@ -982,6 +996,44 @@ export default function PurchaseOrder({ isOpen, onClose, taxes, onTaxUpdate, onD
 
           <VendorPopup isOpen={isVendorPopupOpen} onClose={handleVendorPopupClose} onSave={handleVendorSave} />
           <TaxPopup isOpen={isTaxPopupOpen} onClose={handleTaxPopupClose} onSave={handleTaxSave} />
+        </div>
+      )}
+
+      {/* ── Direct PO → Bill dialog (GRN optional mode) ───────────────────── */}
+      {convertBillDialog && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 28, width: 420, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 700 }}>Create Bill from Purchase Order</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#64748b' }}>
+              PO <strong>{convertBillDialog.po.purchase_order_no}</strong> will be converted directly to a Bill (GRN skipped).
+            </p>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#374151' }}>Bill Date *</label>
+              <input type="date" value={convertBillDate} onChange={e => setConvertBillDate(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14, boxSizing: 'border-box' }} />
+            </div>
+            {convertBillError && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '8px 12px', color: '#dc2626', fontSize: 13, marginBottom: 12 }}>
+                {convertBillError}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setConvertBillDialog(null)} style={{ padding: '8px 18px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+              <button
+                disabled={convertingBill || !convertBillDate}
+                onClick={async () => {
+                  setConvertingBill(true); setConvertBillError('')
+                  try {
+                    await api.convertPOToBill(convertBillDialog.po.id, { bill_date: convertBillDate })
+                    setConvertBillDialog(null); loadOrders()
+                  } catch (err) { setConvertBillError(err.message) }
+                  finally { setConvertingBill(false) }
+                }}
+                style={{ padding: '8px 18px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                {convertingBill ? <><i className="fas fa-spinner fa-spin"></i> Creating...</> : 'Create Bill'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

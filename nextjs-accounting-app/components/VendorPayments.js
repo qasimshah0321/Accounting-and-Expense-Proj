@@ -452,7 +452,10 @@ export default function VendorPayments({ isOpen, onClose, currencySymbol = '$' }
                                     type="radio"
                                     name="billAlloc"
                                     checked={selectedBillId === bill.id}
-                                    onChange={() => setSelectedBillId(bill.id)}
+                                    onChange={() => {
+                                      setSelectedBillId(bill.id)
+                                      setAmount(parseFloat(bill.amount_due).toFixed(2))
+                                    }}
                                   />
                                 </td>
                                 <td><strong>{bill.bill_no}</strong></td>

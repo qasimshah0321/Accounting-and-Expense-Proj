@@ -20,7 +20,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
 
   // ─── Form state ───────────────────────────────────────────────────────────
   const [lineItems, setLineItems] = useState([
-    { id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }
+    { id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0, hs_code: '', uom: '', sale_type: '' }
   ])
   const [customers, setCustomers] = useState([])
   const [selectedCustomer, setSelectedCustomer] = useState('')
@@ -35,6 +35,19 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [shipTo, setShipTo] = useState('')
   const [referenceNo, setReferenceNo] = useState('')
   const [notes, setNotes] = useState('')
+  // ─── FBR (Pakistan) buyer/header state ─────────────────────────────────────
+  const fbrEnabled = !!companyProfile?.fbr_enabled
+  const [buyerNtn, setBuyerNtn] = useState('')
+  const [buyerCnic, setBuyerCnic] = useState('')
+  const [buyerProvince, setBuyerProvince] = useState('')
+  const [buyerRegistrationType, setBuyerRegistrationType] = useState('Unregistered')
+  const [fbrScenarioId, setFbrScenarioId] = useState('')
+  const [fbrValidating, setFbrValidating] = useState(false)
+  // ─── PRA (Punjab Revenue Authority) header state ───────────────────────────
+  const praEnabled = !!companyProfile?.pra_enabled
+  const [praInvoiceType, setPraInvoiceType] = useState('New')
+  const [praRefUsin, setPraRefUsin] = useState('')
+  const [praPaymentMode, setPraPaymentMode] = useState(1)
   const [selectedTax, setSelectedTax] = useState(null)
   const [isTaxPopupOpen, setIsTaxPopupOpen] = useState(false)
   const [showTaxDropdown, setShowTaxDropdown] = useState(false)
@@ -62,6 +75,13 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [dnPickerLoading, setDnPickerLoading] = useState(false)
   const [selectedDnId, setSelectedDnId] = useState(null)
   const [linkedDnData, setLinkedDnData] = useState(null)
+
+  // ─── Invoice image import state ───────────────────────────────────────────
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importParsed, setImportParsed] = useState(null)
+  const [importParsing, setImportParsing] = useState(false)
+  const [importError, setImportError] = useState('')
+  const importFileRef = useRef(null)
 
   const autocompleteRef = useRef(null)
   const taxDropdownRef = useRef(null)
@@ -158,7 +178,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   }
 
   const resetForm = async () => {
-    setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
+    setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0, hs_code: '', uom: '', sale_type: '' }])
     setSelectedCustomer('')
     setSelectedCustomerId(null)
     setCustomerSearchText('')
@@ -169,6 +189,14 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setShipTo('')
     setReferenceNo('')
     setNotes('')
+    setBuyerNtn('')
+    setBuyerCnic('')
+    setBuyerProvince('')
+    setBuyerRegistrationType('Unregistered')
+    setFbrScenarioId(companyProfile?.fbr_default_scenario_id || '')
+    setPraInvoiceType('New')
+    setPraRefUsin('')
+    setPraPaymentMode(1)
     setSelectedTax(taxes.find(t => t.is_default) || taxes[0] || null)
     setError('')
     setShowSoPicker(false)
@@ -200,6 +228,14 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setReferenceNo(invoice.reference_no || '')
     setNotes(invoice.notes || '')
     setTerms('Net 30')
+    setBuyerNtn(invoice.buyer_ntn || '')
+    setBuyerCnic(invoice.buyer_cnic || '')
+    setBuyerProvince(invoice.buyer_province || '')
+    setBuyerRegistrationType(invoice.buyer_registration_type || 'Unregistered')
+    setFbrScenarioId(invoice.fbr_scenario_id || companyProfile?.fbr_default_scenario_id || '')
+    setPraInvoiceType(invoice.pra_invoice_type || 'New')
+    setPraRefUsin(invoice.pra_ref_usin || '')
+    setPraPaymentMode(invoice.pra_payment_mode || 1)
     if (invoice.line_items && invoice.line_items.length > 0) {
       setLineItems(invoice.line_items.map((item, idx) => ({
         id: idx + 1,
@@ -209,9 +245,12 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
         rate: parseFloat(item.rate) || 0,
         discount: parseFloat(item.discount_per_item) || 0,
         amount: (parseFloat(item.quantity) || 1) * (parseFloat(item.rate) || 0) - (parseFloat(item.discount_per_item) || 0),
+        hs_code: item.hs_code || '',
+        uom: item.uom || item.unit_of_measure || '',
+        sale_type: item.sale_type || '',
       })))
     } else {
-      setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
+      setLineItems([{ id: 1, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0, hs_code: '', uom: '', sale_type: '' }])
     }
     if (invoice.tax_id) {
       const tax = taxes.find(t => t.id === invoice.tax_id)
@@ -307,6 +346,13 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     if (customer) {
       setBillTo(formatAddress(customer.billing_address, customer.billing_city, customer.billing_state, customer.billing_postal_code, customer.billing_country))
       setShipTo(formatAddress(customer.shipping_address, customer.shipping_city, customer.shipping_state, customer.shipping_postal_code, customer.shipping_country))
+      // Auto-fill FBR buyer defaults from the customer record
+      if (fbrEnabled) {
+        setBuyerNtn(customer.ntn || '')
+        setBuyerCnic(customer.cnic || '')
+        setBuyerProvince(customer.province || '')
+        setBuyerRegistrationType(customer.registration_type || 'Unregistered')
+      }
       if (!editingInvoice) {
         if (dnRequirement === 'mandatory') {
           fetchCustomerDeliveryNotes(customer.id)
@@ -632,9 +678,55 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
 
   const handleCustomerPopupClose = () => setIsCustomerPopupOpen(false)
 
+  // ─── Invoice image/PDF import ─────────────────────────────────────────────
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImportError('')
+    setImportParsed(null)
+    setImportParsing(true)
+    setShowImportModal(true)
+    try {
+      const res = await api.parseInvoiceImage(file)
+      setImportParsed(res.data || res)
+    } catch (err) {
+      setImportError(err.message || 'Failed to parse invoice')
+    } finally {
+      setImportParsing(false)
+    }
+  }
+
+  const handleApplyImport = () => {
+    if (!importParsed) return
+    const items = (importParsed.line_items || []).filter(i => i.description?.trim())
+    if (items.length > 0) {
+      setLineItems(items.map((item, idx) => ({
+        id: idx + 1,
+        sku: item.sku || '',
+        description: item.description || '',
+        quantity: parseFloat(item.quantity) || 1,
+        rate: parseFloat(item.rate) || 0,
+        discount: 0,
+        amount: (parseFloat(item.quantity) || 1) * (parseFloat(item.rate) || 0),
+      })))
+      onDirtyChange(true)
+    }
+    if (importParsed.customer_name && !selectedCustomer) {
+      setCustomerSearchText(importParsed.customer_name)
+    }
+    if (importParsed.invoice_date) {
+      const d = importParsed.invoice_date
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) setInvoiceDate(d)
+    }
+    if (importParsed.notes) setNotes(importParsed.notes)
+    setShowImportModal(false)
+    setImportParsed(null)
+  }
+
   const addLineItem = () => {
     const newId = lineItems.length > 0 ? Math.max(...lineItems.map(item => item.id)) + 1 : 1
-    setLineItems([...lineItems, { id: newId, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0 }])
+    setLineItems([...lineItems, { id: newId, sku: '', description: '', quantity: 1, rate: 0, discount: 0, amount: 0, hs_code: '', uom: '', sale_type: '' }])
   }
 
   const handleFieldFocus = (itemId) => {
@@ -702,6 +794,22 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       notes: notes || undefined,
       // Pass delivery_note_id when using DN flow (mandatory mode)
       delivery_note_id: linkedDnData?.id || undefined,
+      // FBR (Pakistan) buyer/header fields
+      ...(fbrEnabled ? {
+        buyer_ntn: buyerNtn || undefined,
+        buyer_cnic: buyerCnic || undefined,
+        buyer_province: buyerProvince || undefined,
+        buyer_registration_type: buyerRegistrationType || undefined,
+        fbr_scenario_id: fbrScenarioId || undefined,
+      } : {}),
+      // PRA (Punjab) header fields
+      ...(praEnabled ? {
+        buyer_ntn: buyerNtn || undefined,
+        buyer_cnic: buyerCnic || undefined,
+        pra_invoice_type: praInvoiceType || undefined,
+        pra_ref_usin: praInvoiceType !== 'New' ? (praRefUsin || undefined) : undefined,
+        pra_payment_mode: Number(praPaymentMode) || 1,
+      } : {}),
 
       line_items: validItems.map(item => ({
         sku: item.sku || undefined,
@@ -714,6 +822,12 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
         tax_amount: selectedTax ? Number((item.amount * taxRate / 100).toFixed(4)) : 0,
         sales_order_line_item_id: item.sales_order_line_item_id || undefined,
         dn_line_item_id: item.dn_line_item_id || undefined,
+        // FBR (Pakistan) per-line fields
+        ...(fbrEnabled ? {
+          hs_code: item.hs_code || undefined,
+          uom: item.uom || undefined,
+          sale_type: item.sale_type || undefined,
+        } : {}),
       })),
     }
     try {
@@ -877,6 +991,24 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       </table>
     </div>
   </div>
+  ${editingInvoice?.fbr_qr_url ? `
+  <div style="margin-top:24px;padding:14px;border:1px dashed #2CA01C;border-radius:6px;display:flex;gap:16px;align-items:center;">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(editingInvoice.fbr_qr_url)}" alt="FBR QR" style="width:120px;height:120px;"/>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:#065f46;">FBR Digital Invoicing System — Verified</div>
+      <div style="font-size:12px;color:#374151;margin-top:4px;">FBR Invoice No: <strong>${editingInvoice.fbr_usin || ''}</strong></div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px;word-break:break-all;">Scan to verify at FBR</div>
+    </div>
+  </div>` : ''}
+  ${editingInvoice?.pra_qr_url ? `
+  <div style="margin-top:24px;padding:14px;border:1px dashed #2CA01C;border-radius:6px;display:flex;gap:16px;align-items:center;">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(editingInvoice.pra_qr_url)}" alt="PRA QR" style="width:120px;height:120px;"/>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:#065f46;">PRA Fiscal Invoicing System — Verified</div>
+      <div style="font-size:12px;color:#374151;margin-top:4px;">PRA Invoice No: <strong>${editingInvoice.pra_invoice_number || ''}</strong></div>
+      <div style="font-size:11px;color:#6b7280;margin-top:4px;word-break:break-all;">Scan to verify at PRA</div>
+    </div>
+  </div>` : ''}
   <div class="signature-row">
     <div class="sig-field"><div class="sig-line"></div><span>Signature</span></div>
     <div class="sig-field"><div class="sig-line"></div><span>Name (print)</span></div>
@@ -915,6 +1047,55 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       await loadInvoices()
     } catch (err) {
       setListError(err.message)
+    }
+  }
+
+  const handleSubmitToFBR = async (id) => {
+    if (!confirm('Submit this invoice to FBR? This cannot be undone.')) return
+    try {
+      setListError('')
+      const res = await api.submitInvoiceToFBR(id)
+      await loadInvoices()
+      const num = res.data?.invoiceNumber || res.invoiceNumber
+      alert(`Invoice submitted to FBR successfully${num ? `\nFBR Invoice Number: ${num}` : ''}`)
+    } catch (err) {
+      setListError(`FBR submission failed: ${err.message}`)
+    }
+  }
+
+  // Dry-run validation against FBR before actually submitting.
+  const handleValidateWithFBR = async (id) => {
+    setFbrValidating(true)
+    try {
+      setListError('')
+      const res = await api.validateInvoiceWithFBR(id)
+      const vr = (res.data || res)?.validationResponse || {}
+      if (vr.statusCode === '00' && (vr.status || '').toLowerCase() === 'valid') {
+        alert('FBR validation passed — this invoice is ready to submit.')
+      } else {
+        const items = (vr.invoiceStatuses || [])
+          .filter(s => (s.status || '').toLowerCase() === 'invalid')
+          .map(s => `item ${s.itemSNo}: ${s.errorCode ? `[${s.errorCode}] ` : ''}${s.error}`)
+          .join('\n')
+        alert(`FBR validation failed:\n${vr.error || ''}${items ? `\n${items}` : ''}`)
+      }
+    } catch (err) {
+      setListError(`FBR validation failed: ${err.message}`)
+    } finally {
+      setFbrValidating(false)
+    }
+  }
+
+  const handleSubmitToPRA = async (id) => {
+    if (!confirm('Submit this invoice to PRA? This cannot be undone.')) return
+    try {
+      setListError('')
+      const res = await api.submitInvoiceToPRA(id)
+      await loadInvoices()
+      const num = res.data?.invoiceNumber || res.invoiceNumber
+      alert(`Invoice submitted to PRA successfully${num ? `\nPRA Invoice Number: ${num}` : ''}`)
+    } catch (err) {
+      setListError(`PRA submission failed: ${err.message}`)
     }
   }
 
@@ -1026,6 +1207,46 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                         <span className={`${styles.statusBadge} ${getStatusClass(inv.status)}`}>
                           {inv.status || 'draft'}
                         </span>
+                        {inv.fbr_submission_status === 'submitted' && (
+                          <span
+                            title={`FBR: ${inv.fbr_usin || ''}`}
+                            style={{
+                              marginLeft: '6px', padding: '2px 6px', borderRadius: '4px',
+                              background: '#d1fae5', color: '#065f46',
+                              fontSize: '10px', fontWeight: 700, letterSpacing: '.5px',
+                            }}
+                          >FBR</span>
+                        )}
+                        {inv.fbr_submission_status === 'failed' && (
+                          <span
+                            title="FBR submission failed"
+                            style={{
+                              marginLeft: '6px', padding: '2px 6px', borderRadius: '4px',
+                              background: '#fee2e2', color: '#991b1b',
+                              fontSize: '10px', fontWeight: 700, letterSpacing: '.5px',
+                            }}
+                          >FBR!</span>
+                        )}
+                        {inv.pra_submission_status === 'submitted' && (
+                          <span
+                            title={`PRA: ${inv.pra_invoice_number || ''}`}
+                            style={{
+                              marginLeft: '6px', padding: '2px 6px', borderRadius: '4px',
+                              background: '#d1fae5', color: '#065f46',
+                              fontSize: '10px', fontWeight: 700, letterSpacing: '.5px',
+                            }}
+                          >PRA</span>
+                        )}
+                        {inv.pra_submission_status === 'failed' && (
+                          <span
+                            title="PRA submission failed"
+                            style={{
+                              marginLeft: '6px', padding: '2px 6px', borderRadius: '4px',
+                              background: '#fee2e2', color: '#991b1b',
+                              fontSize: '10px', fontWeight: 700, letterSpacing: '.5px',
+                            }}
+                          >PRA!</span>
+                        )}
                       </td>
                       <td>
                         <div className={styles.actionButtons}>
@@ -1036,6 +1257,41 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                               onClick={() => handleApprove(inv.id)}
                             >
                               <i className="fas fa-check"></i>
+                            </button>
+                          )}
+                          {companyProfile?.fbr_enabled
+                            && (inv.status === 'sent' || inv.status === 'approved' || inv.status === 'paid' || inv.status === 'partially_paid')
+                            && inv.fbr_submission_status !== 'submitted' && (
+                            <>
+                              <button
+                                className={styles.btnApprove}
+                                title="Validate with FBR (dry run)"
+                                onClick={() => handleValidateWithFBR(inv.id)}
+                                disabled={fbrValidating}
+                                style={{ background: '#6366f1' }}
+                              >
+                                <i className="fas fa-clipboard-check"></i>
+                              </button>
+                              <button
+                                className={styles.btnApprove}
+                                title="Submit to FBR"
+                                onClick={() => handleSubmitToFBR(inv.id)}
+                                style={{ background: '#0ea5e9' }}
+                              >
+                                <i className="fas fa-paper-plane"></i>
+                              </button>
+                            </>
+                          )}
+                          {companyProfile?.pra_enabled
+                            && (inv.status === 'sent' || inv.status === 'approved' || inv.status === 'paid' || inv.status === 'partially_paid')
+                            && inv.pra_submission_status !== 'submitted' && (
+                            <button
+                              className={styles.btnApprove}
+                              title="Submit to PRA"
+                              onClick={() => handleSubmitToPRA(inv.id)}
+                              style={{ background: '#0ea5e9' }}
+                            >
+                              <i className="fas fa-paper-plane"></i>
                             </button>
                           )}
                           {(inv.status === 'draft' || inv.status === 'sent') ? (
@@ -1103,6 +1359,24 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                 <h2>{viewMode ? `View Invoice ${editingInvoice?.invoice_no || ''}` : editingInvoice ? `Edit Invoice ${editingInvoice.invoice_no || ''}` : 'Create Invoice'}</h2>
               </div>
               <div className={styles.headerRight}>
+                {!viewMode && (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      ref={importFileRef}
+                      style={{ display: 'none' }}
+                      onChange={handleImportFile}
+                    />
+                    <button
+                      className={styles.btnImportImage}
+                      onClick={() => importFileRef.current?.click()}
+                      title="Import line items from invoice image or PDF"
+                    >
+                      <i className="fas fa-file-import"></i> Import from Image/PDF
+                    </button>
+                  </>
+                )}
                 <button className={styles.closeBtn} onClick={handleFormClose}>
                   <i className="fas fa-times"></i>
                 </button>
@@ -1205,6 +1479,117 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           readOnly={viewMode}
                         />
                       </div>
+
+                      {/* FBR (Pakistan) buyer details */}
+                      {(fbrEnabled || praEnabled) && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #d1d5db' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 600, color: '#6366f1', marginBottom: '6px' }}>
+                            <i className="fas fa-receipt" /> {fbrEnabled ? 'FBR' : 'PRA'} Buyer Details
+                          </div>
+                          <div className={styles.formGroup}>
+                            <label>Buyer NTN / CNIC{praEnabled ? ' (PNTN)' : ''}</label>
+                            <input
+                              type="text"
+                              className={styles.formControlStandard}
+                              placeholder="7-digit NTN or 13-digit CNIC"
+                              value={buyerNtn || buyerCnic}
+                              onChange={(e) => {
+                                const v = e.target.value
+                                // Route 13 digits to CNIC, otherwise NTN
+                                if (v.replace(/\D/g, '').length > 7) { setBuyerCnic(v); setBuyerNtn('') }
+                                else { setBuyerNtn(v); setBuyerCnic('') }
+                              }}
+                              readOnly={viewMode}
+                            />
+                          </div>
+                          {fbrEnabled && (
+                            <>
+                              <div className={styles.formGroup}>
+                                <label>Buyer Registration Type</label>
+                                <select
+                                  className={styles.formControlStandard}
+                                  value={buyerRegistrationType}
+                                  onChange={(e) => setBuyerRegistrationType(e.target.value)}
+                                  disabled={viewMode}
+                                >
+                                  <option value="Unregistered">Unregistered</option>
+                                  <option value="Registered">Registered</option>
+                                </select>
+                              </div>
+                              <div className={styles.formGroup}>
+                                <label>Buyer Province</label>
+                                <input
+                                  type="text"
+                                  className={styles.formControlStandard}
+                                  placeholder="e.g. Sindh / Punjab"
+                                  value={buyerProvince}
+                                  onChange={(e) => setBuyerProvince(e.target.value)}
+                                  readOnly={viewMode}
+                                />
+                              </div>
+                              {companyProfile?.fbr_sandbox_mode && (
+                                <div className={styles.formGroup}>
+                                  <label>FBR Scenario ID (sandbox)</label>
+                                  <input
+                                    type="text"
+                                    className={styles.formControlStandard}
+                                    placeholder="e.g. SN001"
+                                    value={fbrScenarioId}
+                                    onChange={(e) => setFbrScenarioId(e.target.value)}
+                                    readOnly={viewMode}
+                                  />
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {praEnabled && (
+                            <>
+                              <div className={styles.formGroup}>
+                                <label>PRA Invoice Type</label>
+                                <select
+                                  className={styles.formControlStandard}
+                                  value={praInvoiceType}
+                                  onChange={(e) => setPraInvoiceType(e.target.value)}
+                                  disabled={viewMode}
+                                >
+                                  <option value="New">New</option>
+                                  <option value="Debit">Debit</option>
+                                  <option value="Credit">Credit (return)</option>
+                                </select>
+                              </div>
+                              {praInvoiceType !== 'New' && (
+                                <div className={styles.formGroup}>
+                                  <label>Original Invoice # (RefUSIN)</label>
+                                  <input
+                                    type="text"
+                                    className={styles.formControlStandard}
+                                    placeholder="Original invoice number being credited/debited"
+                                    value={praRefUsin}
+                                    onChange={(e) => setPraRefUsin(e.target.value)}
+                                    readOnly={viewMode}
+                                  />
+                                </div>
+                              )}
+                              <div className={styles.formGroup}>
+                                <label>PRA Payment Mode</label>
+                                <select
+                                  className={styles.formControlStandard}
+                                  value={praPaymentMode}
+                                  onChange={(e) => setPraPaymentMode(Number(e.target.value))}
+                                  disabled={viewMode}
+                                >
+                                  <option value={1}>Cash</option>
+                                  <option value={2}>Card</option>
+                                  <option value={3}>Gift Voucher</option>
+                                  <option value={4}>Loyalty Card</option>
+                                  <option value={5}>Mixed</option>
+                                  <option value={6}>Cheque</option>
+                                </select>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Right Side - Invoice Details */}
@@ -1285,6 +1670,9 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           <th className={styles.colQuantity}>Quantity</th>
                           <th className={styles.colRate}>Rate</th>
                           <th className={styles.colDiscount}>Discount</th>
+                          {fbrEnabled && <th>HS Code</th>}
+                          {fbrEnabled && <th>UoM</th>}
+                          {fbrEnabled && <th>Sale Type</th>}
                           <th className={styles.colAmount}>Amount</th>
                           <th className={styles.colAction}></th>
                         </tr>
@@ -1414,6 +1802,42 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                                 readOnly={viewMode}
                               />
                             </td>
+                            {fbrEnabled && (
+                              <td>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="0000.0000"
+                                  value={item.hs_code || ''}
+                                  onChange={(e) => updateLineItem(item.id, 'hs_code', e.target.value)}
+                                  readOnly={viewMode}
+                                />
+                              </td>
+                            )}
+                            {fbrEnabled && (
+                              <td>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="UoM"
+                                  value={item.uom || ''}
+                                  onChange={(e) => updateLineItem(item.id, 'uom', e.target.value)}
+                                  readOnly={viewMode}
+                                />
+                              </td>
+                            )}
+                            {fbrEnabled && (
+                              <td>
+                                <input
+                                  type="text"
+                                  className={styles.formControlTable}
+                                  placeholder="Sale type"
+                                  value={item.sale_type || ''}
+                                  onChange={(e) => updateLineItem(item.id, 'sale_type', e.target.value)}
+                                  readOnly={viewMode}
+                                />
+                              </td>
+                            )}
                             <td className={styles.amountCell}>
                               {currencySymbol}{item.amount.toFixed(2)}
                             </td>
@@ -1544,7 +1968,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                   </button>
                 )}
               </div>
-              {!viewMode && (
+              {!viewMode ? (
                 <div className={styles.footerRight}>
                   {user?.role === 'admin' && (
                     <button
@@ -1560,6 +1984,12 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                   <button className={styles.btnSecondary} onClick={handleSave} disabled={saving}>
                     <i className={saving ? 'fas fa-spinner fa-spin' : 'fas fa-save'}></i>
                     {saving ? 'Saving...' : editingInvoice ? 'Update' : 'Save'}
+                  </button>
+                </div>
+              ) : (
+                <div className={styles.footerRight}>
+                  <button onClick={handlePrint} style={{ padding: '8px 18px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }} title="Print / Save as PDF">
+                    <i className="fas fa-print"></i> Print
                   </button>
                 </div>
               )}
@@ -1803,6 +2233,175 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Invoice Import Modal ─────────────────────────────────────────────── */}
+      {showImportModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 12, width: 560, maxWidth: '95vw',
+            maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '18px 24px', borderBottom: '1px solid #e5e7eb',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8, background: '#eff6ff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <i className="fas fa-file-import" style={{ color: '#2563eb', fontSize: 16 }}></i>
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>Import Invoice Data</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>AI-extracted line items from your document</div>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowImportModal(false); setImportParsed(null); setImportError('') }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#9ca3af', padding: 4 }}
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {importParsing && (
+                <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                  <i className="fas fa-spinner fa-spin" style={{ fontSize: 32, color: '#2563eb', marginBottom: 16, display: 'block' }}></i>
+                  <div style={{ fontWeight: 600, color: '#374151', marginBottom: 6 }}>Analyzing your invoice...</div>
+                  <div style={{ fontSize: 13, color: '#6b7280' }}>Claude AI is reading and extracting data</div>
+                </div>
+              )}
+
+              {importError && !importParsing && (
+                <div style={{
+                  padding: '14px 16px', borderRadius: 8, background: '#fef2f2',
+                  border: '1px solid #fecaca', color: '#991b1b', fontSize: 13,
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                }}>
+                  <i className="fas fa-exclamation-circle" style={{ marginTop: 1, flexShrink: 0 }}></i>
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {importParsed && !importParsing && (
+                <>
+                  {/* Extracted Header Fields */}
+                  {(importParsed.customer_name || importParsed.invoice_no || importParsed.invoice_date) && (
+                    <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Detected Invoice Details</div>
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: '#374151' }}>
+                        {importParsed.customer_name && <span><strong>Customer:</strong> {importParsed.customer_name}</span>}
+                        {importParsed.invoice_no && <span><strong>Invoice #:</strong> {importParsed.invoice_no}</span>}
+                        {importParsed.invoice_date && <span><strong>Date:</strong> {importParsed.invoice_date}</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
+                        <i className="fas fa-info-circle" style={{ marginRight: 4 }}></i>
+                        Customer name will pre-fill the search (if not already selected). Invoice # and date will be applied automatically.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Line Items Preview */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                      Line Items ({(importParsed.line_items || []).filter(i => i.description).length} found)
+                    </div>
+                    {(importParsed.line_items || []).filter(i => i.description).length === 0 ? (
+                      <div style={{ fontSize: 13, color: '#6b7280', padding: '20px 0', textAlign: 'center' }}>
+                        No line items were detected in the document.
+                      </div>
+                    ) : (
+                      <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: '#f9fafb' }}>
+                              <th style={{ padding: '9px 12px', textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px', borderBottom: '1px solid #e5e7eb' }}>Description</th>
+                              <th style={{ padding: '9px 12px', textAlign: 'center', fontWeight: 600, color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px', borderBottom: '1px solid #e5e7eb', width: 70 }}>Qty</th>
+                              <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px', borderBottom: '1px solid #e5e7eb', width: 100 }}>Unit Price</th>
+                              <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 11, textTransform: 'uppercase', letterSpacing: '.4px', borderBottom: '1px solid #e5e7eb', width: 100 }}>Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(importParsed.line_items || []).filter(i => i.description).map((item, idx) => (
+                              <tr key={idx} style={{ borderBottom: idx < importParsed.line_items.length - 1 ? '1px solid #f3f4f6' : 'none' }}>
+                                <td style={{ padding: '9px 12px', color: '#111' }}>
+                                  {item.description}
+                                  {item.sku && <span style={{ display: 'block', fontSize: 11, color: '#9ca3af' }}>SKU: {item.sku}</span>}
+                                </td>
+                                <td style={{ padding: '9px 12px', textAlign: 'center', color: '#374151' }}>{item.quantity}</td>
+                                <td style={{ padding: '9px 12px', textAlign: 'right', color: '#374151' }}>{currencySymbol}{parseFloat(item.rate || 0).toFixed(2)}</td>
+                                <td style={{ padding: '9px 12px', textAlign: 'right', fontWeight: 600, color: '#111' }}>
+                                  {currencySymbol}{((parseFloat(item.quantity) || 1) * (parseFloat(item.rate) || 0)).toFixed(2)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {importParsed.notes && (
+                    <div style={{ padding: '10px 12px', borderRadius: 6, background: '#fafafa', border: '1px solid #e5e7eb', fontSize: 12, color: '#6b7280' }}>
+                      <strong style={{ color: '#374151' }}>Notes: </strong>{importParsed.notes}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {!importParsing && (
+              <div style={{
+                padding: '14px 24px', borderTop: '1px solid #e5e7eb',
+                display: 'flex', gap: 10, justifyContent: 'flex-end',
+              }}>
+                <button
+                  onClick={() => { setShowImportModal(false); setImportParsed(null); setImportError('') }}
+                  style={{
+                    padding: '9px 20px', borderRadius: 8, border: '1px solid #d1d5db',
+                    background: '#fff', color: '#374151', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                {importParsed && (importParsed.line_items || []).filter(i => i.description).length > 0 && (
+                  <button
+                    onClick={handleApplyImport}
+                    style={{
+                      padding: '9px 20px', borderRadius: 8, border: 'none',
+                      background: '#2563eb', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <i className="fas fa-check" style={{ marginRight: 6 }}></i>
+                    Apply {(importParsed.line_items || []).filter(i => i.description).length} Line Items
+                  </button>
+                )}
+                {importError && (
+                  <button
+                    onClick={() => importFileRef.current?.click()}
+                    style={{
+                      padding: '9px 20px', borderRadius: 8, border: 'none',
+                      background: '#2563eb', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    <i className="fas fa-redo" style={{ marginRight: 6 }}></i>
+                    Try Another File
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

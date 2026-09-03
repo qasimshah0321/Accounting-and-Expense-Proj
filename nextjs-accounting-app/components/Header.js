@@ -17,7 +17,7 @@ function timeAgo(dateStr) {
   return `${Math.floor(h / 24)}d ago`
 }
 
-export default function Header({ onMenuToggle, onLogout, user, companyName, onOpenSettings, onNavigate }) {
+export default function Header({ onMenuToggle, onLogout, user, companyName, onOpenSettings, onNavigate, permittedMenus, onOpenApprovals, pendingApprovalsCount = 0 }) {
   const [showUserMenu,  setShowUserMenu]  = useState(false)
   const [showNotifMenu, setShowNotifMenu] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -122,6 +122,24 @@ export default function Header({ onMenuToggle, onLogout, user, companyName, onOp
       </div>
 
       <div className={styles.rightActions}>
+        {/* ── Approvals icon ──────────────────────────────────── */}
+        {onOpenApprovals && (
+          <div className={styles.notifWrapper}>
+            <button
+              className={styles.iconBtn}
+              onClick={onOpenApprovals}
+              title="Pending approvals"
+            >
+              <i className="fas fa-clipboard-check" />
+            </button>
+            {pendingApprovalsCount > 0 && (
+              <div className={styles.notifCountBadge}>
+                {pendingApprovalsCount > 99 ? '99+' : pendingApprovalsCount}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Bell icon ──────────────────────────────────────── */}
         <div className={styles.notifWrapper} ref={notifRef}>
           <button
@@ -213,7 +231,7 @@ export default function Header({ onMenuToggle, onLogout, user, companyName, onOp
                 <div className={styles.dropdownUserName}>{user?.name || 'User'}</div>
                 <div className={styles.dropdownUserEmail}>{user?.email || ''}</div>
               </div>
-              {user?.role !== 'customer' && (
+              {(user?.role === 'admin' || (permittedMenus && permittedMenus.some(m => m.name === 'Company Settings')) || (permittedMenus === null && user?.role !== 'customer')) && (
                 <button className={styles.dropdownItem} onClick={() => { onOpenSettings?.(); setShowUserMenu(false) }}>
                   <i className="fas fa-cog" /> Company Settings
                 </button>
@@ -226,7 +244,7 @@ export default function Header({ onMenuToggle, onLogout, user, companyName, onOp
         </div>
       </div>
 
-      {user?.role !== 'customer' && (
+      {(user?.role === 'admin' || permittedMenus === null || (Array.isArray(permittedMenus) && permittedMenus.length > 0)) && (
         <button className={styles.mobileMenuToggle} onClick={onMenuToggle}>
           <i className="fas fa-bars"></i>
         </button>

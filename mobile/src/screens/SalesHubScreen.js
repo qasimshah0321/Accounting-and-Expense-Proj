@@ -19,7 +19,6 @@ const getCountsFromCache = () => ({
   salesOrders: (cache.get(CACHE_KEYS.SALES_ORDERS) || []).length,
   estimates: (cache.get(CACHE_KEYS.ESTIMATES) || []).length,
   deliveryNotes: (cache.get(CACHE_KEYS.DELIVERY_NOTES) || []).length,
-  payments: (cache.get(CACHE_KEYS.CUSTOMER_PAYMENTS) || []).length,
 });
 
 const SalesHubScreen = ({ navigation }) => {
@@ -52,7 +51,6 @@ const SalesHubScreen = ({ navigation }) => {
             salesOrders: soList.length,
             estimates: estList.length,
             deliveryNotes: (cache.get(CACHE_KEYS.DELIVERY_NOTES) || []).length,
-            payments: (cache.get(CACHE_KEYS.CUSTOMER_PAYMENTS) || []).length,
           });
         } catch (_) {}
       };
@@ -76,14 +74,6 @@ const SalesHubScreen = ({ navigation }) => {
     {
       title: 'Delivery Notes', icon: '\uD83D\uDE9A', count: counts.deliveryNotes,
       color: '#00838f', bg: '#e0f7fa', screen: 'DeliveryNoteList',
-    },
-    {
-      title: 'Payments', icon: '\uD83D\uDCB0', count: counts.payments,
-      color: '#4527a0', bg: '#ede7f6', screen: 'CustomerPaymentList',
-    },
-    {
-      title: 'Products', icon: '\uD83D\uDCE6', count: null,
-      color: '#6a1b9a', bg: '#f3e5f5', screen: 'ProductList',
     },
   ];
 

@@ -110,7 +110,11 @@ export default function VendorPaymentFormScreen({ route, navigation }) {
             </TouchableOpacity>
             {bills.map(b => (
               <TouchableOpacity key={b.id} style={[styles.billRow, String(form.bill_id) === String(b.id) && styles.billRowActive]}
-                onPress={() => set('bill_id', b.id)}>
+                onPress={() => {
+                  set('bill_id', b.id);
+                  // Auto-populate amount with bill's amount_due
+                  setForm((f) => ({ ...f, bill_id: b.id, amount: String(parseFloat(b.amount_due || 0).toFixed(2)) }));
+                }}>
                 <Text style={styles.billNo}>{b.bill_no}</Text>
                 <Text style={styles.billAmt}>Due: ${parseFloat(b.amount_due || 0).toFixed(2)}</Text>
               </TouchableOpacity>

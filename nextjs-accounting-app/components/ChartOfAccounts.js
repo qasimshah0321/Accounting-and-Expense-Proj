@@ -7,7 +7,7 @@ import * as api from '../lib/api'
 const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense']
 const TYPE_LABELS = { asset: 'Assets', liability: 'Liabilities', equity: 'Equity', revenue: 'Revenue', expense: 'Expenses' }
 
-export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' }) {
+export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$', onOpenLedger, onOpeningBalance, onYearEndClose }) {
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(false)
   const [listError, setListError] = useState('')
@@ -61,7 +61,7 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
       parent_id: acct.parent_id || '',
       description: acct.description || '',
       normal_balance: acct.normal_balance,
-      is_active: acct.is_active
+      is_active: !!acct.is_active
     })
     setEditingAccount(acct)
     setShowForm(true)
@@ -83,6 +83,18 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
   }
 
   const handleSave = async () => {
+    if (!formData.account_number.trim()) {
+      setError('Account number is required.')
+      return
+    }
+    if (!editingAccount && formData.account_number.trim() === '0') {
+      setError('Account number cannot be "0". Please use a meaningful account number (e.g. 1010).')
+      return
+    }
+    if (!formData.name.trim()) {
+      setError('Account name is required.')
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -91,7 +103,8 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
         normal_balance: formData.normal_balance || inferNormalBalance(formData.account_type),
         parent_id: formData.parent_id || null,
         sub_type: formData.sub_type || null,
-        description: formData.description || null
+        description: formData.description || null,
+        is_active: !!formData.is_active
       }
       if (editingAccount) {
         await api.updateAccount(editingAccount.id, payload)
@@ -151,6 +164,16 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
                 <option value="">All Types</option>
                 {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
               </select>
+              {onOpeningBalance && (
+                <button onClick={onOpeningBalance} style={{ padding: '8px 16px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <i className="fas fa-balance-scale" /> Opening Balance
+                </button>
+              )}
+              {onYearEndClose && (
+                <button onClick={onYearEndClose} style={{ padding: '8px 16px', background: '#b45309', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <i className="fas fa-calendar-check" /> Year-End Close
+                </button>
+              )}
               <button onClick={handleNewAccount} className={styles.btnPrimary} style={{ padding: '8px 16px' }}>
                 <i className="fas fa-plus" style={{ marginRight: 6 }} /> New Account
               </button>
@@ -186,7 +209,11 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
                         </tr>,
                         ...typeAccounts.map(acct => (
                           <tr key={acct.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{acct.account_number}</td>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{ background: '#f1f5f9', color: '#374151', fontFamily: 'monospace', fontWeight: 700, fontSize: 12, padding: '2px 7px', borderRadius: 4, border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                {acct.account_number}
+                              </span>
+                            </td>
                             <td style={{ padding: '8px 12px' }}>
                               {acct.is_system && <i className="fas fa-lock" style={{ color: '#94a3b8', marginRight: 6, fontSize: 11 }} title="System account" />}
                               {acct.name}
@@ -198,7 +225,14 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$' 
                                 {acct.normal_balance}
                               </span>
                             </td>
-                            <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{formatBalance(acct.balance)}</td>
+                            <td
+                              style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace', cursor: onOpenLedger ? 'pointer' : undefined, color: onOpenLedger ? '#2563eb' : undefined }}
+                              onClick={() => onOpenLedger && onOpenLedger(acct)}
+                              title={onOpenLedger ? 'View in General Ledger' : undefined}
+                            >
+                              {formatBalance(acct.balance)}
+                              {onOpenLedger && <i className="fas fa-chart-line" style={{ fontSize: 10, marginLeft: 5, color: '#94a3b8' }} />}
+                            </td>
                             <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                               <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 12, background: acct.is_active ? '#dcfce7' : '#fef2f2', color: acct.is_active ? '#166534' : '#991b1b' }}>
                                 {acct.is_active ? 'Active' : 'Inactive'}

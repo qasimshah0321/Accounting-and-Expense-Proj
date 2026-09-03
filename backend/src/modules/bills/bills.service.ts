@@ -4,6 +4,7 @@ import { buildPaginationMeta } from '../../utils/pagination';
 import { generateDocumentNumber } from '../../services/documentNumberService';
 import { createStatusHistory } from '../../services/auditService';
 import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
+import { createRequestIfRuleMatches } from '../approvals/approvals.service';
 
 export const peekNextBillNumber = async (companyId: string): Promise<string> => {
   const [rows] = await pool.query(
@@ -130,24 +131,99 @@ export const deleteBill = async (companyId: string, billId: string) => {
   await pool.query('UPDATE bills SET deleted_at=NOW() WHERE id=? AND company_id=?', [billId, companyId]);
 };
 
+// Conservative transition guard: only restrict moves OUT of pending_approval
+// so existing draft/approved/posted flows are untouched.
+const BILL_PENDING_APPROVAL_NEXT: string[] = ['draft', 'approved', 'cancelled'];
+
 export const updateStatus = async (companyId: string, billId: string, userId: string, userName: string, newStatus: string, reason?: string) => {
   return withTransaction(async (client) => {
     const [billRows] = await client.query('SELECT * FROM bills WHERE id=? AND company_id=? AND deleted_at IS NULL FOR UPDATE', [billId, companyId]);
     if (!(billRows as any[]).length) throw new NotFoundError('Bill');
     const bill = (billRows as any[])[0];
+    if (bill.status === 'pending_approval' && !BILL_PENDING_APPROVAL_NEXT.includes(newStatus)) {
+      throw new ConflictError(`Cannot transition bill from pending_approval to ${newStatus}`);
+    }
     await client.query('UPDATE bills SET status=?,updated_by=?,updated_at=NOW() WHERE id=?', [newStatus, userId, billId]);
     await createStatusHistory({ company_id: companyId, document_type: 'bill', document_id: billId, document_no: bill.bill_no, from_status: bill.status, to_status: newStatus, changed_by: userId, changed_by_name: userName, reason }, client);
 
-    if (bill.status === 'draft' && newStatus === 'approved') {
+    if (newStatus === 'pending_approval') {
       try {
-        const expenseAccountId = await getSystemAccount(companyId, '5900', client);
-        const apAccountId = await getSystemAccount(companyId, '2000', client);
-        if (expenseAccountId && apAccountId) {
-          const totalAmount = parseFloat(bill.total_amount) || 0;
-          await createAutoJournalEntry(companyId, userId, userName, 'bill', billId, bill.bill_no, bill.bill_date, [
-            { account_id: expenseAccountId, debit: totalAmount, credit: 0, description: 'Bill expense' },
-            { account_id: apAccountId, debit: 0, credit: totalAmount, description: 'Accounts Payable' },
-          ], `Bill ${bill.bill_no} approved`, client);
+        await createRequestIfRuleMatches(
+          companyId,
+          'bill',
+          billId,
+          bill.bill_no,
+          parseFloat(bill.total_amount) || 0,
+          userId,
+          client
+        );
+      } catch (err) {
+        console.error('Approval rule lookup failed for Bill:', err);
+      }
+    }
+
+    if ((bill.status === 'draft' || bill.status === 'pending_approval') && newStatus === 'approved') {
+      try {
+        // Skip GL if this bill was created from a GRN (GL was already posted on goods receipt)
+        const [grnCheck] = await client.query(
+          'SELECT id FROM goods_received_notes WHERE bill_id=? AND company_id=? AND deleted_at IS NULL LIMIT 1',
+          [billId, companyId]
+        );
+        const hasGRN = (grnCheck as any[]).length > 0;
+
+        const apAccountId       = await getSystemAccount(companyId, '2000', client);
+        const inputTaxAccountId = await getSystemAccount(companyId, '1250', client);
+
+        if (!hasGRN) {
+          // Direct bill (no GRN): post full entry — inventory/expense net + tax + AP gross
+          const inventoryAccountId = await getSystemAccount(companyId, '1200', client);
+          const expenseAccountId   = await getSystemAccount(companyId, '5900', client);
+
+          if (apAccountId) {
+            const [lineItems] = await client.query(
+              `SELECT bli.line_total, p.product_type
+               FROM bill_line_items bli
+               LEFT JOIN products p ON p.id = bli.product_id
+               WHERE bli.bill_id = ?`,
+              [billId]
+            );
+
+            let inventoryNet = 0;
+            let expenseNet = 0;
+            for (const li of (lineItems as any[])) {
+              const lineTotal = parseFloat(li.line_total) || 0;
+              if (li.product_type === 'inventory') inventoryNet += lineTotal;
+              else expenseNet += lineTotal;
+            }
+
+            const taxAmount  = parseFloat(bill.tax_amount) || 0;
+            const grossTotal = parseFloat(bill.total_amount) || 0;
+
+            const glLines: Array<{ account_id: string; debit: number; credit: number; description: string }> = [];
+            if (inventoryNet > 0 && inventoryAccountId) {
+              glLines.push({ account_id: inventoryAccountId, debit: inventoryNet, credit: 0, description: 'Inventory purchase (net)' });
+            }
+            if (expenseNet > 0 && expenseAccountId) {
+              glLines.push({ account_id: expenseAccountId, debit: expenseNet, credit: 0, description: 'Bill expense (net)' });
+            }
+            if (taxAmount > 0 && inputTaxAccountId) {
+              glLines.push({ account_id: inputTaxAccountId, debit: taxAmount, credit: 0, description: 'Input Tax Recoverable' });
+            }
+            if (glLines.length > 0 && grossTotal > 0) {
+              glLines.push({ account_id: apAccountId, debit: 0, credit: grossTotal, description: 'Accounts Payable' });
+              await createAutoJournalEntry(companyId, userId, userName, 'bill', billId, bill.bill_no, bill.bill_date, glLines, `Bill ${bill.bill_no} approved`, client);
+            }
+          }
+        } else {
+          // GRN-linked bill: inventory was posted at GRN receipt — but tax was NOT.
+          // Post only the tax portion now: DR Input Tax / CR AP
+          const taxAmount = parseFloat(bill.tax_amount) || 0;
+          if (taxAmount > 0.001 && inputTaxAccountId && apAccountId) {
+            await createAutoJournalEntry(companyId, userId, userName, 'bill', billId, bill.bill_no, bill.bill_date, [
+              { account_id: inputTaxAccountId, debit: taxAmount, credit: 0,          description: `Input Tax Recoverable — ${bill.bill_no}` },
+              { account_id: apAccountId,       debit: 0,         credit: taxAmount,  description: 'Accounts Payable (tax on GRN)' },
+            ], `Bill ${bill.bill_no} — tax entry for GRN receipt`, client);
+          }
         }
       } catch (glErr) {
         console.error('GL auto-post failed for bill status change:', glErr);
@@ -178,9 +254,11 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
     const newAmountPaid = parseFloat(bill.amount_paid) + data.amount;
     const newAmountDue = Math.max(0, parseFloat(bill.total_amount) - newAmountPaid);
     const paymentStatus = newAmountDue <= 0.01 ? 'paid' : 'partially_paid';
+    // Auto-approve draft bills when payment is recorded
+    const newStatus = bill.status === 'draft' ? 'approved' : bill.status;
     await client.query(
-      'UPDATE bills SET amount_paid=?,amount_due=?,payment_status=?,updated_by=?,updated_at=NOW() WHERE id=?',
-      [newAmountPaid, newAmountDue, paymentStatus, userId, billId]
+      'UPDATE bills SET amount_paid=?,amount_due=?,payment_status=?,status=?,updated_by=?,updated_at=NOW() WHERE id=?',
+      [newAmountPaid, newAmountDue, paymentStatus, newStatus, userId, billId]
     );
 
     try {
@@ -196,7 +274,7 @@ export const recordPayment = async (companyId: string, billId: string, userId: s
       console.error('GL auto-post failed for bill payment:', glErr);
     }
 
-    return { payment, bill_updated: { id: billId, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: newAmountDue } };
+    return { payment, bill_updated: { id: billId, status: newStatus, payment_status: paymentStatus, amount_paid: newAmountPaid, amount_due: newAmountDue } };
   });
 };
 

@@ -19,6 +19,10 @@ import SalesOrderDetailScreen from '../screens/sales-orders/SalesOrderDetailScre
 import BillDetailScreen from '../screens/bills/BillDetailScreen';
 import PurchaseOrderDetailScreen from '../screens/purchase-orders/PurchaseOrderDetailScreen';
 
+// Statement screens
+import CustomerStatementScreen from '../screens/customers/CustomerStatementScreen';
+import VendorStatementScreen from '../screens/vendors/VendorStatementScreen';
+
 const Stack = createStackNavigator();
 const screenOptions = {
   headerStyle: { backgroundColor: '#1a237e', elevation: 4, shadowOpacity: 0.3 },
@@ -50,6 +54,9 @@ const FullAppNavigator = () => (
     {/* Purchase detail */}
     <Stack.Screen name="BillDetail" component={BillDetailScreen} options={{ title: 'Bill Details' }} />
     <Stack.Screen name="PurchaseOrderDetail" component={PurchaseOrderDetailScreen} options={{ title: 'Purchase Order Details' }} />
+    {/* Statement screens */}
+    <Stack.Screen name="CustomerStatement" component={CustomerStatementScreen} options={{ title: 'Customer Statement' }} />
+    <Stack.Screen name="VendorStatement" component={VendorStatementScreen} options={{ title: 'Vendor Statement' }} />
   </Stack.Navigator>
 );
 

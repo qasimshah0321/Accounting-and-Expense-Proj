@@ -5,6 +5,7 @@ import { pool, withTransaction } from '../../config/database';
 import { config } from '../../config/env';
 import { ensureDocumentSequences } from '../../services/documentNumberService';
 import { seedDefaultPermissions } from '../role-permissions/role-permissions.service';
+import { seedDefaultRoles } from '../roles/roles.service';
 import { seedDefaultProducts } from '../products/products.service';
 import { seedChartOfAccounts } from '../accounting/accounting.service';
 import { UnauthorizedError, NotFoundError, ValidationError } from '../../utils/errors';
@@ -100,6 +101,7 @@ export const register = async (data: {
   // Run heavy seeds AFTER transaction commits (non-blocking for login, fail-safe)
   Promise.all([
     seedDefaultPermissions(companyId, pool as any).catch(() => {}),
+    seedDefaultRoles(companyId, pool as any).catch(() => {}),
     seedDefaultProducts(companyId, pool as any).catch(() => {}),
     seedChartOfAccounts(companyId).catch(() => {}),
   ]);

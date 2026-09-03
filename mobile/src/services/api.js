@@ -55,6 +55,8 @@ export const customersAPI = {
   create: (data) => api.post('/customers', data),
   update: (id, data) => api.put(`/customers/${id}`, data),
   delete: (id) => api.delete(`/customers/${id}`),
+  getStatement: (id, startDate, endDate) =>
+    api.get(`/customers/${id}/statement?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`),
 };
 
 // ─── Vendors ───────────────────────────────────────────────────────────────
@@ -65,6 +67,8 @@ export const vendorsAPI = {
   create: (data) => api.post('/vendors', data),
   update: (id, data) => api.put(`/vendors/${id}`, data),
   delete: (id) => api.delete(`/vendors/${id}`),
+  getStatement: (id, startDate, endDate) =>
+    api.get(`/vendors/${id}/statement?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`),
 };
 
 // ─── Products ──────────────────────────────────────────────────────────────
@@ -124,6 +128,8 @@ export const purchaseOrdersAPI = {
   getNextNumber: () => api.get('/purchase-orders/next-number'),
   updateStatus: (id, status, reason) =>
     api.patch(`/purchase-orders/${id}/status`, { status, reason }),
+  getGrnRequirement: () => api.get('/purchase-orders/grn-requirement'),
+  convertToBill: (id, data) => api.post(`/purchase-orders/${id}/convert-to-bill`, data),
 };
 
 // ─── Estimates ─────────────────────────────────────────────────────────────
@@ -249,12 +255,65 @@ export const reportsAPI = {
   getProfitLoss: (params = '') => api.get(`/reports/profit-loss${params ? `?${params}` : ''}`),
   getSalesSummary: (params = '') => api.get(`/reports/sales-summary${params ? `?${params}` : ''}`),
   getPurchasesSummary: (params = '') => api.get(`/reports/purchases-summary${params ? `?${params}` : ''}`),
+  getReceivablesAging: (asOf) => api.get(`/reports/receivables-ageing${asOf ? `?as_of=${encodeURIComponent(asOf)}` : ''}`),
+  getPayablesAging: (asOf) => api.get(`/reports/payables-ageing${asOf ? `?as_of=${encodeURIComponent(asOf)}` : ''}`),
+};
+
+// ─── Goods Received Notes (GRN) ──────────────────────────────────────────────
+export const grnAPI = {
+  getAll: () => api.get('/goods-received-notes?limit=200'),
+  getById: (id) => api.get(`/goods-received-notes/${id}`),
+  create: (data) => api.post('/goods-received-notes', data),
+  update: (id, data) => api.put(`/goods-received-notes/${id}`, data),
+  delete: (id) => api.delete(`/goods-received-notes/${id}`),
+  getNextNumber: () => api.get('/goods-received-notes/next-number'),
+  updateStatus: (id, status, reason) =>
+    api.patch(`/goods-received-notes/${id}/status`, { status, ...(reason && { reason }) }),
+  receiveGoods: (id, data) => api.post(`/goods-received-notes/${id}/receive`, data),
+  convertToBill: (id, data) => api.post(`/goods-received-notes/${id}/convert-to-bill`, data),
+};
+
+// ─── Departments ─────────────────────────────────────────────────────────────
+export const departmentsAPI = {
+  getAll: () => api.get('/departments'),
+  getById: (id) => api.get(`/departments/${id}`),
+  create: (data) => api.post('/departments', data),
+  update: (id, data) => api.put(`/departments/${id}`, data),
+  delete: (id) => api.delete(`/departments/${id}`),
+};
+
+// ─── Roles ───────────────────────────────────────────────────────────────────
+export const rolesAPI = {
+  getAll: () => api.get('/roles'),
+  create: (data) => api.post('/roles', data),
+  update: (id, data) => api.put(`/roles/${id}`, data),
+  delete: (id) => api.delete(`/roles/${id}`),
+};
+
+// ─── Users ───────────────────────────────────────────────────────────────────
+export const usersAPI = {
+  getAll: () => api.get('/users?limit=200'),
+  getById: (id) => api.get(`/users/${id}`),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
+  getPermissions: (id) => api.get(`/users/${id}/permissions`),
+  updatePermissions: (id, updates) => api.put(`/users/${id}/permissions`, updates),
 };
 
 // ─── Company Settings ──────────────────────────────────────────────────────
 export const companySettingsAPI = {
   get: () => api.get('/company-profile'),
   update: (data) => api.put('/company-profile', data),
+};
+
+// ─── FBR (Pakistan Federal Board of Revenue) ───────────────────────────────
+export const fbrAPI = {
+  getConfig: () => api.get('/fbr/config'),
+  saveConfig: (data) => api.put('/fbr/config', data),
+  testConnection: () => api.post('/fbr/test-connection'),
+  submitInvoice: (invoiceId) => api.post(`/fbr/invoices/${invoiceId}/submit`),
+  getInvoiceStatus: (invoiceId) => api.get(`/fbr/invoices/${invoiceId}/status`),
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────

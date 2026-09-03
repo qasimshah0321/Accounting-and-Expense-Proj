@@ -315,6 +315,18 @@
   margin: 0;
 }
 
+/* Balance column */
+.balanceCol { text-align: right; white-space: nowrap; }
+.balanceOwed { font-weight: 700; color: #dc2626; }
+.balanceZero { font-weight: 600; color: #9ca3af; }
+
+/* Statement button – indigo accent */
+.btnView:hover {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  color: #fff !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .header {

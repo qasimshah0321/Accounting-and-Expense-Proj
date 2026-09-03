@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import styles from './VendorCenter.module.css'
 import VendorPopup from './VendorPopup'
+import VendorStatement from './VendorStatement'
 import * as api from '@/lib/api'
 
 export default function VendorCenter({ isOpen, onClose }) {
@@ -12,6 +13,7 @@ export default function VendorCenter({ isOpen, onClose }) {
   const [isVendorPopupOpen, setIsVendorPopupOpen] = useState(false)
   const [editingVendor, setEditingVendor] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [statementVendor, setStatementVendor] = useState(null)
 
   const fetchVendors = useCallback(async () => {
     setLoading(true)
@@ -75,6 +77,7 @@ export default function VendorCenter({ isOpen, onClose }) {
   )
 
   return (
+    <>
     <div className={styles.vendorCenterOverlay}>
       <div className={styles.vendorCenterContainer}>
         {/* Header */}
@@ -130,6 +133,7 @@ export default function VendorCenter({ isOpen, onClose }) {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Phone</th>
+                  <th className={styles.balanceCol}>Balance</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -146,8 +150,20 @@ export default function VendorCenter({ isOpen, onClose }) {
                     </td>
                     <td>{vendor.email || '-'}</td>
                     <td>{vendor.phone || '-'}</td>
+                    <td className={styles.balanceCol}>
+                      <span className={parseFloat(vendor.outstanding_balance) > 0 ? styles.balanceOwed : styles.balanceZero}>
+                        ${parseFloat(vendor.outstanding_balance || 0).toFixed(2)}
+                      </span>
+                    </td>
                     <td>
                       <div className={styles.actionButtons}>
+                        <button
+                          className={styles.btnView}
+                          title="Vendor Statement"
+                          onClick={() => setStatementVendor(vendor)}
+                        >
+                          <i className="fas fa-file-invoice-dollar"></i>
+                        </button>
                         <button className={styles.btnEdit} title="Edit" onClick={() => handleEditVendor(vendor)}>
                           <i className="fas fa-edit"></i>
                         </button>
@@ -178,5 +194,13 @@ export default function VendorCenter({ isOpen, onClose }) {
         editVendor={editingVendor}
       />
     </div>
+
+    {/* Vendor Statement — outside overlay to avoid stacking context */}
+    <VendorStatement
+      isOpen={!!statementVendor}
+      onClose={() => setStatementVendor(null)}
+      vendor={statementVendor}
+    />
+    </>
   )
 }

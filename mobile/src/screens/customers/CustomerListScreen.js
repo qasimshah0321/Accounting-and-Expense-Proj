@@ -89,6 +89,12 @@ const CustomerListScreen = ({ navigation }) => {
         <Text style={styles.detail} numberOfLines={1}>{item.email || 'No email'}</Text>
         {item.phone && <Text style={styles.detail}>{item.phone}</Text>}
       </View>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('CustomerStatement', { customerId: item.id, customerName: item.name })}
+        style={styles.stmtBtn}
+      >
+        <Text style={styles.stmtText}>Stmt</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={styles.deleteBtn}>
         <Text style={styles.deleteText}>X</Text>
       </TouchableOpacity>
@@ -177,6 +183,8 @@ const styles = StyleSheet.create({
   detail: { fontSize: 12, color: '#888', marginTop: 2 },
   deleteBtn: { padding: 8 },
   deleteText: { color: '#d32f2f', fontSize: 16, fontWeight: '700' },
+  stmtBtn: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#e8eaf6', borderRadius: 6, marginRight: 4 },
+  stmtText: { color: '#1a237e', fontSize: 11, fontWeight: '700' },
   emptyText: { color: '#999', fontSize: 14 },
   fab: {
     position: 'absolute',

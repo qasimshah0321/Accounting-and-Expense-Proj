@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert,
+  View, Text, ScrollView, StyleSheet, ActivityIndicator, Alert, TouchableOpacity, TextInput, Modal,
 } from 'react-native';
 import { purchaseOrdersAPI } from '../../services/api';
 
 const STATUS_COLORS = {
   draft: '#9e9e9e', approved: '#2e7d32', sent: '#1565c0',
-  received: '#00695c', cancelled: '#d32f2f',
+  received: '#00695c', partially_received: '#00897b', cancelled: '#d32f2f',
 };
 
-const PurchaseOrderDetailScreen = ({ route }) => {
+const PurchaseOrderDetailScreen = ({ route, navigation }) => {
   const { purchaseOrderId } = route.params;
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [grnRequirement, setGrnRequirement] = useState(null);
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -25,7 +29,31 @@ const PurchaseOrderDetailScreen = ({ route }) => {
         setLoading(false);
       }
     })();
+    (async () => {
+      try {
+        const res = await purchaseOrdersAPI.getGrnRequirement();
+        setGrnRequirement(res.data?.grn_requirement || res.data?.requirement || 'optional');
+      } catch (_) {
+        setGrnRequirement('optional');
+      }
+    })();
   }, [purchaseOrderId]);
+
+  const handleConvertToBill = async () => {
+    if (!billDate) return Alert.alert('Validation', 'Please enter a bill date');
+    try {
+      setConverting(true);
+      await purchaseOrdersAPI.convertToBill(purchaseOrderId, { bill_date: billDate });
+      setShowBillModal(false);
+      Alert.alert('Success', 'Bill created successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setConverting(false);
+    }
+  };
 
   const fmt = (v) => parseFloat(v || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-';
@@ -88,6 +116,42 @@ const PurchaseOrderDetailScreen = ({ route }) => {
         </View>
       ) : null}
 
+      {grnRequirement === 'optional' && ['approved', 'partially_received', 'received'].includes(status) && (
+        <View style={{ marginHorizontal: 12, marginTop: 12 }}>
+          <TouchableOpacity
+            style={styles.convertBtn}
+            onPress={() => setShowBillModal(true)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.convertBtnText}>Create Bill (Skip GRN)</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Modal visible={showBillModal} transparent animationType="fade" onRequestClose={() => setShowBillModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Create Bill from PO</Text>
+            <Text style={styles.modalLabel}>Bill Date</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={billDate}
+              onChangeText={setBillDate}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#999"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#9e9e9e' }]} onPress={() => setShowBillModal(false)} disabled={converting}>
+                <Text style={styles.modalBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#e65100' }]} onPress={handleConvertToBill} disabled={converting}>
+                <Text style={styles.modalBtnText}>{converting ? 'Creating...' : 'Create Bill'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <View style={{ height: 30 }} />
     </ScrollView>
   );
@@ -130,6 +194,16 @@ const styles = StyleSheet.create({
   lineDetail: { fontSize: 11, color: '#888', marginTop: 2 },
   lineTotal: { fontSize: 14, fontWeight: '700', color: '#e65100' },
   notes: { fontSize: 13, color: '#666', lineHeight: 20 },
+  convertBtn: { backgroundColor: '#e65100', paddingVertical: 14, borderRadius: 10, alignItems: 'center', elevation: 2 },
+  convertBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, width: '100%', maxWidth: 400 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 14 },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 6 },
+  modalInput: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14 },
+  modalActions: { flexDirection: 'row', marginTop: 16, gap: 10 },
+  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  modalBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
 });
 
 export default PurchaseOrderDetailScreen;

@@ -12,6 +12,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [viewingEntry, setViewingEntry] = useState(null)
+  const [editingEntry, setEditingEntry] = useState(null)
 
   // Form state
   const [entryNo, setEntryNo] = useState('')
@@ -76,6 +77,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
     ])
     setError('')
     setViewingEntry(null)
+    setEditingEntry(null)
   }
 
   const handleNewEntry = async () => {
@@ -89,6 +91,35 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
       const res = await api.getJournalEntry(entry.id)
       const je = res.data || res
       setViewingEntry(je)
+      setEditingEntry(null)
+      setShowForm(true)
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
+  const handleEditEntry = async (entry) => {
+    try {
+      const res = await api.getJournalEntry(entry.id)
+      const je = res.data || res
+      if (je.status === 'reversed') {
+        alert('Cannot edit a reversed journal entry.')
+        return
+      }
+      setEditingEntry(je)
+      setEntryNo(je.entry_no || '')
+      setEntryDate(je.entry_date ? je.entry_date.split('T')[0] : new Date().toISOString().split('T')[0])
+      setDescription(je.description || '')
+      setReferenceNo(je.reference_no || '')
+      setLines((je.lines || []).map((l, i) => ({
+        id: l.id || i + 1,
+        account_id: l.account_id?.toString() || '',
+        description: l.description || '',
+        debit: parseFloat(l.debit) > 0 ? String(parseFloat(l.debit)) : '',
+        credit: parseFloat(l.credit) > 0 ? String(parseFloat(l.credit)) : '',
+      })))
+      setViewingEntry(null)
+      setError('')
       setShowForm(true)
     } catch (err) {
       alert(err.message)
@@ -100,6 +131,10 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
     try {
       await api.reverseJournalEntry(entry.id)
       loadEntries()
+      if (viewingEntry?.id === entry.id) {
+        setShowForm(false)
+        resetForm()
+      }
     } catch (err) {
       alert(err.message)
     }
@@ -118,7 +153,6 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
     setLines(lines.map(l => {
       if (l.id !== id) return l
       const updated = { ...l, [field]: value }
-      // If entering debit, clear credit and vice versa
       if (field === 'debit' && value) updated.credit = ''
       if (field === 'credit' && value) updated.debit = ''
       return updated
@@ -147,7 +181,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
     setSaving(true)
     setError('')
     try {
-      await api.createJournalEntry({
+      const payload = {
         entry_no: entryNo || undefined,
         entry_date: entryDate,
         description: description || null,
@@ -158,7 +192,12 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
           credit: parseFloat(l.credit) || 0,
           description: l.description || null
         }))
-      })
+      }
+      if (editingEntry) {
+        await api.updateJournalEntry(editingEntry.id, payload)
+      } else {
+        await api.createJournalEntry(payload)
+      }
       setShowForm(false)
       resetForm()
       loadEntries()
@@ -189,19 +228,27 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
     return <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 12, background: c.bg, color: c.color }}>{status}</span>
   }
 
+  const formTitle = () => {
+    if (viewingEntry) return `Journal Entry: ${viewingEntry.entry_no}`
+    if (editingEntry) return `Edit Journal Entry: ${editingEntry.entry_no}`
+    if (showForm) return 'New Journal Entry'
+    return 'Journal Entries'
+  }
+
   if (!isOpen) return null
 
   return (
     <div className={styles.invoicePopupOverlay} onClick={onClose}>
       <div className={styles.invoicePopup} onClick={e => e.stopPropagation()} style={{ maxWidth: 1100, width: '95%' }}>
         <div className={styles.popupHeader}>
-          <h2>{viewingEntry ? `Journal Entry: ${viewingEntry.entry_no}` : (showForm ? 'New Journal Entry' : 'Journal Entries')}</h2>
+          <h2>{formTitle()}</h2>
           <button className={styles.closeBtn} onClick={() => { if (showForm) { setShowForm(false); resetForm() } else { onClose() } }}>
             <i className={`fas fa-${showForm ? 'arrow-left' : 'times'}`} />
           </button>
         </div>
 
-        {!showForm ? (
+        {/* ── List ──────────────────────────────────────────────────────────── */}
+        {!showForm && (
           <div className={styles.popupContent}>
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
               <input
@@ -242,11 +289,26 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>{statusBadge(je.status)}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'right', fontFamily: 'monospace' }}>{formatAmount(je.total_debit)}</td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                          {je.status === 'posted' && (
-                            <button onClick={() => handleReverse(je)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }} title="Reverse">
-                              <i className="fas fa-undo" />
-                            </button>
-                          )}
+                          <div style={{ display: 'inline-flex', gap: 6 }}>
+                            {je.status !== 'reversed' && (
+                              <button
+                                onClick={() => handleEditEntry(je)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: 13 }}
+                                title="Edit"
+                              >
+                                <i className="fas fa-edit" />
+                              </button>
+                            )}
+                            {je.status === 'posted' && (
+                              <button
+                                onClick={() => handleReverse(je)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 13 }}
+                                title="Reverse"
+                              >
+                                <i className="fas fa-undo" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -258,7 +320,10 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
               </div>
             )}
           </div>
-        ) : viewingEntry ? (
+        )}
+
+        {/* ── View ──────────────────────────────────────────────────────────── */}
+        {showForm && viewingEntry && (
           <div className={styles.popupContent}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Entry No</span><div style={{ fontWeight: 600 }}>{viewingEntry.entry_no}</div></div>
@@ -305,15 +370,34 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
             </table>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+              {viewingEntry.status !== 'reversed' && (
+                <button
+                  onClick={() => handleEditEntry(viewingEntry)}
+                  style={{ padding: '8px 20px', border: '1px solid #2563eb', borderRadius: 6, background: '#eff6ff', color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  <i className="fas fa-edit" style={{ marginRight: 6 }} /> Edit Entry
+                </button>
+              )}
               {viewingEntry.status === 'posted' && (
-                <button onClick={() => handleReverse(viewingEntry)} style={{ padding: '8px 20px', border: '1px solid #ef4444', borderRadius: 6, background: '#fff', color: '#ef4444', cursor: 'pointer' }}>
+                <button
+                  onClick={() => handleReverse(viewingEntry)}
+                  style={{ padding: '8px 20px', border: '1px solid #ef4444', borderRadius: 6, background: '#fff', color: '#ef4444', cursor: 'pointer' }}
+                >
                   <i className="fas fa-undo" style={{ marginRight: 6 }} /> Reverse Entry
                 </button>
               )}
-              <button onClick={() => { setShowForm(false); resetForm() }} style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Close</button>
+              <button
+                onClick={() => { setShowForm(false); resetForm() }}
+                style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}
+              >
+                Close
+              </button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* ── Create / Edit Form ────────────────────────────────────────────── */}
+        {showForm && !viewingEntry && (
           <div className={styles.popupContent}>
             {error && <div style={{ color: '#dc2626', marginBottom: 10, padding: '8px 12px', background: '#fef2f2', borderRadius: 6 }}>{error}</div>}
 
@@ -322,7 +406,8 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
                 <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>JE Number</label>
                 <input
                   type="text" value={entryNo} onChange={e => setEntryNo(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6 }}
+                  readOnly={!!editingEntry}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, background: editingEntry ? '#f9fafb' : undefined }}
                 />
               </div>
               <div>
@@ -424,7 +509,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
                     <tr>
                       <td colSpan={5} style={{ padding: '8px 10px', color: '#dc2626', fontSize: 13, textAlign: 'center' }}>
                         <i className="fas fa-exclamation-triangle" style={{ marginRight: 6 }} />
-                        Difference: {currencySymbol}{Math.abs(totalDebits - totalCredits).toFixed(2)} -- debits must equal credits
+                        Difference: {currencySymbol}{Math.abs(totalDebits - totalCredits).toFixed(2)} — debits must equal credits
                       </td>
                     </tr>
                   )}
@@ -433,13 +518,26 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
-              <button onClick={() => { setShowForm(false); resetForm() }} style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>Cancel</button>
-              <button onClick={handleSave} disabled={saving || !isBalanced} className={styles.btnPrimary} style={{ padding: '8px 20px', opacity: (!isBalanced ? 0.5 : 1) }}>
-                {saving ? <><i className="fas fa-spinner fa-spin" /> Posting...</> : 'Post Journal Entry'}
+              <button
+                onClick={() => { setShowForm(false); resetForm() }}
+                style={{ padding: '8px 20px', border: '1px solid #d1d5db', borderRadius: 6, background: '#fff', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !isBalanced}
+                className={styles.btnPrimary}
+                style={{ padding: '8px 20px', opacity: !isBalanced ? 0.5 : 1 }}
+              >
+                {saving
+                  ? <><i className="fas fa-spinner fa-spin" /> {editingEntry ? 'Updating...' : 'Posting...'}</>
+                  : editingEntry ? 'Update Journal Entry' : 'Post Journal Entry'}
               </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   )

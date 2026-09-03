@@ -8,6 +8,7 @@ export type DocumentType =
   | 'purchase_order'
   | 'estimate'
   | 'delivery_note'
+  | 'goods_received_note'
   | 'bill'
   | 'expense'
   | 'payment'
@@ -24,6 +25,7 @@ const DEFAULT_PREFIXES: Record<DocumentType, string> = {
   purchase_order: 'PO',
   estimate: 'EST',
   delivery_note: 'DN',
+  goods_received_note: 'GRN',
   bill: 'BILL',
   expense: 'EXP',
   payment: 'PMT',

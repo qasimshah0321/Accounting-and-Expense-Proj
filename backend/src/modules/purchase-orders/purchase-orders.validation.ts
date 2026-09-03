@@ -30,6 +30,6 @@ export const createPurchaseOrderSchema = z.object({
 export const updatePurchaseOrderSchema = createPurchaseOrderSchema.partial();
 
 export const updateStatusSchema = z.object({
-  status: z.enum(['draft', 'approved', 'partially_received', 'received', 'cancelled']),
+  status: z.enum(['draft', 'pending_approval', 'approved', 'partially_received', 'received', 'cancelled']),
   reason: z.string().optional(),
 });

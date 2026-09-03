@@ -2,6 +2,7 @@ import { pool } from '../../config/database';
 import { withTransaction } from '../../config/database';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { buildPaginationMeta } from '../../utils/pagination';
+import { createAutoJournalEntry, getSystemAccount } from '../accounting/accounting.service';
 
 export const listTransactions = async (companyId: string, filters: any) => {
   const conditions = ['it.company_id=?'];
@@ -68,6 +69,43 @@ export const adjustStock = async (companyId: string, userId: string, data: any) 
          ON DUPLICATE KEY UPDATE quantity_on_hand = quantity_on_hand + VALUES(quantity_on_hand), updated_at=NOW()`,
         [companyId, data.product_id, data.location_id, qty]
       );
+    }
+
+    // ── GL posting: DR/CR Inventory vs Inventory Adjustment (Expense) ───────
+    try {
+      const inventoryAccountId = await getSystemAccount(companyId, '1200');
+      // Write-offs use a dedicated shrinkage account; general adjustments use Other Expenses
+      const isWriteOff = data.transaction_type === 'write_off';
+      const offsetAccountId = isWriteOff
+        ? await getSystemAccount(companyId, '5050')   // Inventory Write-Off / Shrinkage
+        : await getSystemAccount(companyId, '5900');  // Other Expenses (adjustment in/out)
+
+      if (inventoryAccountId && offsetAccountId) {
+        const unitCost = parseFloat(product.avg_cost) || parseFloat(product.cost_price) || parseFloat(product.selling_price) || 0;
+        const adjustValue = Math.abs(qty) * unitCost;
+        if (adjustValue > 0) {
+          const txDate = new Date().toISOString().split('T')[0];
+          const isIncrease = qty > 0;
+          const offsetDesc = isWriteOff ? `Inventory write-off — ${product.name}` : `Inventory adjustment offset`;
+          await createAutoJournalEntry(
+            companyId, userId, userId, 'inventory_adjustment',
+            (txRows as any[])[0].id, data.reference_no || data.transaction_type,
+            txDate,
+            isIncrease
+              ? [
+                  { account_id: inventoryAccountId, debit: adjustValue,  credit: 0,           description: `Inventory adj in — ${product.name}` },
+                  { account_id: offsetAccountId,    debit: 0,            credit: adjustValue,  description: offsetDesc },
+                ]
+              : [
+                  { account_id: offsetAccountId,    debit: adjustValue,  credit: 0,           description: offsetDesc },
+                  { account_id: inventoryAccountId, debit: 0,            credit: adjustValue,  description: 'Inventory reduction' },
+                ],
+            `Inventory ${isWriteOff ? 'write-off' : 'adjustment'}: ${product.name}`
+          );
+        }
+      }
+    } catch (glErr) {
+      console.error('GL auto-post failed for inventory adjustment:', glErr);
     }
 
     return { ...(txRows as any[])[0], product_name: product.name, sku: product.sku, new_stock: newStock };

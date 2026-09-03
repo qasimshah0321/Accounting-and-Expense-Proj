@@ -11,10 +11,15 @@ import PurchaseOrder from '@/components/PurchaseOrder'
 import Estimate from '@/components/Estimate'
 import DeliveryNote from '@/components/DeliveryNote'
 import CustomerCenter from '@/components/CustomerCenter'
+import AgingReceivables from '@/components/AgingReceivables'
+import AgingPayables from '@/components/AgingPayables'
 import VendorCenter from '@/components/VendorCenter'
+import VendorStatement from '@/components/VendorStatement'
 import ProductCenter from '@/components/ProductCenter'
 import TaxConfiguration from '@/components/TaxConfiguration'
 import ShipViaConfiguration from '@/components/ShipViaConfiguration'
+import ApprovalWorkflowConfig from '@/components/ApprovalWorkflowConfig'
+import PendingApprovals from '@/components/PendingApprovals'
 import BillCenter from '@/components/BillCenter'
 import ExpenseCenter from '@/components/ExpenseCenter'
 import CustomerPayments from '@/components/CustomerPayments'
@@ -23,6 +28,8 @@ import ReportsDashboard from '@/components/ReportsDashboard'
 import InventoryCenter from '@/components/InventoryCenter'
 import BankingCenter from '@/components/BankingCenter'
 import ChartOfAccounts from '@/components/ChartOfAccounts'
+import OpeningBalance from '@/components/OpeningBalance'
+import YearEndClose from '@/components/YearEndClose'
 import JournalEntryCenter from '@/components/JournalEntryCenter'
 import GeneralLedger from '@/components/GeneralLedger'
 import TrialBalance from '@/components/TrialBalance'
@@ -31,8 +38,8 @@ import CompanySettings from '@/components/CompanySettings'
 import ERPFlowDiagram from '@/components/ERPFlowDiagram'
 import UserManagement from '@/components/UserManagement'
 import RolePermissions from '@/components/RolePermissions'
+import GoodsReceivedNote from '@/components/GoodsReceivedNote'
 import RequestForQuotation from '@/components/RequestForQuotation'
-import QuickOrder from '@/components/QuickOrder'
 import Login from '@/components/Login'
 import ToastContainer from '../components/Toast'
 import styles from './page.module.css'
@@ -47,12 +54,16 @@ const MENU_PANEL_MAP = {
   'Delivery Note': 'DeliveryNote', 'Delivery Notes': 'DeliveryNote',
   'Customer Payments': 'CustomerPayments', 'Receive Payment': 'CustomerPayments', 'Sales Receipt': 'CustomerPayments',
   'Purchase Order': 'PurchaseOrder', 'Purchase Orders': 'PurchaseOrder',
+  'Goods Received Note': 'GoodsReceivedNote',
   'Request for Quotation': 'RequestForQuotation',
   'Bills': 'BillCenter',
   'Expenses': 'ExpenseCenter',
   'Bill Payments': 'VendorPayments', 'Make Payment': 'VendorPayments',
   'Customer Center': 'CustomerCenter',
+  'Aging (Account Receivables)': 'AgingReceivables',
+  'Aging (Accounts Payables)': 'AgingPayables',
   'Vendor Center': 'VendorCenter',
+  'Vendor Statements': 'VendorStatement',
   'Product Center': 'ProductCenter',
   'Stock Valuation': 'InventoryCenter', 'Stock Locations': 'InventoryCenter',
   'Stock Mobility': 'InventoryCenter', 'Reorder Planning': 'InventoryCenter',
@@ -72,9 +83,9 @@ const MENU_PANEL_MAP = {
   'ERP Flow Guide': 'ERPFlowDiagram', 'ERP Flow': 'ERPFlowDiagram',
   'Tax': 'TaxConfiguration',
   'Ship Via': 'ShipViaConfiguration',
+  'Approval Workflows': 'ApprovalWorkflowConfig',
   'Users & Roles': 'UserManagement',
   'Role Permissions': 'RolePermissions',
-  'Quick Order': 'QuickOrder', 'POS': 'QuickOrder', 'Point of Sale': 'QuickOrder',
 }
 
 export default function Home() {
@@ -96,6 +107,13 @@ export default function Home() {
 
   // Single active panel — only one panel open at a time
   const [activePanel, setActivePanel] = useState(null)
+
+  // Account to drill into from Chart of Accounts → General Ledger
+  const [ledgerAccount, setLedgerAccount] = useState(null)
+
+  // Pending approvals: count for badge + open state of side panel
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0)
+  const [isApprovalsOpen, setIsApprovalsOpen] = useState(false)
 
   // Toast notifications
   const [toasts, setToasts] = useState([])
@@ -183,6 +201,19 @@ export default function Home() {
     }
   }, [user])
 
+  // Pending approvals: load count on auth and refresh every 60s while logged in
+  useEffect(() => {
+    if (!user) return
+    const refreshCount = () => {
+      api.getMyPendingApprovals()
+        .then((res) => setPendingApprovalsCount((res.data || []).length))
+        .catch(() => {})
+    }
+    refreshCount()
+    const id = setInterval(refreshCount, 60000)
+    return () => clearInterval(id)
+  }, [user])
+
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser)
   }
@@ -260,6 +291,9 @@ export default function Home() {
         companyName={companyProfile?.name || ''}
         onOpenSettings={() => { setActiveMenu('Company Settings'); setActivePanel('CompanySettings'); }}
         onNavigate={(panel) => setActivePanel(panel)}
+        permittedMenus={permittedMenus}
+        onOpenApprovals={() => setIsApprovalsOpen(true)}
+        pendingApprovalsCount={pendingApprovalsCount}
       />
 
       <CreateMenu
@@ -270,7 +304,7 @@ export default function Home() {
       />
 
       <div className={styles.mainContainer}>
-        {user?.role !== 'customer' && (
+        {(user?.role === 'admin' || permittedMenus === null || (Array.isArray(permittedMenus) && permittedMenus.length > 0)) && (
           <Sidebar
             isOpen={isSidebarOpen}
             isCollapsed={isSidebarCollapsed}
@@ -331,6 +365,14 @@ export default function Home() {
           />
 
           {/* Purchases */}
+          <GoodsReceivedNote
+            isOpen={activePanel === 'GoodsReceivedNote'}
+            onClose={closePanel}
+            onDirtyChange={setIsDirty}
+            user={user}
+            companyProfile={companyProfile}
+            currencySymbol={currencySymbol}
+          />
           <RequestForQuotation
             isOpen={activePanel === 'RequestForQuotation'}
             onClose={closePanel}
@@ -379,7 +421,10 @@ export default function Home() {
 
           {/* Centers */}
           <CustomerCenter isOpen={activePanel === 'CustomerCenter'} onClose={closePanel} />
+          <AgingReceivables isOpen={activePanel === 'AgingReceivables'} onClose={closePanel} />
+          <AgingPayables isOpen={activePanel === 'AgingPayables'} onClose={closePanel} />
           <VendorCenter isOpen={activePanel === 'VendorCenter'} onClose={closePanel} />
+          <VendorStatement isOpen={activePanel === 'VendorStatement'} onClose={closePanel} />
           <ProductCenter isOpen={activePanel === 'ProductCenter'} onClose={closePanel} currencySymbol={currencySymbol} />
           <InventoryCenter isOpen={activePanel === 'InventoryCenter'} onClose={closePanel} />
 
@@ -394,14 +439,32 @@ export default function Home() {
             onClose={closePanel}
             onShipViasLoaded={setShipVias}
           />
+          <ApprovalWorkflowConfig
+            isOpen={activePanel === 'ApprovalWorkflowConfig'}
+            onClose={closePanel}
+          />
 
           {/* Banking */}
           <BankingCenter isOpen={activePanel === 'BankingCenter'} onClose={closePanel} />
 
           {/* Accounting / GL */}
-          <ChartOfAccounts isOpen={activePanel === 'ChartOfAccounts'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <ChartOfAccounts
+            isOpen={activePanel === 'ChartOfAccounts'}
+            onClose={closePanel}
+            currencySymbol={currencySymbol}
+            onOpenLedger={(account) => { setLedgerAccount(account); setActivePanel('GeneralLedger') }}
+            onOpeningBalance={() => setActivePanel('OpeningBalance')}
+            onYearEndClose={() => setActivePanel('YearEndClose')}
+          />
+          <OpeningBalance isOpen={activePanel === 'OpeningBalance'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <YearEndClose isOpen={activePanel === 'YearEndClose'} onClose={closePanel} currencySymbol={currencySymbol} />
           <JournalEntryCenter isOpen={activePanel === 'JournalEntryCenter'} onClose={closePanel} currencySymbol={currencySymbol} />
-          <GeneralLedger isOpen={activePanel === 'GeneralLedger'} onClose={closePanel} currencySymbol={currencySymbol} />
+          <GeneralLedger
+            isOpen={activePanel === 'GeneralLedger'}
+            onClose={() => { setLedgerAccount(null); closePanel() }}
+            currencySymbol={currencySymbol}
+            initialAccount={ledgerAccount}
+          />
           <TrialBalance isOpen={activePanel === 'TrialBalance'} onClose={closePanel} currencySymbol={currencySymbol} />
 
           {/* Recurring */}
@@ -424,15 +487,6 @@ export default function Home() {
             isOpen={activePanel === 'ERPFlowDiagram'}
             onClose={closePanel}
             onNavigate={(menuName) => { handleMenuClick(menuName) }}
-          />
-
-          {/* Quick Order / POS */}
-          <QuickOrder
-            isOpen={activePanel === 'QuickOrder'}
-            onClose={closePanel}
-            user={user}
-            currencySymbol={currencySymbol}
-            taxes={taxes}
           />
 
           {/* Reports */}
@@ -498,6 +552,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <PendingApprovals
+        isOpen={isApprovalsOpen}
+        onClose={() => setIsApprovalsOpen(false)}
+        onCountChange={setPendingApprovalsCount}
+        currencySymbol={currencySymbol}
+      />
 
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </>

@@ -49,7 +49,7 @@ export const listRFQs = async (companyId: string, filters: any) => {
   const total = parseInt((countRows as any[])[0].count, 10);
   const [rows] = await pool.query(
     `SELECT id, rfq_no, vendor_id, vendor_name, rfq_date, required_by_date, status, grand_total, converted_to_po, created_at
-     FROM rfqs WHERE ${where} ORDER BY rfq_date DESC LIMIT ? OFFSET ?`,
+     FROM rfqs WHERE ${where} ORDER BY rfq_date DESC, created_at DESC LIMIT ? OFFSET ?`,
     [...params, filters.limit, filters.offset]
   );
   return { rfqs: rows as any[], pagination: buildPaginationMeta(filters.page, filters.limit, total) };

@@ -1,0 +1,500 @@
+/* ── Recurring Documents Center ──────────────────────────────────────────── */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--white);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.container {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
+  flex-shrink: 0;
+}
+
+.headerLeft h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.headerLeft p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.headerRight {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btnPrimary {
+  padding: 10px 20px;
+  background: var(--primary-green);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--dark-green);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(44, 160, 28, 0.3);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btnSecondary {
+  padding: 9px 18px;
+  background: var(--white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btnSecondary:hover {
+  background: var(--sidebar-hover);
+  border-color: var(--primary-green);
+}
+
+.closeBtn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeBtn:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+/* ── Tab Navigation ──────────────────────────────────────────────────────── */
+.tabBar {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 30px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 14px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tabActive {
+  color: var(--primary-green);
+  border-bottom-color: var(--primary-green);
+}
+
+/* ── Banners ─────────────────────────────────────────────────────────────── */
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 30px 0;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  color: #166534;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 30px 0;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ── Scrollable Content ──────────────────────────────────────────────────── */
+.contentArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  background: #FAFAFA;
+}
+
+.contentArea::-webkit-scrollbar { width: 8px; }
+.contentArea::-webkit-scrollbar-track { background: transparent; }
+.contentArea::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+.contentArea::-webkit-scrollbar-thumb:hover { background: #BDBDBD; }
+
+/* ── Table wrapper (allows horizontal scroll on small screens) ───────────── */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+/* ── Data Table ──────────────────────────────────────────────────────────── */
+.table {
+  width: 100%;
+  background: var(--white);
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.table thead {
+  background: var(--sidebar-bg);
+}
+
+.table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #F9FFF7;
+}
+
+/* ── Status / Type Badges ────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badgeInvoice  { background: #f0fdf4; color: #16a34a; }
+.badgeBill     { background: #f1f5f9; color: #64748b; }
+.badgeExpense  { background: #fef2f2; color: #dc2626; }
+
+/* ── Table Action Buttons ────────────────────────────────────────────────── */
+.actionCell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.btnIcon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btnIcon:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.btnIconEdit:hover {
+  background: #eff6ff;
+  color: #3b82f6;
+  border-color: #93c5fd;
+}
+
+.btnIconPause:hover {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.btnIconDanger:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.btnGenerate {
+  padding: 6px 12px;
+  background: var(--primary-green);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  white-space: nowrap;
+}
+
+.btnGenerate:hover:not(:disabled) {
+  background: var(--dark-green);
+}
+
+.btnGenerate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Empty / Loading States ──────────────────────────────────────────────── */
+.emptyState,
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptyState i,
+.loadingState i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: var(--border-color);
+}
+
+.loadingState i {
+  color: var(--primary-green);
+}
+
+.emptyState h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
+/* ── Form Card ───────────────────────────────────────────────────────────── */
+.formCard {
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  max-width: 760px;
+}
+
+.formCardHeader {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--sidebar-bg);
+}
+
+.formCardHeader h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.formCardHeader p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.formCardBody {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Form Inline Error (inside card) ─────────────────────────────────────── */
+.formError {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+/* ── Section divider inside the form ────────────────────────────────────── */
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-green);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0fdf4;
+  margin-bottom: 4px;
+}
+
+/* ── Form Fields ─────────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  background: var(--white);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(44, 160, 28, 0.12);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ── Form Footer (actions) ───────────────────────────────────────────────── */
+.formFooter {
+  display: flex;
+  gap: 10px;
+  padding: 18px 24px;
+  border-top: 1px solid var(--border-color);
+  background: #FAFAFA;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .header      { padding: 15px 20px; }
+  .tabBar      { padding: 0 20px; }
+  .contentArea { padding: 20px; }
+  .successBanner,
+  .errorBanner { margin: 12px 20px 0; }
+  .headerLeft h2 { font-size: 20px; }
+  .grid2       { grid-template-columns: 1fr; }
+  .table       { min-width: 680px; }
+  .formCard    { max-width: 100%; }
+  .tab         { padding: 12px 14px; font-size: 13px; }
+}

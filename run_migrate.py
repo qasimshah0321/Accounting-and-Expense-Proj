@@ -3,7 +3,7 @@ import paramiko, time
 host = '176.9.63.151'
 port = 22
 user = 'candydada'
-password = 'Blista1214@@'
+password = 'Candy1612@@'
 
 client = paramiko.SSHClient()
 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

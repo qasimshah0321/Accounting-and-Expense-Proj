@@ -4,7 +4,7 @@ import os
 host = '176.9.63.151'
 port = 22
 user = 'candydada'
-password = 'Blista1214@@'
+password = 'Candy1499@@'
 
 LOCAL_OUT = r'D:\E Drive\Code Generation\projects\Accounting and Expense Proj\nextjs-accounting-app\out'
 REMOTE_BASE = '/home/candydada/public_html'

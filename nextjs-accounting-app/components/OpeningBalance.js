@@ -160,8 +160,8 @@ export default function OpeningBalance({ isOpen, onClose, currencySymbol = '$' }
               </div>
 
               {/* Account table */}
-              <div style={{ maxHeight: 420, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ maxHeight: 420, overflow: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
                       <th style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0', width: 80 }}>Acct #</th>
@@ -223,7 +223,7 @@ export default function OpeningBalance({ isOpen, onClose, currencySymbol = '$' }
 
               {/* Totals summary */}
               <div style={{ marginTop: 16, background: '#f8fafc', borderRadius: 8, padding: '14px 18px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: 12, color: '#64748b', marginBottom: 4 }}>Total Debits</div>
                     <div style={{ fontSize: 16, fontWeight: 700, fontFamily: 'monospace', color: '#1e40af' }}>{fmt(totalDebits)}</div>

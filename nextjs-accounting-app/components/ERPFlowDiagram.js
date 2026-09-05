@@ -279,7 +279,7 @@ export default function ERPFlowDiagram({ isOpen, onClose, onNavigate }) {
           </div>
 
           {/* ── Two main flows ──────────────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, marginBottom: 36 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 40, marginBottom: 36 }}>
 
             {/* Customer Flow */}
             <div>

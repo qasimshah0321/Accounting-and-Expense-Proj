@@ -183,8 +183,8 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$',
             {loading && <div style={{ textAlign: 'center', padding: 20 }}><i className="fas fa-spinner fa-spin" /> Loading...</div>}
 
             {!loading && (
-              <div style={{ maxHeight: 500, overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <div style={{ maxHeight: 500, overflow: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
                       <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Account #</th>
@@ -265,7 +265,7 @@ export default function ChartOfAccounts({ isOpen, onClose, currencySymbol = '$',
             <h3 style={{ marginBottom: 16 }}>{editingAccount ? 'Edit Account' : 'New Account'}</h3>
             {error && <div style={{ color: '#dc2626', marginBottom: 10, padding: '8px 12px', background: '#fef2f2', borderRadius: 6 }}>{error}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>Account Number *</label>
                 <input

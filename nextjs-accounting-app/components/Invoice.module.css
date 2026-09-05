@@ -1136,6 +1136,58 @@ textarea.formControlStandard {
 
 /* Responsive */
 @media (max-width: 768px) {
+  /* ── List view: header + search ── */
+  .listHeader {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+  }
+
+  .listHeaderLeft h2 {
+    font-size: 18px;
+  }
+
+  .listHeaderRight {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .btnNewInvoice,
+  .btnImportImage {
+    flex: 1;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .searchSection {
+    padding: 12px 20px;
+    flex-wrap: wrap;
+  }
+
+  .btnRefresh {
+    flex-shrink: 0;
+  }
+
+  .errorBanner {
+    margin: 12px 20px 0;
+  }
+
+  /* ── List view: table becomes horizontally scrollable ── */
+  .invoiceGridContainer {
+    padding: 16px 0;
+    overflow-x: auto;
+  }
+
+  .invoiceTable {
+    min-width: 640px;
+  }
+
+  .invoiceTable th,
+  .invoiceTable td {
+    padding: 10px 12px;
+  }
+
+  /* ── Popup / edit form ── */
   .popupHeader,
   .popupFooter {
     padding: 15px 20px;
@@ -1172,6 +1224,35 @@ textarea.formControlStandard {
     gap: 15px;
   }
 
+  /* Label-beside-input rows collapse to stacked label-above-input */
+  .formGroup,
+  .formGroupFull {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .formGroup label,
+  .formGroupFull label {
+    min-width: 0;
+  }
+
+  .formControlShort,
+  .formControlDefault,
+  .formControlMedium,
+  .formControlLong,
+  .formControlDate,
+  .formControlFullWidth {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .autocompleteWrapper {
+    width: 100%;
+    flex: none;
+  }
+
   .bottomRow {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -1179,6 +1260,10 @@ textarea.formControlStandard {
 
   .notesAttachmentsSection {
     gap: 15px;
+  }
+
+  .attachmentArea {
+    padding: 20px;
   }
 
   .sectionCard {
@@ -1206,5 +1291,43 @@ textarea.formControlStandard {
   .btnSecondary {
     flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .listHeaderLeft h2,
+  .headerLeft h2 {
+    font-size: 16px;
+  }
+
+  .btnNewInvoice span,
+  .btnImportImage span {
+    display: none;
+  }
+
+  .popupHeader,
+  .popupFooter,
+  .popupContent {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .sectionCard,
+  .attachmentArea {
+    padding: 15px;
+  }
+
+  .closeBtn {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .discountInput {
+    width: 90px;
+  }
+
+  .taxRateInput {
+    width: 50px;
   }
 }

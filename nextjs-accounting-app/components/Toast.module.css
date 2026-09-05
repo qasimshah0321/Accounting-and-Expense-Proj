@@ -76,3 +76,16 @@
   from { width: 100%; }
   to   { width: 0%; }
 }
+
+@media (max-width: 480px) {
+  .container {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    max-width: none;
+  }
+
+  .toast {
+    min-width: 0;
+  }
+}

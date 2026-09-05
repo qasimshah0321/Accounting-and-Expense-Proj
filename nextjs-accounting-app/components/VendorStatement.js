@@ -319,6 +319,7 @@ export default function VendorStatement({ isOpen, onClose, vendor: vendorProp })
                   <p>No transactions in this period.</p>
                 </div>
               ) : (
+                <div className={styles.tableScroll}>
                 <table className={styles.txTable}>
                   <thead>
                     <tr>
@@ -372,6 +373,7 @@ export default function VendorStatement({ isOpen, onClose, vendor: vendorProp })
                     </tr>
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

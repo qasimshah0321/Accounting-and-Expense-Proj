@@ -277,7 +277,8 @@ function UsersTab({ toast }) {
       {loading ? (
         <div style={{ textAlign:'center', padding:40, color:'#64748b' }}><i className="fas fa-spinner fa-spin" style={{ fontSize:22 }}></i></div>
       ) : (
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+        <div style={{ overflowX: 'auto' }}>
+        <table style={{ width:'100%', minWidth: 640, borderCollapse:'collapse', fontSize:13 }}>
           <thead>
             <tr style={{ borderBottom:'2px solid #e2e8f0' }}>
               <th style={thStyle}>Name</th>
@@ -360,6 +361,7 @@ function UsersTab({ toast }) {
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )
@@ -739,7 +741,8 @@ function RolesTab({ toast }) {
           No roles defined yet. Create your first role above.
         </div>
       ) : (
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+        <div style={{ overflowX: 'auto' }}>
+        <table style={{ width:'100%', minWidth: 560, borderCollapse:'collapse', fontSize:13 }}>
           <thead>
             <tr style={{ borderBottom:'2px solid #e2e8f0' }}>
               <th style={thStyle}>Role Code</th>
@@ -800,6 +803,7 @@ function RolesTab({ toast }) {
             })}
           </tbody>
         </table>
+        </div>
       )}
 
       <div style={{ marginTop:20, padding:14, background:'#f0f9ff', borderRadius:10, border:'1px solid #bae6fd', fontSize:12, color:'#0369a1' }}>

@@ -434,7 +434,7 @@ export default function InventoryCenter({ isOpen, onClose }) {
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 16 }}>
               <div className={styles.formGroup}>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14, color: '#374151' }}>Qty Change <span style={{ color: '#ef4444' }}>*</span></label>
                 <input
@@ -539,7 +539,7 @@ export default function InventoryCenter({ isOpen, onClose }) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
               <div className={styles.formGroup}>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14, color: '#374151' }}>Quantity <span style={{ color: '#ef4444' }}>*</span></label>
                 <input type="number" className={styles.formControlStandard} placeholder="0" min="0.001" step="0.001"
@@ -591,7 +591,7 @@ export default function InventoryCenter({ isOpen, onClose }) {
               <div style={{ margin: '0 24px 20px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 20 }}>
                 <h4 style={{ margin: '0 0 16px', fontSize: 15 }}>{editingLoc ? 'Edit Location' : 'New Location'}</h4>
                 {locFormError && <div className={styles.errorBanner} style={{ marginBottom: 12 }}><i className="fas fa-exclamation-circle"></i> {locFormError}</div>}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 16 }}>
                   <div className={styles.formGroup}>
                     <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 14, color: '#374151' }}>Name <span style={{ color: '#ef4444' }}>*</span></label>
                     <input type="text" className={styles.formControlStandard} placeholder="e.g. Main Warehouse"

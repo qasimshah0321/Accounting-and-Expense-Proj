@@ -163,7 +163,8 @@ export default function RolePermissions({ isOpen, onClose }) {
               <p>Loading permissions...</p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
                   <th style={{ ...thStyle, width: '28%' }}>Menu Item</th>
@@ -231,6 +232,7 @@ export default function RolePermissions({ isOpen, onClose }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

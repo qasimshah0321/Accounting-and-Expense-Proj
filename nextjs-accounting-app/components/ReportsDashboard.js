@@ -332,7 +332,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                 ) : plData ? (
                   // Legacy fallback (older deployments without /profit-and-loss)
                   <div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
                       <KpiCard label="Total Revenue" value={fmt(plData.revenue?.total)} color="#15803d" bg="#f0fdf4" border="#bbf7d0" icon="fa-chart-line" />
                       <KpiCard label="Total Expenses" value={fmt(plData.expenses?.combined)} color="#b91c1c" bg="#fef2f2" border="#fecaca" icon="fa-minus-circle" />
                       <KpiCard
@@ -458,14 +458,15 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                   {agingView === 'receivables' && (
                     agingData?.receivables?.length > 0 ? (
                       <>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginBottom: 16 }}>
                           {['current_due', 'overdue_1_30', 'overdue_31_60', 'overdue_61_90', 'overdue_90_plus'].map((k, i) => {
                             const labels = ['Current', '1-30 Days', '31-60 Days', '61-90 Days', '90+ Days']
                             const total = agingData.receivables.reduce((s, r) => s + (parseFloat(r[k]) || 0), 0)
                             return <KpiCard key={k} label={labels[i]} value={fmt(total)} color={i >= 3 ? '#b91c1c' : '#1d4ed8'} bg={i >= 3 ? '#fef2f2' : '#eff6ff'} border={i >= 3 ? '#fecaca' : '#bfdbfe'} />
                           })}
                         </div>
-                        <table className={styles.invoiceTable}>
+                        <div className={styles.tableContainer}>
+                        <table className={styles.invoiceTable} style={{ minWidth: 640 }}>
                           <thead><tr><th>Customer</th><th>Current</th><th>1-30</th><th>31-60</th><th>61-90</th><th>90+</th><th>Total</th></tr></thead>
                           <tbody>
                             {agingData.receivables.map((r, i) => (
@@ -481,6 +482,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </>
                     ) : (
                       <div className={styles.emptyState}><i className="fas fa-file-invoice"></i><h3>No outstanding receivables</h3><p>{agingData ? 'All invoices are paid' : 'Click "Run Report" to load'}</p></div>
@@ -490,14 +492,15 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                   {agingView === 'payables' && (
                     agingData?.payables?.length > 0 ? (
                       <>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginBottom: 16 }}>
                           {['current_due', 'overdue_1_30', 'overdue_31_60', 'overdue_61_90', 'overdue_90_plus'].map((k, i) => {
                             const labels = ['Current', '1-30 Days', '31-60 Days', '61-90 Days', '90+ Days']
                             const total = agingData.payables.reduce((s, r) => s + (parseFloat(r[k]) || 0), 0)
                             return <KpiCard key={k} label={labels[i]} value={fmt(total)} color={i >= 3 ? '#b91c1c' : '#b45309'} bg={i >= 3 ? '#fef2f2' : '#fef3c7'} border={i >= 3 ? '#fecaca' : '#fde68a'} />
                           })}
                         </div>
-                        <table className={styles.invoiceTable}>
+                        <div className={styles.tableContainer}>
+                        <table className={styles.invoiceTable} style={{ minWidth: 640 }}>
                           <thead><tr><th>Vendor</th><th>Current</th><th>1-30</th><th>31-60</th><th>61-90</th><th>90+</th><th>Total</th></tr></thead>
                           <tbody>
                             {agingData.payables.map((r, i) => (
@@ -513,6 +516,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </>
                     ) : (
                       <div className={styles.emptyState}><i className="fas fa-file-invoice-dollar"></i><h3>No outstanding payables</h3><p>{agingData ? 'All bills are paid' : 'Click "Run Report" to load'}</p></div>
@@ -529,7 +533,8 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                       <KpiCard label="Total Inventory Value" value={fmt(inventoryData.total_inventory_value)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-boxes" />
                     </div>
                     {inventoryData.products?.length > 0 ? (
-                      <table className={styles.invoiceTable}>
+                      <div className={styles.tableContainer}>
+                      <table className={styles.invoiceTable} style={{ minWidth: 560 }}>
                         <thead>
                           <tr>
                             <th>Product</th>
@@ -559,6 +564,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                           </tr>
                         </tfoot>
                       </table>
+                      </div>
                     ) : (
                       <div className={styles.emptyState}><i className="fas fa-box-open"></i><h3>No tracked inventory products</h3><p>Enable inventory tracking on products to see valuation</p></div>
                     )}
@@ -572,7 +578,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                 taxData ? (
                   <div>
                     {/* Net Tax Payable highlight */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
                       <KpiCard label="Output Tax (Sales)" value={fmt(taxData.output_tax?.tax_amount)} color="#166534" bg="#f0fdf4" border="#bbf7d0" icon="fa-arrow-up" />
                       <KpiCard label="Input Tax (Purchases)" value={fmt(taxData.input_tax?.total)} color="#1e40af" bg="#eff6ff" border="#bfdbfe" icon="fa-arrow-down" />
                       <KpiCard
@@ -585,7 +591,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
                       {/* Output Tax detail */}
                       <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
                         <div style={{ background: '#f0fdf4', padding: '10px 14px', borderBottom: '1px solid #e2e8f0', fontWeight: 700, fontSize: 13, color: '#166534' }}>
@@ -710,13 +716,13 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                       </div>
 
                       {/* KPI row */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 28 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, marginBottom: 28 }}>
                         <KpiCard label="Total Assets" value={fmt(bsData.assets.total)} color="#15803d" bg="#f0fdf4" border="#bbf7d0" icon="fa-university" />
                         <KpiCard label="Total Liabilities" value={fmt(bsData.liabilities.total)} color="#b91c1c" bg="#fef2f2" border="#fecaca" icon="fa-hand-holding-usd" />
                         <KpiCard label="Total Equity" value={fmt(bsData.equity.total)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-chart-pie" />
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 32 }}>
                         {/* Left — Assets */}
                         <div>
                           <Section title="Current Assets"  accounts={bsData.assets.current} total={bsData.assets.current.reduce((s,a)=>s+a.balance,0)} color="#15803d" />
@@ -820,7 +826,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                       </div>
 
                       {/* KPI strip */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                         <KpiCard label="Operating" value={fmtAmt(cfData.operating.net_cash)} color={cfData.operating.net_cash >= 0 ? '#15803d' : '#b91c1c'} bg={cfData.operating.net_cash >= 0 ? '#f0fdf4' : '#fef2f2'} border={cfData.operating.net_cash >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-cogs" />
                         <KpiCard label="Investing"  value={fmtAmt(cfData.investing.net_cash)}  color={cfData.investing.net_cash  >= 0 ? '#15803d' : '#b91c1c'} bg={cfData.investing.net_cash  >= 0 ? '#f0fdf4' : '#fef2f2'} border={cfData.investing.net_cash  >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-chart-line" />
                         <KpiCard label="Financing"  value={fmtAmt(cfData.financing.net_cash)}  color={cfData.financing.net_cash  >= 0 ? '#15803d' : '#b91c1c'} bg={cfData.financing.net_cash  >= 0 ? '#f0fdf4' : '#fef2f2'} border={cfData.financing.net_cash  >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-hand-holding-usd" />
@@ -919,12 +925,13 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
 
                     return (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                           <KpiCard label="Net Income (Current)" value={fmt(c.net_income)} color={c.net_income >= 0 ? '#15803d' : '#b91c1c'} bg={c.net_income >= 0 ? '#f0fdf4' : '#fef2f2'} border={c.net_income >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-chart-bar" />
                           <KpiCard label="Net Income (Prior)" value={fmt(p.net_income)} color="#6b7280" bg="#f9fafb" border="#e5e7eb" icon="fa-chart-bar" />
                           <KpiCard label="Net Income Change" value={fmtChg(changes?.net_income).val} color={changes?.net_income?.value >= 0 ? '#15803d' : '#b91c1c'} bg={changes?.net_income?.value >= 0 ? '#f0fdf4' : '#fef2f2'} border={changes?.net_income?.value >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-code-branch" />
                         </div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                        <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                           <thead style={{ background: '#f8fafc' }}>
                             <tr>
                               <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700 }}>Account / Line</th>
@@ -945,6 +952,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                             <Row label="Net Income"           curr={c.net_income}                 comp={p.net_income}                 chg={changes?.net_income}         bold border />
                           </tbody>
                         </table>
+                        </div>
                       </div>
                     )
                   })() : (
@@ -957,13 +965,14 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
               {activeTab === 'pl_by_dept' && (
                 plDeptData ? (
                   <div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                       <KpiCard label="Total Revenue" value={fmt(plDeptData.total_revenue)} color="#15803d" bg="#f0fdf4" border="#bbf7d0" icon="fa-chart-line" />
                       <KpiCard label="Total Expenses" value={fmt(plDeptData.total_expenses)} color="#b91c1c" bg="#fef2f2" border="#fecaca" icon="fa-minus-circle" />
                       <KpiCard label="Net Income" value={fmt(plDeptData.net_income)} color={plDeptData.net_income >= 0 ? '#15803d' : '#b91c1c'} bg={plDeptData.net_income >= 0 ? '#f0fdf4' : '#fef2f2'} border={plDeptData.net_income >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-sitemap" />
                     </div>
                     {plDeptData.departments?.length > 0 ? (
-                      <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                      <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                         <thead style={{ background: '#f8fafc' }}>
                           <tr>
                             <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: 13, fontWeight: 700 }}>Department</th>
@@ -996,6 +1005,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                           </tr>
                         </tbody>
                       </table>
+                      </div>
                     ) : (
                       <div className={styles.emptyState}><i className="fas fa-sitemap"></i><h3>No department data</h3><p>Assign users to departments and record expenses to see department-level P&L</p></div>
                     )}
@@ -1031,7 +1041,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                           No budget data found. Create a budget period at <strong>Settings → Budgets</strong> and enter budget amounts per account to see variance analysis.
                         </div>
                       )}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                         <KpiCard label="Budgeted Net Income" value={fmt(budgetData.summary?.budgeted_net)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-tasks" />
                         <KpiCard label="Actual Net Income" value={fmt(budgetData.summary?.actual_net)} color={budgetData.summary?.actual_net >= 0 ? '#15803d' : '#b91c1c'} bg={budgetData.summary?.actual_net >= 0 ? '#f0fdf4' : '#fef2f2'} border={budgetData.summary?.actual_net >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-chart-bar" />
                         <KpiCard label="Net Variance" value={fmt(budgetData.summary?.net_variance)} color={budgetData.summary?.net_variance >= 0 ? '#15803d' : '#b91c1c'} bg={budgetData.summary?.net_variance >= 0 ? '#f0fdf4' : '#fef2f2'} border={budgetData.summary?.net_variance >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-balance-scale" />
@@ -1040,7 +1050,8 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                         lines?.length > 0 && (
                           <div key={section} style={{ marginBottom: 24 }}>
                             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: section === 'Revenue' ? '#15803d' : '#b91c1c', marginBottom: 8, borderBottom: `2px solid ${section === 'Revenue' ? '#bbf7d0' : '#fecaca'}`, paddingBottom: 6 }}>{section}</div>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
                               <thead><tr>
                                 {['Account', 'Budget', 'Actual', '$ Variance', '% Variance'].map(h => (
                                   <th key={h} style={{ padding: '8px 12px', textAlign: h === 'Account' ? 'left' : 'right', fontSize: 12, fontWeight: 700, color: '#64748b', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
@@ -1064,6 +1075,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                                 })}
                               </tbody>
                             </table>
+                            </div>
                           </div>
                         )
                       ))}
@@ -1120,19 +1132,19 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
 
                     return (
                       <div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                           <KpiCard label={`Assets (${bsCompDate2})`} value={fmt(bs2.assets.total)} color="#15803d" bg="#f0fdf4" border="#bbf7d0" icon="fa-university" />
                           <KpiCard label="Asset Change" value={(changes.total_assets.value >= 0 ? '+' : '') + fmt(changes.total_assets.value)} color={changes.total_assets.value >= 0 ? '#15803d' : '#b91c1c'} bg={changes.total_assets.value >= 0 ? '#f0fdf4' : '#fef2f2'} border={changes.total_assets.value >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-arrow-right" />
                           <KpiCard label={`Equity (${bsCompDate2})`} value={fmt(bs2.equity.total)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-chart-pie" />
                         </div>
-                        <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', gap: 8, padding: '10px 16px', background: '#f8fafc', fontWeight: 700, fontSize: 12, color: '#64748b' }}>
+                        <div style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'auto' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', gap: 8, padding: '10px 16px', background: '#f8fafc', fontWeight: 700, fontSize: 12, color: '#64748b', minWidth: 480 }}>
                             <span>Account</span>
                             <span style={{ textAlign: 'right' }}>{bsCompDate1}</span>
                             <span style={{ textAlign: 'right', color: '#2563eb' }}>{bsCompDate2}</span>
                             <span style={{ textAlign: 'right' }}>Change</span>
                           </div>
-                          <div style={{ padding: '12px 16px' }}>
+                          <div style={{ padding: '12px 16px', minWidth: 480 }}>
                             <BSSection title="Current Assets"      accounts={mergeAccounts(bs1.assets.current, bs2.assets.current)} color="#15803d" />
                             <BSSection title="Fixed Assets"        accounts={mergeAccounts(bs1.assets.fixed, bs2.assets.fixed)} color="#0369a1" />
                             <BSSection title="Current Liabilities" accounts={mergeAccounts(bs1.liabilities.current, bs2.liabilities.current)} color="#b91c1c" />
@@ -1152,12 +1164,13 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
               {activeTab === 'equity_changes' && (
                 equityData ? (
                   <div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                       <KpiCard label="Opening Equity" value={fmt(equityData.totals?.opening_balance)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-door-open" />
                       <KpiCard label="Period Net Income" value={fmt(equityData.period_net_income)} color={equityData.period_net_income >= 0 ? '#15803d' : '#b91c1c'} bg={equityData.period_net_income >= 0 ? '#f0fdf4' : '#fef2f2'} border={equityData.period_net_income >= 0 ? '#bbf7d0' : '#fecaca'} icon="fa-chart-bar" />
                       <KpiCard label="Closing Equity" value={fmt(equityData.totals?.closing_balance)} color="#7c3aed" bg="#f5f3ff" border="#ddd6fe" icon="fa-door-closed" />
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                       <thead style={{ background: '#f8fafc' }}>
                         <tr>
                           {['Account', 'Opening Balance', 'Net Income', 'Other Movements', 'Closing Balance'].map(h => (
@@ -1187,6 +1200,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ) : (
                   <div className={styles.emptyState}><i className="fas fa-chart-pie"></i><h3>Statement of Changes in Equity</h3><p>Select a date range and click "Run Report"</p></div>
@@ -1197,12 +1211,13 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
               {activeTab === 'cf_forecast' && (
                 forecastData ? (
                   <div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
                       <KpiCard label="Current Cash Balance" value={fmt(forecastData.current_cash)} color="#15803d" bg="#f0fdf4" border="#bbf7d0" icon="fa-wallet" />
                       <KpiCard label="13-Week Inflows" value={fmt(forecastData.summary?.total_inflows)} color="#1d4ed8" bg="#eff6ff" border="#bfdbfe" icon="fa-arrow-down" />
                       <KpiCard label="Projected Closing Cash" value={fmt(forecastData.summary?.closing_cash)} color={forecastData.summary?.closing_cash >= 0 ? '#7c3aed' : '#b91c1c'} bg={forecastData.summary?.closing_cash >= 0 ? '#f5f3ff' : '#fef2f2'} border={forecastData.summary?.closing_cash >= 0 ? '#ddd6fe' : '#fecaca'} icon="fa-calendar-alt" />
                     </div>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', borderRadius: 8, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
                       <thead style={{ background: '#f8fafc' }}>
                         <tr>
                           {['Week', 'Period', 'Expected Inflows', 'Expected Outflows', 'Net Flow', 'Running Balance'].map(h => (
@@ -1239,6 +1254,7 @@ export default function ReportsDashboard({ isOpen, onClose, currencySymbol = '$'
                         </tr>
                       </tfoot>
                     </table>
+                    </div>
                     <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 12 }}>
                       * Inflows = open invoice balances due each week. Outflows = open bill balances due each week. Actuals will differ based on payment timing.
                     </p>

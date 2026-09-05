@@ -529,4 +529,7 @@
   .headerRight { flex-wrap: wrap; }
   .summaryCard { min-width: 100%; }
   .searchBox { flex: 1; }
+  .tableWrap { overflow-x: auto; }
+  .table { min-width: 640px; }
+  .body { overflow-x: auto; }
 }

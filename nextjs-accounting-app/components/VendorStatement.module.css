@@ -474,10 +474,16 @@
 }
 
 /* ── Transaction Table ───────────────────────────────────────────────────── */
+.tableScroll {
+  overflow-x: auto;
+}
 .txTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+@media (max-width: 700px) {
+  .txTable { min-width: 560px; }
 }
 .txTable th {
   padding: 9px 12px;

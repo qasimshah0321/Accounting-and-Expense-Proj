@@ -173,7 +173,8 @@ export default function PendingApprovals({ isOpen, onClose, onCountChange, curre
               <p style={{ margin: 0, fontSize: 14 }}>No pending approvals — you're all caught up.</p>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 680, borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
                   <th style={thStyle}>Document</th>
@@ -252,6 +253,7 @@ export default function PendingApprovals({ isOpen, onClose, onCountChange, curre
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

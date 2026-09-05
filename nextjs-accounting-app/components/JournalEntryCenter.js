@@ -266,8 +266,8 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
             {loading && <div style={{ textAlign: 'center', padding: 20 }}><i className="fas fa-spinner fa-spin" /> Loading...</div>}
 
             {!loading && (
-              <div style={{ maxHeight: 500, overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <div style={{ maxHeight: 500, overflow: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
                       <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>JE #</th>
@@ -325,7 +325,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
         {/* ── View ──────────────────────────────────────────────────────────── */}
         {showForm && viewingEntry && (
           <div className={styles.popupContent}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 20 }}>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Entry No</span><div style={{ fontWeight: 600 }}>{viewingEntry.entry_no}</div></div>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Date</span><div style={{ fontWeight: 600 }}>{formatDate(viewingEntry.entry_date)}</div></div>
               <div><span style={{ color: '#64748b', fontSize: 13 }}>Status</span><div>{statusBadge(viewingEntry.status)}</div></div>
@@ -334,7 +334,8 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
               {viewingEntry.reference_type && <div><span style={{ color: '#64748b', fontSize: 13 }}>Type</span><div style={{ textTransform: 'capitalize' }}>{viewingEntry.reference_type}</div></div>}
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: '#f8fafc' }}>
                   <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>#</th>
@@ -368,6 +369,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
                 </tr>
               </tbody>
             </table>
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
               {viewingEntry.status !== 'reversed' && (
@@ -401,7 +403,7 @@ export default function JournalEntryCenter({ isOpen, onClose, currencySymbol = '
           <div className={styles.popupContent}>
             {error && <div style={{ color: '#dc2626', marginBottom: 10, padding: '8px 12px', background: '#fef2f2', borderRadius: 6 }}>{error}</div>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 20 }}>
               <div>
                 <label style={{ display: 'block', fontWeight: 600, marginBottom: 4, fontSize: 13 }}>JE Number</label>
                 <input

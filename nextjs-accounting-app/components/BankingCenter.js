@@ -539,7 +539,8 @@ export default function BankingCenter({ isOpen, onClose }) {
                     </div>
 
                     {recData.outstanding_transactions?.length > 0 ? (
-                      <table className={styles.invoiceTable}>
+                      <div className={styles.tableContainer}>
+                      <table className={styles.invoiceTable} style={{ minWidth: 560 }}>
                         <thead>
                           <tr><th>✓</th><th>Date</th><th>Description</th><th>Type</th><th style={{ textAlign: 'right' }}>Amount</th><th>Reference</th></tr>
                         </thead>
@@ -569,6 +570,7 @@ export default function BankingCenter({ isOpen, onClose }) {
                           })}
                         </tbody>
                       </table>
+                      </div>
                     ) : (
                       <div className={styles.emptyState}><i className="fas fa-check-circle" style={{ color: '#16a34a' }}></i><h3>No outstanding transactions</h3></div>
                     )}
@@ -581,7 +583,8 @@ export default function BankingCenter({ isOpen, onClose }) {
                     {recData.previous_reconciliations?.length > 0 && (
                       <>
                         <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: '#374151' }}>Previous Reconciliations</h4>
-                        <table className={styles.invoiceTable}>
+                        <div className={styles.tableContainer}>
+                        <table className={styles.invoiceTable} style={{ minWidth: 560 }}>
                           <thead><tr><th>Statement Date</th><th>Statement Balance</th><th>Reconciled Balance</th><th>Status</th><th>Date Completed</th></tr></thead>
                           <tbody>
                             {recData.previous_reconciliations.map(r => (
@@ -595,6 +598,7 @@ export default function BankingCenter({ isOpen, onClose }) {
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       </>
                     )}
                   </>
@@ -614,7 +618,7 @@ export default function BankingCenter({ isOpen, onClose }) {
               <button className={styles.closeBtn} onClick={() => setShowAccountForm(false)}><i className="fas fa-times"></i></button>
             </div>
             {accountFormError && <div className={styles.errorBanner} style={{ marginBottom: 16 }}><i className="fas fa-exclamation-circle"></i> {accountFormError}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               {[
                 { label: 'Account Name *', field: 'account_name', placeholder: 'e.g. Main Checking' },
                 { label: 'Bank Name *', field: 'bank_name', placeholder: 'e.g. Chase Bank' },
@@ -690,7 +694,7 @@ export default function BankingCenter({ isOpen, onClose }) {
               <button className={styles.closeBtn} onClick={() => setShowTxForm(false)}><i className="fas fa-times"></i></button>
             </div>
             {txFormError && <div className={styles.errorBanner} style={{ marginBottom: 16 }}><i className="fas fa-exclamation-circle"></i> {txFormError}</div>}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13, color: '#374151' }}>Date *</label>
                 <input type="date" className={styles.formControlStandard} value={txForm.transaction_date} onChange={e => setTxForm(f => ({ ...f, transaction_date: e.target.value }))} />
@@ -706,7 +710,7 @@ export default function BankingCenter({ isOpen, onClose }) {
               <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13, color: '#374151' }}>Description *</label>
               <input className={styles.formControlStandard} value={txForm.description} onChange={e => setTxForm(f => ({ ...f, description: e.target.value }))} placeholder="Transaction description" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: 16 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13, color: '#374151' }}>Amount * <small style={{ color: '#94a3b8', fontWeight: 400 }}>(always positive)</small></label>
                 <input type="number" className={styles.formControlStandard} value={txForm.amount} onChange={e => setTxForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" step="0.01" min="0" />
@@ -725,7 +729,7 @@ export default function BankingCenter({ isOpen, onClose }) {
                 </select>
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: 16 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500, fontSize: 13, color: '#374151' }}>Reference No</label>
                 <input className={styles.formControlStandard} value={txForm.reference_no} onChange={e => setTxForm(f => ({ ...f, reference_no: e.target.value }))} placeholder="Optional" />

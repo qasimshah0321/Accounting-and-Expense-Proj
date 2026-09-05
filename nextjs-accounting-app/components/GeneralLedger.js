@@ -310,7 +310,8 @@ export default function GeneralLedger({ isOpen, onClose, currencySymbol = '$', i
                     </div>
 
                     {/* Transactions table */}
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead>
                         <tr style={{ background: '#f8fafc' }}>
                           <th style={{ padding: '9px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Date</th>
@@ -361,6 +362,7 @@ export default function GeneralLedger({ isOpen, onClose, currencySymbol = '$', i
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ))}
               </div>

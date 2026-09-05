@@ -918,3 +918,110 @@
 }
 .btnSave:hover:not(:disabled) { background: #15803d; }
 .btnSave:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .topBar {
+    padding: 0 14px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .pageTitle {
+    font-size: 15px;
+  }
+
+  .topBarRight {
+    flex-wrap: wrap;
+  }
+
+  .btnPrimary span,
+  .btnSecondary span {
+    display: none;
+  }
+
+  .body {
+    padding: 14px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .searchBox {
+    max-width: none;
+  }
+
+  .tableWrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+
+  .formOverlay {
+    padding: 0;
+  }
+
+  .formPanel {
+    max-width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .formHeader {
+    padding: 0 14px;
+  }
+
+  .formTitle {
+    font-size: 14px;
+  }
+
+  .btnHeaderAction span {
+    display: none;
+  }
+
+  .infoSection {
+    grid-template-columns: 1fr;
+  }
+
+  .infoCol:first-child {
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .lineSection {
+    overflow-x: auto;
+  }
+
+  .lineTable {
+    min-width: 560px;
+  }
+
+  .totalsRow {
+    flex-wrap: wrap;
+  }
+
+  .totalCell {
+    flex: 1 1 33%;
+  }
+
+  .formFooter {
+    flex-wrap: wrap;
+  }
+
+  .btnCancel,
+  .btnSave {
+    flex: 1;
+    justify-content: center;
+  }
+}

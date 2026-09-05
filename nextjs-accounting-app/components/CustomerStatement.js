@@ -324,6 +324,7 @@ export default function CustomerStatement({ isOpen, onClose, customer: customerP
                   <p>No transactions in this period.</p>
                 </div>
               ) : (
+                <div className={styles.tableScroll}>
                 <table className={styles.txTable}>
                   <thead>
                     <tr>
@@ -377,6 +378,7 @@ export default function CustomerStatement({ isOpen, onClose, customer: customerP
                     </tr>
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </div>

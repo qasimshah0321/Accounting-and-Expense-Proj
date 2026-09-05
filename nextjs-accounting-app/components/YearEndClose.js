@@ -135,7 +135,7 @@ export default function YearEndClose({ isOpen, onClose, currencySymbol = '$' }) 
           {preview && (
             <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden', marginBottom: 20 }}>
               {/* Summary bar */}
-              <div style={{ background: '#f8fafc', padding: '14px 18px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ background: '#f8fafc', padding: '14px 18px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, borderBottom: '1px solid #e2e8f0' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 12, color: '#64748b', marginBottom: 3 }}>Total Revenue</div>
                   <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace', color: '#166534' }}>{fmt(preview.totalRevenue)}</div>
@@ -151,8 +151,8 @@ export default function YearEndClose({ isOpen, onClose, currencySymbol = '$' }) 
               </div>
 
               {/* Account list */}
-              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ maxHeight: 260, overflow: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#f1f5f9', position: 'sticky', top: 0 }}>
                       <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>Account</th>
@@ -230,7 +230,8 @@ export default function YearEndClose({ isOpen, onClose, currencySymbol = '$' }) 
           {history.length > 0 && (
             <div style={{ marginTop: 24, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
               <h4 style={{ margin: '0 0 12px', fontSize: 14, color: '#374151' }}>Previous Year-End Closes</h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Entry No</th>
@@ -250,6 +251,7 @@ export default function YearEndClose({ isOpen, onClose, currencySymbol = '$' }) 
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

@@ -73,8 +73,8 @@ export default function TrialBalance({ isOpen, onClose, currencySymbol = '$' }) 
                 </div>
               </div>
 
-              <div style={{ maxHeight: 450, overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <div style={{ maxHeight: 450, overflow: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
                       <th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Account #</th>

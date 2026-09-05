@@ -2106,11 +2106,11 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       {/* ── Partial Invoice Modal ─────────────────────────────────────────── */}
       {showPartialModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 28, minWidth: 640, maxWidth: 820, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+          <div style={{ background: '#fff', borderRadius: 10, padding: 28, width: '95%', maxWidth: 820, maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 32px rgba(0,0,0,0.22)', boxSizing: 'border-box' }}>
             <h3 style={{ margin: '0 0 4px', fontSize: 16, color: '#111' }}>Partial Invoice — Set Quantities</h3>
             <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6b7280' }}>Enter the quantity to invoice for each item. Backlog is the remaining undelivered quantity.</p>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <div style={{ overflow: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={{ padding: '9px 10px', textAlign: 'left', fontWeight: 600, color: '#374151', borderBottom: '2px solid #e5e7eb' }}>SO #</th>

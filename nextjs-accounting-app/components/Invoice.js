@@ -35,6 +35,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
   const [shipTo, setShipTo] = useState('')
   const [referenceNo, setReferenceNo] = useState('')
   const [notes, setNotes] = useState('')
+  const invoiceImportEnabled = companyProfile?.invoice_import_enabled !== false
   // ─── FBR (Pakistan) buyer/header state ─────────────────────────────────────
   const fbrEnabled = !!companyProfile?.fbr_enabled
   const [buyerNtn, setBuyerNtn] = useState('')
@@ -1370,7 +1371,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                 <h2>{viewMode ? `View Invoice ${editingInvoice?.invoice_no || ''}` : editingInvoice ? `Edit Invoice ${editingInvoice.invoice_no || ''}` : 'Create Invoice'}</h2>
               </div>
               <div className={styles.headerRight}>
-                {!viewMode && (
+                {!viewMode && invoiceImportEnabled && (
                   <>
                     <input
                       type="file"

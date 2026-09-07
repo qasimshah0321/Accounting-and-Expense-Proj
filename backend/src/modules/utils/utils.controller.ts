@@ -43,7 +43,7 @@ export const getCompanyInfo = async (req: AuthRequest, res: Response, next: Next
   try {
     const [rows] = await pool.query(
       `SELECT id, name, email, phone, address, city, state, country, postal_code, tax_number, currency, timezone,
-              dn_requirement, grn_requirement, created_at,
+              dn_requirement, grn_requirement, invoice_import_enabled, created_at,
               tax_authority, fbr_enabled, fbr_sandbox_mode, fbr_default_scenario_id, pra_enabled, pra_sandbox_mode
        FROM companies WHERE id=?`,
       [getCompanyId(req)]
@@ -55,7 +55,7 @@ export const getCompanyInfo = async (req: AuthRequest, res: Response, next: Next
 export const updateCompanyInfo = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const companyId = getCompanyId(req);
-    const allowed = ['name', 'email', 'phone', 'address', 'city', 'state', 'country', 'postal_code', 'tax_number', 'currency', 'timezone', 'dn_requirement', 'grn_requirement'];
+    const allowed = ['name', 'email', 'phone', 'address', 'city', 'state', 'country', 'postal_code', 'tax_number', 'currency', 'timezone', 'dn_requirement', 'grn_requirement', 'invoice_import_enabled'];
     const fields = Object.keys(req.body).filter(k => allowed.includes(k));
     if (!fields.length) { sendSuccess(res, null, 'No changes'); return; }
     const setClause = fields.map(f => `${f}=?`).join(', ');
@@ -64,7 +64,7 @@ export const updateCompanyInfo = async (req: AuthRequest, res: Response, next: N
       [...fields.map(f => req.body[f]), companyId]
     );
     const [rows] = await pool.query(
-      `SELECT id,name,email,phone,address,city,state,country,postal_code,tax_number,currency,timezone,dn_requirement,grn_requirement,
+      `SELECT id,name,email,phone,address,city,state,country,postal_code,tax_number,currency,timezone,dn_requirement,grn_requirement,invoice_import_enabled,
               tax_authority, fbr_enabled, fbr_sandbox_mode, fbr_default_scenario_id, pra_enabled, pra_sandbox_mode
        FROM companies WHERE id=?`,
       [companyId]

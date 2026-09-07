@@ -20,6 +20,7 @@ const emptyProfile = {
   tax_number: '',
   dn_requirement: 'optional',
   grn_requirement: 'optional',
+  invoice_import_enabled: true,
   // Only one of FBR / PRA can be active at a time — see active_tax_authority.
   active_tax_authority: 'none', // 'none' | 'fbr' | 'pra'
   fbr_enabled: false,
@@ -88,6 +89,7 @@ export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
         tax_number: data.tax_number || '',
         dn_requirement: data.dn_requirement || 'optional',
         grn_requirement: data.grn_requirement || 'optional',
+        invoice_import_enabled: data.invoice_import_enabled === undefined ? true : !!data.invoice_import_enabled,
         active_tax_authority: activeTaxAuthority,
         fbr_enabled: !!fbr.fbr_enabled,
         fbr_sandbox_mode: fbr.fbr_sandbox_mode === undefined ? true : !!fbr.fbr_sandbox_mode,
@@ -148,6 +150,7 @@ export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
         tax_number: form.tax_number,
         dn_requirement: form.dn_requirement,
         grn_requirement: form.grn_requirement,
+        invoice_import_enabled: form.invoice_import_enabled,
       }
       await api.updateCompanyProfile(profileData)
       // FBR / PRA config — enabled flags derive from the single active-authority
@@ -413,6 +416,16 @@ export default function CompanySettings({ isOpen, onClose, onCurrencyChange }) {
                     {form.dn_requirement === 'mandatory'
                       ? 'Mandatory mode: Invoices can only be created from shipped/delivered Delivery Notes. Inventory is deducted when Delivery Notes are shipped (not at invoice approval).'
                       : 'Optional mode: Invoices can be created directly from Sales Orders or entered manually. Inventory is deducted at invoice approval if no Delivery Note was used.'}
+                  </p>
+                </div>
+                <div className={styles.fieldFull}>
+                  <label>Invoice Import from Image/PDF</label>
+                  <select value={form.invoice_import_enabled ? 'shown' : 'hidden'} onChange={e => handleChange('invoice_import_enabled', e.target.value === 'shown')}>
+                    <option value="shown">Show - Users can import invoice data from an image or PDF</option>
+                    <option value="hidden">Hide - Remove the Import button from the Invoice form</option>
+                  </select>
+                  <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#6b7280', lineHeight: 1.5 }}>
+                    Controls whether the "Import from Image/PDF" button appears on the Invoice form for this company.
                   </p>
                 </div>
               </div>

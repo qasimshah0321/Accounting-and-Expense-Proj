@@ -329,6 +329,18 @@ export const numberToPaymentTerms = (days) => {
   return 'Net 30';
 };
 
+// Computes a YYYY-MM-DD due date from a payment-terms label + a YYYY-MM-DD
+// invoice/document date. Returns '' when the date isn't a valid, complete date
+// (e.g. while the user is still typing it) so callers can safely call this on
+// every keystroke without producing "Invalid Date" errors.
+export const calculateDueDate = (terms, dateStr) => {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return '';
+  const date = new Date(dateStr + 'T00:00:00');
+  if (isNaN(date.getTime())) return '';
+  date.setDate(date.getDate() + paymentTermsToNumber(terms));
+  return date.toISOString().slice(0, 10);
+};
+
 export const productTypeToBackend = (type) => {
   const map = { Services: 'service', 'Inventory item': 'inventory', 'Non-Inventory': 'non-inventory' };
   return map[type] || 'service';

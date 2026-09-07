@@ -135,9 +135,9 @@ export const createInvoice = async (companyId: string, userId: string, _userName
     const grandTotal = subtotal + taxAmount + (data.shipping_charges || 0) - (data.discount_amount || 0);
 
     await client.query(
-      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,po_number,reference_no,invoice_date,due_date,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,amount_due,terms_and_conditions,notes,internal_notes,buyer_ntn,buyer_cnic,buyer_business_name,buyer_province,buyer_registration_type,fbr_scenario_id,fbr_invoice_type,pra_invoice_type,pra_ref_usin,pra_payment_mode,created_by,updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,'draft','unpaid',?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [companyId, invNo, data.customer_id, cust.name, data.bill_to || cust.billing_address, data.ship_to || cust.shipping_address, data.sales_order_id || null, data.delivery_note_id || null, data.po_number || null, data.reference_no || null, data.invoice_date, data.due_date, subtotal, data.tax_id || null, data.tax_rate || 0, taxAmount, data.discount_amount || 0, data.shipping_charges || 0, grandTotal, grandTotal, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, buyerNtn, buyerCnic, buyerBusinessName, buyerProvince, buyerRegistrationType, data.fbr_scenario_id || null, data.fbr_invoice_type || 'Sale Invoice', data.pra_invoice_type || 'New', data.pra_ref_usin || null, data.pra_payment_mode || 1, userId, userId]
+      `INSERT INTO invoices (company_id,invoice_no,customer_id,customer_name,bill_to,ship_to,sales_order_id,delivery_note_id,po_number,reference_no,invoice_date,due_date,terms,status,payment_status,subtotal,tax_id,tax_rate,tax_amount,discount_amount,shipping_charges,grand_total,amount_paid,amount_due,terms_and_conditions,notes,internal_notes,buyer_ntn,buyer_cnic,buyer_business_name,buyer_province,buyer_registration_type,fbr_scenario_id,fbr_invoice_type,pra_invoice_type,pra_ref_usin,pra_payment_mode,created_by,updated_by)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'draft','unpaid',?,?,?,?,?,?,?,0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [companyId, invNo, data.customer_id, cust.name, data.bill_to || cust.billing_address, data.ship_to || cust.shipping_address, data.sales_order_id || null, data.delivery_note_id || null, data.po_number || null, data.reference_no || null, data.invoice_date, data.due_date, data.terms || null, subtotal, data.tax_id || null, data.tax_rate || 0, taxAmount, data.discount_amount || 0, data.shipping_charges || 0, grandTotal, grandTotal, data.terms_and_conditions || null, data.notes || null, data.internal_notes || null, buyerNtn, buyerCnic, buyerBusinessName, buyerProvince, buyerRegistrationType, data.fbr_scenario_id || null, data.fbr_invoice_type || 'Sale Invoice', data.pra_invoice_type || 'New', data.pra_ref_usin || null, data.pra_payment_mode || 1, userId, userId]
     );
 
     const [invRows] = await client.query('SELECT * FROM invoices WHERE company_id=? AND invoice_no=? ORDER BY created_at DESC LIMIT 1', [companyId, invNo]);
@@ -267,6 +267,9 @@ export const updateInvoice = async (companyId: string, invoiceId: string, userId
     const setIf = (key: string, col: string) => {
       if (data[key] !== undefined) { fbrSet.push(`${col}=?`); fbrParams.push(data[key] || null); }
     };
+    setIf('invoice_date', 'invoice_date');
+    setIf('due_date', 'due_date');
+    setIf('terms', 'terms');
     setIf('buyer_ntn', 'buyer_ntn');
     setIf('buyer_cnic', 'buyer_cnic');
     setIf('buyer_business_name', 'buyer_business_name');

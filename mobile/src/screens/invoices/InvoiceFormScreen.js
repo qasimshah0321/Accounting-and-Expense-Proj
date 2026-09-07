@@ -4,9 +4,11 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
   Modal, FlatList,
 } from 'react-native';
-import { invoicesAPI, customersAPI, productsAPI, taxesAPI, salesOrdersAPI } from '../../services/api';
+import { invoicesAPI, customersAPI, productsAPI, taxesAPI, salesOrdersAPI, calculateDueDate } from '../../services/api';
 import LineItemsEditor, { emptyLine, calcLineTotal } from '../../components/LineItemsEditor';
 import SearchableDropdown from '../../components/SearchableDropdown';
+
+const TERMS_OPTIONS = ['Due on Receipt', 'Net 15', 'Net 30', 'Net 60'];
 
 // Convert LineItemsEditor's internal format → backend payload format
 const toPayloadLine = (l) => {
@@ -46,6 +48,7 @@ const InvoiceFormScreen = ({ route, navigation }) => {
     invoice_no: '',
     invoice_date: new Date().toISOString().slice(0, 10),
     due_date: '',
+    terms: 'Net 30',
     notes: '',
     shipping_charges: '0',
   });
@@ -90,6 +93,7 @@ const InvoiceFormScreen = ({ route, navigation }) => {
           invoice_no: inv.invoice_no || '',
           invoice_date: (inv.invoice_date || '').slice(0, 10),
           due_date: (inv.due_date || '').slice(0, 10),
+          terms: inv.terms || 'Net 30',
           notes: inv.notes || '',
           shipping_charges: String(inv.shipping_charges || '0'),
         });
@@ -113,15 +117,24 @@ const InvoiceFormScreen = ({ route, navigation }) => {
           const nn = await invoicesAPI.getNextNumber();
           setForm((f) => ({ ...f, invoice_no: nn.data?.next_number || nn.data?.invoice_no || '' }));
         } catch (_) {}
-        const due = new Date();
-        due.setDate(due.getDate() + 30);
-        setForm((f) => ({ ...f, due_date: due.toISOString().slice(0, 10) }));
+        setForm((f) => ({ ...f, due_date: calculateDueDate(f.terms, f.invoice_date) }));
       }
     } catch (err) {
       Alert.alert('Error', err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Recalculate due date from terms + invoice date. Invoice date is typed
+  // character-by-character, so due date is only recomputed once it's a
+  // complete valid date (onEndEditing), not on every keystroke.
+  const handleTermsChange = (newTerms) => {
+    setForm((f) => ({ ...f, terms: newTerms, due_date: calculateDueDate(newTerms, f.invoice_date) || f.due_date }));
+  };
+
+  const handleInvoiceDateBlur = () => {
+    setForm((f) => ({ ...f, due_date: calculateDueDate(f.terms, f.invoice_date) || f.due_date }));
   };
 
   // When customer is selected, fetch their confirmed SOs
@@ -299,6 +312,7 @@ const InvoiceFormScreen = ({ route, navigation }) => {
         invoice_no: form.invoice_no,
         invoice_date: form.invoice_date,
         due_date: form.due_date,
+        terms: form.terms,
         notes: form.notes,
         shipping_charges: parseFloat(form.shipping_charges) || 0,
         status,
@@ -369,9 +383,23 @@ const InvoiceFormScreen = ({ route, navigation }) => {
             style={styles.input}
             value={form.invoice_date}
             onChangeText={(v) => setForm((f) => ({ ...f, invoice_date: v }))}
+            onEndEditing={handleInvoiceDateBlur}
             placeholder="2026-01-01"
             placeholderTextColor="#999"
           />
+
+          <Text style={styles.label}>Terms</Text>
+          <View style={styles.termsRow}>
+            {TERMS_OPTIONS.map((t) => (
+              <TouchableOpacity
+                key={t}
+                style={[styles.termChip, form.terms === t && styles.termChipActive]}
+                onPress={() => handleTermsChange(t)}
+              >
+                <Text style={[styles.termChipText, form.terms === t && styles.termChipTextActive]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={styles.label}>Due Date (YYYY-MM-DD)</Text>
           <TextInput
@@ -633,6 +661,14 @@ const styles = StyleSheet.create({
   },
   soLoadingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
   soLoadingText: { fontSize: 12, color: '#666' },
+  termsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  termChip: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20,
+    borderWidth: 1, borderColor: '#ddd', backgroundColor: '#fafafa',
+  },
+  termChipActive: { backgroundColor: '#1a237e', borderColor: '#1a237e' },
+  termChipText: { fontSize: 12, color: '#666', fontWeight: '600' },
+  termChipTextActive: { color: '#fff' },
   totalsSection: {
     backgroundColor: '#fff', marginHorizontal: 12, marginTop: 10,
     borderRadius: 10, padding: 16, elevation: 2,

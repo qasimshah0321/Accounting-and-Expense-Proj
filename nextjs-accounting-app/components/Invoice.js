@@ -120,7 +120,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     }
   }, [isOpen, loadInvoices, loadCustomers])
 
-  // ─── Auto-calculate due date only for new invoices ────────────────────────
+  // ─── Auto-calculate due date from payment terms + invoice date ────────────
   const calculateDueDate = (selectedTerms, selectedInvoiceDate) => {
     if (!selectedInvoiceDate) return ''
     const date = new Date(selectedInvoiceDate)
@@ -134,11 +134,20 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     return date.toISOString().split('T')[0]
   }
 
-  useEffect(() => {
-    if (!editingInvoice) {
-      setDueDate(calculateDueDate(terms, invoiceDate))
-    }
-  }, [terms, invoiceDate])
+  // Recalculate due date whenever terms or invoice date is changed by the user
+  // (see onChange handlers on the Terms/Invoice Date fields below). Not done via
+  // a useEffect keyed on [terms, invoiceDate] because that would also fire right
+  // after populateForm() loads an existing invoice for edit/view, clobbering the
+  // saved due_date with a freshly recomputed one.
+  const handleTermsChange = (newTerms) => {
+    setTerms(newTerms)
+    setDueDate(calculateDueDate(newTerms, invoiceDate))
+  }
+
+  const handleInvoiceDateChange = (newInvoiceDate) => {
+    setInvoiceDate(newInvoiceDate)
+    setDueDate(calculateDueDate(terms, newInvoiceDate))
+  }
 
   // ─── Click-outside handlers ───────────────────────────────────────────────
   useEffect(() => {
@@ -182,9 +191,10 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setSelectedCustomer('')
     setSelectedCustomerId(null)
     setCustomerSearchText('')
-    setInvoiceDate(new Date().toISOString().split('T')[0])
-    setDueDate('')
+    const today = new Date().toISOString().split('T')[0]
+    setInvoiceDate(today)
     setTerms('Net 30')
+    setDueDate(calculateDueDate('Net 30', today))
     setBillTo('')
     setShipTo('')
     setReferenceNo('')
@@ -227,7 +237,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
     setShipTo(invoice.ship_to || '')
     setReferenceNo(invoice.reference_no || '')
     setNotes(invoice.notes || '')
-    setTerms('Net 30')
+    setTerms(invoice.terms || 'Net 30')
     setBuyerNtn(invoice.buyer_ntn || '')
     setBuyerCnic(invoice.buyer_cnic || '')
     setBuyerProvince(invoice.buyer_province || '')
@@ -785,6 +795,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
       customer_id: selectedCustomerId,
       invoice_date: invoiceDate,
       due_date: dueDate,
+      terms: terms || undefined,
       reference_no: referenceNo || undefined,
       bill_to: billTo,
       ship_to: shipTo,
@@ -1609,7 +1620,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                         <select
                           className={styles.formControlStandard}
                           value={terms}
-                          onChange={(e) => setTerms(e.target.value)}
+                          onChange={(e) => handleTermsChange(e.target.value)}
                           disabled={viewMode}
                         >
                           <option>Net 30</option>
@@ -1624,7 +1635,7 @@ export default function Invoice({ isOpen, onClose, taxes, onTaxUpdate, onDirtyCh
                           type="date"
                           className={styles.formControlStandard}
                           value={invoiceDate}
-                          onChange={(e) => setInvoiceDate(e.target.value)}
+                          onChange={(e) => handleInvoiceDateChange(e.target.value)}
                           readOnly={viewMode}
                         />
                       </div>

@@ -36,6 +36,7 @@ export const createInvoiceSchema = z.object({
   reference_no: z.string().optional(),
   invoice_date: z.string().min(1),
   due_date: z.string().min(1),
+  terms: z.string().optional(),
   bill_to: z.string().optional(),
   ship_to: z.string().optional(),
   // FBR Digital Invoicing (buyer/header) — optional; default from customer where absent

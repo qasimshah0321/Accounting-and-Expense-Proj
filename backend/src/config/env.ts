@@ -38,7 +38,7 @@ export const config = {
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'AccountPro <noreply@candydada.com>',
+    from: process.env.SMTP_FROM || 'ZeroPoint <noreply@candydada.com>',
   },
   // Pakistan FBR Digital Invoicing (DI) API — PRAL Technical Spec v1.12.
   // Endpoints are identical for sandbox and production (routing is by token +

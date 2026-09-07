@@ -1,11 +1,11 @@
-// Service Worker for Web Push Notifications — AccountPro ERP
+// Service Worker for Web Push Notifications — ZeroPoint ERP
 
 self.addEventListener('push', (event) => {
   let data = {}
   try {
     data = event.data ? event.data.json() : {}
   } catch (e) {
-    data = { title: 'AccountPro', body: event.data ? event.data.text() : '' }
+    data = { title: 'ZeroPoint', body: event.data ? event.data.text() : '' }
   }
 
   const options = {
@@ -22,7 +22,7 @@ self.addEventListener('push', (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'AccountPro', options)
+    self.registration.showNotification(data.title || 'ZeroPoint', options)
   )
 
   // Notify open pages so they can refresh the order list immediately

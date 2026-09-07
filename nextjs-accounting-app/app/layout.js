@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'AccountPro - Accounting Software',
+  title: 'ZeroPoint - Accounting Software',
   description: 'Professional accounting software for your business',
 }
 

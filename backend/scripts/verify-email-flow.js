@@ -86,7 +86,7 @@ async function main() {
       from: smtpCfg.from,
       to: 'qasim@candydada.com',
       subject: '[Test] Order Update: SO-007',
-      html: `<p>This is a test email from the AccountPro ERP verification script.</p>
+      html: `<p>This is a test email from the ZeroPoint ERP verification script.</p>
              <p>Your order <strong>SO-007</strong> status has been updated to <strong>Confirmed</strong>.</p>`,
     });
     console.log('TEST EMAIL SENT OK');

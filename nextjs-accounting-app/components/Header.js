@@ -106,7 +106,7 @@ export default function Header({ onMenuToggle, onLogout, user, companyName, onOp
           <div className={styles.logoIcon}>
             <i className="fas fa-circle"></i>
           </div>
-          <span className={styles.logoText}>AccountPro</span>
+          <span className={styles.logoText}>ZeroPoint</span>
         </div>
         <div className={styles.companyName}>{companyName || 'My Company'}</div>
       </div>

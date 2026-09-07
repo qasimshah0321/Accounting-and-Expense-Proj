@@ -46,7 +46,7 @@ async function emailCustomer(conn, companyId, customerId, subject, bodyText) {
   const html = `<!DOCTYPE html><html><body style="font-family:Arial;font-size:14px;">
     <h2 style="color:#2CA01C;">${subject}</h2>
     <p>${bodyText}</p>
-    <p style="color:#94a3b8;font-size:12px;">AccountPro ERP — automated notification</p>
+    <p style="color:#94a3b8;font-size:12px;">ZeroPoint ERP — automated notification</p>
   </body></html>`;
 
   for (const row of rows) {

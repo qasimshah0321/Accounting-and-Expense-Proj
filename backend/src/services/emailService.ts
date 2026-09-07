@@ -27,7 +27,7 @@ function getTransporter(): any {
 
 // ─── HTML email template ─────────────────────────────────────────────────────
 
-function buildHtml(title: string, body: string, companyName = 'AccountPro'): string {
+function buildHtml(title: string, body: string, companyName = 'ZeroPoint'): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -64,7 +64,7 @@ function buildHtml(title: string, body: string, companyName = 'AccountPro'): str
     <div class="title">${title}</div>
     <div class="msg">${body}</div>
   </div>
-  <div class="foot">This is an automated notification from ${companyName} &bull; AccountPro ERP</div>
+  <div class="foot">This is an automated notification from ${companyName} &bull; ZeroPoint ERP</div>
 </div>
 </body>
 </html>`;
@@ -83,8 +83,8 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
 async function getCompanyName(companyId: string): Promise<string> {
   try {
     const [rows] = await pool.query('SELECT name FROM companies WHERE id=? LIMIT 1', [companyId]);
-    return (rows as any[])[0]?.name || 'AccountPro';
-  } catch { return 'AccountPro'; }
+    return (rows as any[])[0]?.name || 'ZeroPoint';
+  } catch { return 'ZeroPoint'; }
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────

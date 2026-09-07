@@ -1,4 +1,4 @@
-# AccountPro - Next.js Accounting Software
+# ZeroPoint - Next.js Accounting Software
 
 A modern, responsive accounting software frontend built with Next.js, featuring a QuickBooks-inspired design and EasyAccount menu structure.
 

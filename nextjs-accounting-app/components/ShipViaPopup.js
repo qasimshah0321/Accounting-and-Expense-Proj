@@ -14,7 +14,7 @@ export default function ShipViaPopup({ isOpen, onClose, onSave, editShipVia }) {
       setFormData({
         shipViaName: editShipVia.name || '',
         description: editShipVia.description || '',
-        isActive: editShipVia.is_active !== false,
+        isActive: !!editShipVia.is_active,
       })
     } else {
       setFormData({ shipViaName: '', description: '', isActive: true })

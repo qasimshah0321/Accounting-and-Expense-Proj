@@ -43,8 +43,8 @@ const SalesOrderFormScreen = ({ route, navigation }) => {
       ]);
       setCustomers(custRes.data?.customers || custRes.data?.items || []);
       setProducts(prodRes.data?.products || prodRes.data?.items || []);
-      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => t.is_active !== false));
-      setShipVias((svRes.data?.ship_vias || svRes.data?.items || []).filter((s) => s.is_active !== false));
+      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => !!t.is_active));
+      setShipVias((svRes.data?.ship_vias || svRes.data?.items || []).filter((s) => !!s.is_active));
 
       if (isEdit) {
         const res = await salesOrdersAPI.getById(editId);

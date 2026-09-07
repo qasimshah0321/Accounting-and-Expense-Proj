@@ -39,7 +39,7 @@ const BillFormScreen = ({ route, navigation }) => {
       ]);
       setVendors(vendRes.data?.vendors || vendRes.data?.items || []);
       setProducts(prodRes.data?.products || prodRes.data?.items || []);
-      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => t.is_active !== false));
+      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => !!t.is_active));
 
       if (isEdit) {
         const res = await billsAPI.getById(editId);

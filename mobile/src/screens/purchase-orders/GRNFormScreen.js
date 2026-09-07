@@ -57,7 +57,7 @@ const GRNFormScreen = ({ route, navigation }) => {
       setVendors(vRes.data?.vendors || vRes.data?.items || []);
       setPurchaseOrders(poRes.data?.purchase_orders || poRes.data?.items || []);
       setProducts(pRes.data?.products || pRes.data?.items || []);
-      setTaxes((tRes.data?.taxes || tRes.data?.items || []).filter((t) => t.is_active !== false));
+      setTaxes((tRes.data?.taxes || tRes.data?.items || []).filter((t) => !!t.is_active));
 
       if (!isEdit) {
         try {

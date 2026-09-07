@@ -82,7 +82,7 @@ const InvoiceFormScreen = ({ route, navigation }) => {
       setCustomers(custRes.data?.customers || custRes.data?.items || []);
       setProducts(prodRes.data?.products || prodRes.data?.items || []);
       const taxList = taxRes.data?.taxes || taxRes.data?.items || [];
-      setTaxes(taxList.filter((t) => t.is_active !== false));
+      setTaxes(taxList.filter((t) => !!t.is_active));
 
       if (isEdit) {
         const res = await invoicesAPI.getById(editId);

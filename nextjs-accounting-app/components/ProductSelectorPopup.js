@@ -16,7 +16,7 @@ export default function ProductSelectorPopup({ isOpen, onClose, products = [], o
   }, [isOpen])
 
   const filtered = useMemo(() => {
-    const active = products.filter(p => p.is_active !== false && p.is_for_sale !== false)
+    const active = products.filter(p => !!p.is_active && !!p.is_for_sale)
     if (!search.trim()) return active
     const q = search.toLowerCase()
     return active.filter(p =>

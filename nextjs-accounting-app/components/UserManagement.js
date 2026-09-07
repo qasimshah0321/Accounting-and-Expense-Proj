@@ -328,8 +328,8 @@ function UsersTab({ toast }) {
                         {editActive ? 'Active' : 'Inactive'}
                       </label>
                     ) : (
-                      <span style={{ padding:'3px 10px', borderRadius:12, fontSize:11, fontWeight:600, background: user.is_active !== false ? '#dcfce7' : '#fee2e2', color: user.is_active !== false ? '#16a34a' : '#dc2626' }}>
-                        {user.is_active !== false ? 'Active' : 'Inactive'}
+                      <span style={{ padding:'3px 10px', borderRadius:12, fontSize:11, fontWeight:600, background: !!user.is_active ? '#dcfce7' : '#fee2e2', color: !!user.is_active ? '#16a34a' : '#dc2626' }}>
+                        {!!user.is_active ? 'Active' : 'Inactive'}
                       </span>
                     )}
                   </td>
@@ -342,7 +342,7 @@ function UsersTab({ toast }) {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => { setEditingId(user.id); setEditRole(user.role); setEditActive(user.is_active !== false) }} title="Edit" style={iconBtn('#2563eb')}><i className="fas fa-edit"></i></button>
+                          <button onClick={() => { setEditingId(user.id); setEditRole(user.role); setEditActive(!!user.is_active) }} title="Edit" style={iconBtn('#2563eb')}><i className="fas fa-edit"></i></button>
                           <button onClick={() => openPermissions(user.id)} title="User Permissions" style={iconBtn('#7c3aed')}><i className="fas fa-shield-alt"></i></button>
                           {user.linked_customer_id ? (
                             <button onClick={async () => { try { await api.unlinkCustomer(user.id); toast('Unlinked'); load() } catch(e){ toast(e.message,'error') }}} title="Unlink Customer" style={iconBtn('#f59e0b')}><i className="fas fa-unlink"></i></button>

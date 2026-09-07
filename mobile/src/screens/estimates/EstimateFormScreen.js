@@ -39,7 +39,7 @@ const EstimateFormScreen = ({ route, navigation }) => {
       ]);
       setCustomers(custRes.data?.customers || custRes.data?.items || []);
       setProducts(prodRes.data?.products || prodRes.data?.items || []);
-      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => t.is_active !== false));
+      setTaxes((taxRes.data?.taxes || taxRes.data?.items || []).filter((t) => !!t.is_active));
 
       if (isEdit) {
         const res = await estimatesAPI.getById(editId);

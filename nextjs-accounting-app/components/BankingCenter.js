@@ -147,7 +147,7 @@ export default function BankingCenter({ isOpen, onClose }) {
       opening_balance: acct.opening_balance || '',
       currency: acct.currency || 'USD',
       gl_account_id: acct.gl_account_id || '',
-      is_active: acct.is_active !== false,
+      is_active: !!acct.is_active,
     })
     setGlSearch(acct.gl_account_name ? `${acct.gl_account_number} - ${acct.gl_account_name}` : '')
     setAccountFormError('')

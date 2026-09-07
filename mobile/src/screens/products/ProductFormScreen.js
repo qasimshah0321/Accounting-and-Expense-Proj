@@ -20,7 +20,7 @@ const ProductFormScreen = ({ route, navigation }) => {
     cost_price: existing?.cost_price ? String(existing.cost_price) : '',
     unit_of_measure: existing?.unit_of_measure || '',
     reorder_level: existing?.reorder_level ? String(existing.reorder_level) : '',
-    is_active: existing?.is_active !== false,
+    is_active: isEdit ? !!existing.is_active : true,
   });
   const [saving, setSaving] = useState(false);
 
